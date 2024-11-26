@@ -4,7 +4,6 @@ from datetime import datetime
 import os
 import requests
 import folium
-from streamlit_folium import st_folium
 import pandas as pd
 
 
@@ -98,20 +97,21 @@ class LocationSearch:
                if place[0] == selected_place:
                    name, address, latitude, longitude = place
 
+                   # 장소 정보를 표시
+                   st.write(f"장소 이름: {name}")
+                   st.write(f"주소: {address}")
 
-                   # folium 지도 생성
-                   m = folium.Map(location=[latitude, longitude], zoom_start=17)
-                   folium.Marker([latitude, longitude], tooltip=f"{name}\n{address}",
-                                 icon=folium.Icon(color='blue', icon='star', icon_color='white')).add_to(m)
+                   # Streamlit map 사용: DataFrame으로 장소의 위도, 경도 전달
+                   location_df = pd.DataFrame({
+                       'latitude': [latitude],
+                       'longitude': [longitude]
+                   })
 
+                   # 지도 표시
+                   st.map(location_df)
 
-                   st_folium(m, width=800, height=400)  # Streamlit에서 folium 지도 표시
-                   col3, col4 = st.columns([4, 1])
-                   with col3:
-                       st.write(f"장소 이름: {name}")
-                       st.write(f"주소: {address}")
-                       self.db_manager.save_location(name, address, latitude, longitude)
-
+                   # 데이터베이스에 장소 저장
+                   self.db_manager.save_location(name, address, latitude, longitude)
 
 
 
@@ -142,35 +142,33 @@ class PostManager:
        """
        self.locations_df = pd.read_sql(query, conn)
        conn.close()
+
+   def fetch_location_data(self):
+       conn = sqlite3.connect('zip.db')
+       query = """
+       SELECT l.location_name, l.address_name, l.latitude, l.longitude
+       FROM posting p
+       JOIN locations l ON p.p_location = l.location_id
+       """
+       self.locations_df = pd.read_sql(query, conn)
+       conn.close()
+
    def create_map_with_markers(self):
-       if self.locations_df is None:
-           st.error("위치가 존재하지 않습니다")
+       if self.locations_df is None or self.locations_df.empty:
+           st.error("위치 정보가 없습니다.")
+           return
 
+       # Creating a DataFrame with latitude and longitude for all locations
+       location_data = self.locations_df[['latitude', 'longitude']]
 
-       # 첫 번째 위치의 위도, 경도로 초기 위치 설정
-       latitude = self.locations_df.iloc[0]['latitude']
-       longitude = self.locations_df.iloc[0]['longitude']
+       # Display the map using Streamlit's st.map() with location data
+       st.map(location_data)
 
-
-       # Folium 맵 생성
-       self.map = folium.Map(location=[latitude, longitude], zoom_start=17)
-
-
-       # 각 위치에 마커 추가
-       for index, row in self.locations_df.iterrows():
-           lat = row['latitude']
-           lon = row['longitude']
-           name = row['location_name']
-           address = row['address_name']
-
-
-           folium.Marker([lat, lon],
-                         tooltip=f"{name}\n{address}",
-                         icon=folium.Icon(color='blue', icon='star', icon_color='white')).add_to(self.map)
-   def display_map(self,key):
+   def display_map(self, key):
        if self.map is None:
-           st.warning('위치 등록이 되어있지 않습니다')
-       st_folium(self.map, width=800, height=400,key=key)
+           st.warning('위치 등록이 되어 있지 않습니다.')
+       else:
+           st_folium(self.map, width=800, height=400, key=key)
    # posting에 디비 저장 , 사진 업로드 한 개 밖에 못함
    def add_post(self, title, content, image_file, file_file, category):
        conn = self.create_connection()
@@ -252,7 +250,7 @@ class PostManager:
            return file_path
        return ''
 
-
+    #p_id랑 p_title만 가져옴
    def fetch_and_store_posts(self):
        # Fetch all posts from the database and store them in session state
        conn = self.create_connection()
@@ -368,8 +366,26 @@ class PostManager:
            st.write(f"Post ID: {post['p_id']}, Title: {post['p_title']}")
            st.write(f"Content: {post['p_content']}")
 
+           if post.get('p_image_path') and os.path.exists(post['p_image_path']):
+               st.image(post['p_image_path'],  width=300)
+           else:
+               pass
 
-           # 좋아요 버튼
+           if post.get('p_file_path') and os.path.exists(post['p_file_path']):
+               # Read the file in binary mode
+               with open(post['p_file_path'], 'rb') as f:
+                   bytes_data = f.read()
+
+               # Display the file name
+               st.write("Filename:", os.path.basename(post['p_file_path']))
+
+               # Show the file size
+               st.write(f"File size: {len(bytes_data)} bytes")
+
+               # Provide a download link
+               st.write(f"파일을 다운로드하려면 [여기 클릭]({post['p_file_path']})")
+           else:
+               pass
            self.display_like_button(post['p_id'])
 
 
@@ -434,7 +450,7 @@ if page == "게시물 등록":
 
 
    # 카테고리 선택을 위한 Selectbox
-   post_manager = PostManager('zip.db')  # DB 경로 설정
+   post_manager = PostManager('/uploads')  # DB 경로 설정
    category_names = post_manager.get_category_names()  # 카테고리 이름만 가져옴
 
 
