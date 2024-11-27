@@ -461,7 +461,6 @@ def main():
     # Create the SetView object and render the views
     view = SetView()
     view.render_user_profile()
-    view.render_alarm_settings()
     theme_manager = ThemeManager()
     theme_manager.render_button()
 
