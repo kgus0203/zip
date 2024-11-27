@@ -3,11 +3,13 @@ import sqlite3
 from typing import Dict
 import os
 
-def init_db():
-    conn = sqlite3.connect('zip.db')
-    cursor = conn.cursor()
+def create_db():
+   conn = sqlite3.connect('zip.db')
+   cursor = conn.cursor()
 
-    cursor.execute("""
+
+   # user 테이블
+   cursor.execute("""
    CREATE TABLE IF NOT EXISTS user (
        user_id TEXT PRIMARY KEY,
        user_password TEXT NOT NULL,
@@ -24,50 +26,17 @@ def init_db():
             'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png'))
 
 
-    # friend 테이블 (친구 목록)
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS friend (
-        friend_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id TEXT NOT NULL,
-        friend_user_id TEXT NOT NULL,
-        FOREIGN KEY (user_id) REFERENCES user(user_id),
-        FOREIGN KEY (friend_user_id) REFERENCES user(user_id)
-    )
-    """)
-
-    # block 테이블 (차단 목록)
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS block (
-        block_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id TEXT NOT NULL,
-        blocked_user_id TEXT NOT NULL,
-        FOREIGN KEY (user_id) REFERENCES user(user_id),
-        FOREIGN KEY (blocked_user_id) REFERENCES user(user_id)
-    )
-    """)
-
-    # myFriendrequest 테이블 (내가 보낸 친구 신청 목록)
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS myFriendrequest (
-        request_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id TEXT NOT NULL,
-        requested_user_id TEXT NOT NULL,
-        FOREIGN KEY (user_id) REFERENCES user(user_id),
-        FOREIGN KEY (requested_user_id) REFERENCES user(user_id)
-    )
-    """)
-
-    # otherRequest 테이블 (다른 사람이 보낸 친구 신청 목록)
-    cursor.execute("""
-    CREATE TABLE IF NOT EXISTS otherRequest (
-        request_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id TEXT NOT NULL,
-        requester_user_id TEXT NOT NULL,
-        FOREIGN KEY (user_id) REFERENCES user(user_id),
-        FOREIGN KEY (requester_user_id) REFERENCES user(user_id)
-    )
-    """)
-
+   # friend 테이블
+   cursor.execute("""
+   CREATE TABLE IF NOT EXISTS friend (
+       friend_id INTEGER PRIMARY KEY AUTOINCREMENT,
+       user_id TEXT NOT NULL,
+       friend_user_id TEXT NOT NULL,
+       status TEXT NOT NULL,
+       FOREIGN KEY (user_id) REFERENCES user(user_id),
+       FOREIGN KEY (friend_user_id) REFERENCES user(user_id)
+   )
+   """)
 
 
    # groups 테이블
@@ -174,10 +143,15 @@ def init_db():
        CREATE TABLE IF NOT EXISTS settings (
            id INTEGER PRIMARY KEY AUTOINCREMENT,
            current_theme TEXT
-       )
+       );
    ''')
-    conn.commit()
-    conn.close()
+
+
+   conn.commit()
+   conn.close()
+
+
+create_db()
 
 def create_connection():
     conn = sqlite3.connect('zip.db')
