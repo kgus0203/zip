@@ -1,2 +1,2 @@
 folium
-st_folium
+st-folium
