@@ -157,6 +157,7 @@ def create_connection():
     conn = sqlite3.connect('zip.db')
     conn.row_factory = sqlite3.Row  # results as dictionary-like
     return conn
+   
 class LikeButton:
    def __init__(self):
        self.lk = st.session_state
@@ -178,49 +179,31 @@ class LikeButton:
            self.fetch_and_store_posts()
 
 
-   def create_connection(self):
-       """ Create a SQLite database connection. """
-       conn = sqlite3.connect('zip.db')
-       conn.row_factory = sqlite3.Row  # Return results as dictionaries
-       return conn
-
-
    def fetch_and_store_posts(self):
        """ Fetch all posts from the database and store them in session state. """
-       conn = self.create_connection()
+       conn = create_connection()
        cursor = conn.cursor()
        cursor.execute("SELECT p_id, p_title FROM posting")
        posts = cursor.fetchall()
        conn.close()
-
-
        # Store the posts in session state
        st.session_state.posts = posts
 
 
    def fetch_liked_posts(self):
-       """ Fetch only posts with likes (like_num > 0). """
-       conn = self.create_connection()
+       conn = create_connection()
        cursor = conn.cursor()
        cursor.execute("SELECT p_id, p_title FROM posting WHERE like_num > 0")
        liked_posts = cursor.fetchall()
        conn.close()
-
-
        return liked_posts
 
 
    def toggle_like(self, post_id):
-       """ Toggle like/unlike for a post based on its current like status. """
-       conn = self.create_connection()
+       conn = create_connection()
        cursor = conn.cursor()
-
-
-       # Check current like status for the post
        cursor.execute("SELECT like_num FROM posting WHERE p_id = ?", (post_id,))
        result = cursor.fetchone()
-
-
        if result:
            if result[0] == 1:
                # Unlike the post
@@ -234,41 +217,31 @@ class LikeButton:
            # If the post doesn't exist or hasn't been liked yet
            cursor.execute("UPDATE posting SET like_num = 1 WHERE p_id = ?", (post_id,))
            st.success("포스팅을 좋아요 했습니다!")
-
-
        conn.commit()
        conn.close()
 
 
    def change_like(self):
-       """ Toggle the 'like' theme between 'like' and 'not_like'. """
        previous_like = self.lk.like["current_like"]
-
-
        # Toggle between "like" and "not_like" themes
        like_key = "not_like" if self.lk.like["current_like"] == "not_like" else "like"
        like_dict = self.lk.like[like_key]
-
 
        # Update Streamlit theme options
        for vkey, vval in like_dict.items():
            if vkey.startswith("like"):
                st._config.set_option(vkey, vval)
-
-
        # Toggle current like state
        self.lk.like["refreshed"] = False
        self.lk.like["current_like"] = "like" if previous_like == "not_like" else "not_like"
 
 
    def render_button(self, post_id):
-       """ Display the like/unlike button and handle its functionality. """
-       conn = self.create_connection()
+       conn = create_connection()
        cursor = conn.cursor()
        cursor.execute("SELECT like_num FROM posting WHERE p_id = ?", (post_id,))
        result = cursor.fetchone()
        conn.close()
-
 
        if result:
            current_like_count = result[0]
@@ -277,10 +250,8 @@ class LikeButton:
        else:
            button_label = self.lk.like["not_like"]["button_face"]
 
-
        # Display the button and trigger like/unlike on click
        st.button(button_label, on_click=self.toggle_like, args=(post_id,))
-
 
        # Refresh if necessary
        if self.lk.like["refreshed"] == False:
@@ -289,22 +260,15 @@ class LikeButton:
 
 
    def display_posts(self):
-       """ Display all posts and their corresponding like buttons. """
        posts = st.session_state.posts
-
-
        # Display posts with the like button
        for post in posts:
            post_id, post_title = post
            st.write(f"Post ID: {post_id}, Title: {post_title}")
            self.render_button(post_id)
 
-
    def display_liked_posts(self):
-       """ Display only liked posts (like_num > 0). """
        liked_posts = self.fetch_liked_posts()
-
-
        # Display liked posts with the like button
        if liked_posts:
            for post in liked_posts:
@@ -312,8 +276,6 @@ class LikeButton:
                st.write(f"Liked Post ID: {post_id}, Title: {post_title}")
        else:
            st.write("좋아요를 누른 포스팅이 없습니다.")
-
-
 
 
 class Account:
@@ -357,7 +319,6 @@ class ThemeManager:
             }
 
     def get_saved_theme(self):
-        # 저장된 테마 가져오기
         conn = create_connection()
         cursor = conn.cursor()
         cursor.execute('SELECT current_theme FROM settings WHERE id=1')
@@ -366,7 +327,6 @@ class ThemeManager:
         return theme[0] if theme else 'light'
 
     def save_theme(self, theme):
-        # 현재 테마를 데이터베이스에 저장
         conn = create_connection()
         cursor = conn.cursor()
         cursor.execute('UPDATE settings SET current_theme=? WHERE id=1', (theme,))
@@ -374,11 +334,8 @@ class ThemeManager:
         conn.close()
 
     def change_theme(self):
-        # 테마 변경
         previous_theme = self.th.themes["current_theme"]
         new_theme = "light" if previous_theme == "dark" else "dark"
-
-        # 테마 적용
         theme_dict = self.th.themes[new_theme]
         for key, value in theme_dict.items():
             if key.startswith("theme"):
@@ -401,16 +358,9 @@ class ThemeManager:
 
 class UserProfile:
     def __init__(self, upload_folder="profile_pictures"):
-        self.db_name = 'zip.db'
         self.upload_folder = upload_folder
         self.default_profile_picture = "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png"
         os.makedirs(self.upload_folder, exist_ok=True)
-
-    def create_connection(self):
-        """SQLite 데이터베이스 연결 생성"""
-        conn = sqlite3.connect(self.db_name)
-        conn.row_factory = sqlite3.Row  # 결과를 딕셔너리 형태로 반환
-        return conn
 
     def save_file(self, uploaded_file):
         # 이미지 저장 후 경로 반환
@@ -423,7 +373,7 @@ class UserProfile:
 
     # 사용자 이미지 가져오기
     def get_user_profile(self, user_id):
-        connection = self.create_connection()
+        connection = create_connection()
         cursor = connection.cursor()
         cursor.execute("SELECT * FROM user WHERE user_id = ?", (user_id,))
         user = cursor.fetchone()
@@ -432,7 +382,7 @@ class UserProfile:
 
     # 프로필 업데이트
     def update_profile_picture(self, user_id, image_path):
-        connection = self.create_connection()
+        connection = create_connection()
         cursor = connection.cursor()
         cursor.execute("""
         UPDATE user
@@ -499,19 +449,7 @@ class SetView:
                 st.success("프로필 사진이 성공적으로 업데이트되었습니다.")
                 st.rerun()
 
-    def render_alarm_settings(self):
-
-        alarm_enabled = st.button("알람 설정", use_container_width=True)
-        if alarm_enabled:
-            st.write("알람이 설정되었습니다.")
-        else:
-            st.write("알람이 해제되었습니다.")
-
-
-
     def render_posts(self):
-        # Display liked posts toggle button
-
         with st.expander('관심목록',icon='💗'):
             self.like_button.display_liked_posts()
 
