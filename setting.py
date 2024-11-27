@@ -174,7 +174,7 @@ def init_db():
        CREATE TABLE IF NOT EXISTS settings (
            id INTEGER PRIMARY KEY AUTOINCREMENT,
            current_theme TEXT
-       );
+       )
    ''')
     conn.commit()
     conn.close()
