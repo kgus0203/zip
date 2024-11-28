@@ -294,7 +294,7 @@ class change_pasges():
 
 # 페이지 함수 매핑
 page_functions = {
-    'Home': page.home_page,
+    'Home': Page.home_page,
     'Signup': change_pages.signup_page,
 }
 
