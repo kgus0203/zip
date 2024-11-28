@@ -455,26 +455,36 @@ class Settings(Base):
 
 # 데이터베이스 초기화 및 기본 데이터 삽입
 def initialize_database():
-    # Only create missing tables, do not recreate existing ones
-    Base.metadata.create_all(engine, checkfirst=True)
+    try:
+        # 테이블 생성 (앱 실행 시 한 번만)
+        Base.metadata.create_all(engine, checkfirst=True)
 
-    # 기본 데이터 삽입
-    if not session.query(User).filter_by(user_id="default_user").first():
-        default_user = User(
-            user_id="default_user",
-            user_password="default_password",  # 실제로는 비밀번호 해싱 필요
-            user_email="default@example.com",
-            profile_picture_path="https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png"
-        )
-        session.add(default_user)
+        # 기본 데이터 삽입 (기본 데이터가 없다면 삽입)
+        if not session.query(User).filter_by(user_id="default_user").first():
+            default_user = User(
+                user_id="default_user",
+                user_password="default_password",  # 실제로는 비밀번호 해싱 필요
+                user_email="default@example.com",
+                profile_picture_path="https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png"
+            )
+            session.add(default_user)
 
-    # Food Categories 기본값 삽입
-    default_categories = ["한식", "중식", "양식", "일식", "디저트", "패스트푸드"]
-    for category in default_categories:
-        if not session.query(FoodCategory).filter_by(category=category).first():
-            session.add(FoodCategory(category=category))
-    
-    session.commit()
+        # Food Categories 기본값 삽입
+        default_categories = ["한식", "중식", "양식", "일식", "디저트", "패스트푸드"]
+        for category in default_categories:
+            if not session.query(FoodCategory).filter_by(category=category).first():
+                session.add(FoodCategory(category=category))
+
+        session.commit()
+
+    except Exception as e:
+        session.rollback()  # 예외 발생 시 롤백
+        print(f"Error initializing database: {e}")
+
+    finally:
+        session.close()  # 세션 닫기
+
+initialize_database()
 
 #---------------------------------------------------------------db만들기 ----------------------------
 
@@ -1187,21 +1197,7 @@ class UserProfile:
                 st.error("파일을 업로드해주세요.")
 
 class Account:
-    def __init__(self, user_id, user_email):
-        self.user_id = user_id
-        self.user_email = user_email
-
-    def get_user_info(self) -> dict:
-        # 사용자 정보를 데이터베이스에서 조회
-        user = session.query(User).filter_by(user_id=self.user_id).first()
-        session.close()
-
-        # 사용자 정보가 있으면 반환, 없으면 빈 딕셔너리 반환
-        if user:
-            return {"user_id": user.user_id, "user_email": user.user_email}
-        else:
-            return {"user_id": None, "user_email": None}
-
+    
     def update_email(self, new_email: str):
         """Update the user's email in the database."""
         user = session.query(User).filter_by(user_id=self.user_id).first()
@@ -1213,6 +1209,7 @@ class Account:
 
 class SetView:
     def __init__(self, user_id, user_email):
+        account=Account()
         self.user_id=user_id
         self.user_email=user_email
         self.user_profile = UserProfile()
@@ -1253,7 +1250,6 @@ class SetView:
 
 class LikeButton:
     def __init__(self):
-       
         if "posts" not in st.session_state:
             st.session_state.posts = []
             self.fetch_and_store_posts()
@@ -1272,6 +1268,7 @@ class LikeButton:
                 st.write(f"Title: {post_title}, content : {post_content}")
         else:
             st.write("좋아요를 누른 포스팅이 없습니다.")
+            
 
 # 페이지 함수 매핑
 page_functions = {
