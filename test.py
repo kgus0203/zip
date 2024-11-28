@@ -854,7 +854,7 @@ class PostManager:
     def get_category_options(self):
         return session.query(FoodCategory).all()
 
-    def get_category_dict(self):
+    def get_category_names(self):
         categories = self.get_category_options()
         # 카테고리 이름을 key로, 카테고리 ID를 value로 하는 딕셔너리 생성
         category_dict = {category.category: category.category_id for category in categories}
