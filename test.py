@@ -1,140 +1,153 @@
 import streamlit as st
-import sqlite3
-import pandas as pdpyth
-from streamlit_ace import st_ace, KEYBINDINGS, LANGUAGES, THEMES
-import  streamlit_toggle as tog
-from pathlib import Path
+from sqlalchemy import create_engine, Column, Integer, String, ForeignKey, DateTime
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker, relationship
+import bcrypt
 
+# Database setup
+Base = declarative_base()
 
-def create_connection(db_file):
-     """ create a database connection to the SQLite database
-     specified by the db_file
- :param db_file: database file
- :return: Connection object or None
- """
-     conn = None
-     try:
-         conn = sqlite3.connect(db_file)
-     except Exception as e:
-         st.write(e)
-     
-         return conn
+class User(Base):
+    __tablename__ = 'user'
+    
+    user_id = Column(String, primary_key=True)
+    user_password = Column(String)
+    user_email = Column(String)
+    user_is_online = Column(Integer, default=0)
+    user_mannerscore = Column(Integer, default=0)
+    profile_picture_path = Column(String)
+    
+    def __init__(self, user_id, user_password, user_email):
+        self.user_id = user_id
+        self.user_password = user_password
+        self.user_email = user_email
 
-def create_database():
-     st.markdown("# Create Database")
+class Friend(Base):
+    __tablename__ = 'friend'
+    
+    friend_id = Column(Integer, primary_key=True)
+    user_id = Column(String, ForeignKey('user.user_id'), nullable=False)
+    friend_user_id = Column(String, ForeignKey('user.user_id'), nullable=False)
+    status = Column(String, nullable=False)
+    
+    user = relationship('User', foreign_keys=[user_id])
+    friend_user = relationship('User', foreign_keys=[friend_user_id])
 
-     st.info("""A database in SQLite is just a file on same server. 
-     By convention their names always must end in .db""")
+class Group(Base):
+    __tablename__ = 'group'
+    
+    group_id = Column(Integer, primary_key=True)
+    group_name = Column(String, unique=True, nullable=False)
+    group_creator = Column(String, ForeignKey('user.user_id'), nullable=False)
+    category = Column(Integer)
+    location = Column(Integer)
+    meeting_date = Column(DateTime)
+    status = Column(String, default='진행 중')
 
+# Create connection using Streamlit's st.connection
+def create_connection():
+    conn = st.connection("sql", type="sql")
+    return conn
 
-     db_filename = st.text_input("Database Name")
-     create_db = st.button('Create Database')
-     
-     conn = create_connection('default.db')
-     mycur = conn.cursor() 
-     mycur.execute("PRAGMA database_list;")
-     available_table=(mycur.fetchall())
-     with st.expander("Available Databases"): st.write(pd.DataFrame(available_table))
-     
-     if create_db:
-         
-         
-         if db_filename.endswith('.db'):
-             conn = create_connection(db_filename)
+# Create all tables if they do not exist
+def create_db():
+    conn = create_connection()
+    with conn.session as s:
+        Base.metadata.create_all(bind=conn.engine)  # Creates tables in the DB if they don't exist
 
-             st.success("New Database has been Created! Please move on to next tab for loading data into Table.")
-         else: 
-             st.error('Database name must end with .db as we are using sqlite in the background to create files.')
-def upload_data():
-     st.markdown("# Upload Data")
-     sqlite_dbs = [file for file in os.listdir('.') if file.endswith('.db')]
-     db_filename = st.selectbox('Database', sqlite_dbs)
-     table_name = st.text_input('Table Name to Insert')
-     conn = create_connection(db_filename)
-     uploaded_file = st.file_uploader('Choose a file')
-     upload = st.button("Create Table")
-     if upload:
-         #read csv
-         try:
-             df = pd.read_csv(uploaded_file)
-             df.to_sql(name=table_name, con=conn)
-             st.write('Data uploaded successfully. These are the first 5 rows.')
-             st.dataframe(df.head(5))
+# Insert user into the database
+def insert_user(user_id, user_password, user_email):
+    # Hash the password before storing it
+    hashed_password = bcrypt.hashpw(user_password.encode('utf-8'), bcrypt.gensalt())
+    
+    conn = create_connection()
+    with conn.session as s:
+        new_user = User(user_id=user_id, user_password=hashed_password, user_email=user_email)
+        s.add(new_user)
+        s.commit()
+        st.success(f"User {user_id} has been successfully registered!")
 
-         except Exception as e:
-             st.write(e)
+# Check if user exists
+def check_user_exists(user_id):
+    conn = create_connection()
+    with conn.session as s:
+        user = s.query(User).filter_by(user_id=user_id).first()
+        return user is not None
 
+# Verify password
+def verify_password(user_id, password):
+    conn = create_connection()
+    with conn.session as s:
+        user = s.query(User).filter_by(user_id=user_id).first()
+        if user and bcrypt.checkpw(password.encode('utf-8'), user.user_password.encode('utf-8')):
+            return True
+        return False
 
-intro, db, tbl, qry = st.tabs(["1 Intro to SQL","2 Create Database", "3 Upload Data", "4 Query Data"])
+# Login page
+def login_page():
+    st.title("Login Page")
+    
+    user_id = st.text_input("User ID")
+    user_password = st.text_input("Password", type='password')
+    
+    if st.button("Login"):
+        if user_id and user_password:
+            if verify_password(user_id, user_password):
+                st.session_state["user_id"] = user_id
+                st.success(f"Welcome back, {user_id}!")
+            else:
+                st.error("Invalid user ID or password.")
+        else:
+            st.error("Please enter both user ID and password.")
 
+# Sign up page
+def signup_page():
+    st.title("Signup Page")
+    
+    user_id = st.text_input("User ID")
+    user_password = st.text_input("Password", type='password')
+    user_email = st.text_input("Email")
+    
+    if st.button("Signup"):
+        if user_id and user_password and user_email:
+            if check_user_exists(user_id):
+                st.error("This user ID already exists. Please choose a different one.")
+            else:
+                insert_user(user_id, user_password, user_email)
+        else:
+            st.error("Please fill all fields.")
 
-with intro:
-     st.write((Path(__file__).parent/"data/sql.md").read_text()) 
- with db:
-     create_database()
- with tbl: 
-     upload_data()
- with qry:
-     sqlite_dbs = [file for file in os.listdir('.') if file.endswith('.db')]
-     db_filename = st.selectbox('DB Filename', sqlite_dbs)
-     conn = create_connection(db_filename)
-     mycur = conn.cursor() 
-     mycur.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;")
-     available_table=(mycur.fetchall())
-     st.write("Available Tables")
-     st.dataframe(pd.DataFrame(available_table))
-     with readme("streamlit-ace"):
-         c1, c2 = st.columns([3, 0.5])
+# Home page
+def home_page():
+    st.title("Home Page")
+    
+    col1, col2, col3 = st.columns(3)
+    with col1:
+        if st.button("Login"):
+            st.session_state["current_page"] = "Login"
+            st.experimental_rerun()
+    with col2:
+        if st.button("Signup"):
+            st.session_state["current_page"] = "Signup"
+            st.experimental_rerun()
 
-         # c2.subheader("Parameters")
-         # st.write(LANGUAGES)
-         with c2: 
-             st.write("")
-             st.write("")
-             st.write("")
-             st.write("")
-             dark_mode = tog.st_toggle_switch(label="Dark", 
-                         key="darkmode", 
-                         default_value=False, 
-                         label_after = False, 
-                         inactive_color = '#D3D3D3', 
-                         active_color="#11567f", 
-                         track_color="#29B5E8"
-                         )
-             if dark_mode: THEME = THEMES[0]
-             else: THEME = THEMES[3]
-         with c1:
-             st.subheader("Query Editor")
-             content = st_ace(
-                 placeholder="--Select Database and Write your SQL Query Here!",
-                 language= LANGUAGES[145],
-                 theme=THEME,
-                 keybinding=KEYBINDINGS[3],
-                 font_size=c2.slider("Font Size", 10, 24, 16),
-                 min_lines=15,
-                 key="run_query",
-             )
+# Page routing logic
+def page_routing():
+    if 'current_page' not in st.session_state:
+        st.session_state['current_page'] = 'Home'
+    
+    if st.session_state['current_page'] == 'Home':
+        home_page()
+    elif st.session_state['current_page'] == 'Login':
+        login_page()
+    elif st.session_state['current_page'] == 'Signup':
+        signup_page()
 
-             if content:
-                 st.subheader("Content")
-                 
-                 st.text(content)
-                 
-                 def run_query():
-                     query = content
-                     conn = create_connection(db_filename)
+# Main function to run the app
+def main():
+    create_db()  # Initialize DB and tables
+    page_routing()  # Handle page navigation
 
-                     try:
-                         query = conn.execute(query)
-                         cols = [column[0] for column in query.description]
-                         results_df= pd.DataFrame.from_records(
-                             data = query.fetchall(), 
-                             columns = cols
-                         )
-                         st.dataframe(results_df)
-                         export = results_df.to_csv()
-                         st.download_button(label="Download Results", data=export, file_name='query_results.csv' )
-                     except Exception as e:
-                         st.write(e)
-
-                 run_query()
+# Run the application
+if __name__ == "__main__":
+    main()
