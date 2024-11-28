@@ -1203,11 +1203,11 @@ class SetView:
         self.like_button = LikeButton()
 
 
-      def render_user_profile(self):
+   def render_user_profile(self):
         user_info = self.account.get_user_info()
         # Display user profile
         self.user_profile.display_profile(user_info["user_id"])
-
+    
         # Edit Profile Button (popup simulation)
         with st.expander("내 정보 수정하기"):
             # Change Email
@@ -1215,7 +1215,7 @@ class SetView:
             if st.button("이메일 변경"):
                 self.account.update_email(new_email)
                 st.success("이메일이 변경되었습니다.")
-
+    
             # Profile Picture Upload
             uploaded_file = st.file_uploader("새 프로필 사진 업로드", type=["jpg", "png", "jpeg"])
             if uploaded_file is not None:
