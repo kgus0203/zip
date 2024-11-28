@@ -1057,8 +1057,7 @@ class CategoryManager:
 
 
 class ThemeManager:
-    def __init__(self, session):
-        self.session = session
+    def __init__(self):
         self.th = st.session_state
         if "themes" not in self.th:
             self.th.themes = {
@@ -1079,12 +1078,12 @@ class ThemeManager:
 
     def get_saved_theme(self):
         # 저장된 테마 가져오기
-        settings = self.session.query(Settings).filter_by(id=1).first()
+        settings = session.query(Settings).filter_by(id=1).first()
         return settings.current_theme if settings else "dark"
 
     def save_theme(self, theme):
         # 현재 테마를 데이터베이스에 저장
-        settings = self.session.query(Settings).filter_by(id=1).first()
+        settings = session.query(Settings).filter_by(id=1).first()
         if not settings:
             settings = Settings(id=1, current_theme=theme)
             self.session.add(settings)
@@ -1109,13 +1108,8 @@ class ThemeManager:
         st.rerun()  # UI 새로고침
 
     def render_button(self):
-        # 동적으로 버튼 텍스트 가져오기
         current_theme = self.th.themes["current_theme"]
-        button_label = (
-            "dark_mode"
-            if current_theme == "light"
-            else "light_mode"
-        )
+        button_label = self.th.themes[current_theme]["button_face"]
 
         # 버튼 렌더링 및 클릭 이벤트 처리
         if st.button(button_label, use_container_width=True):
