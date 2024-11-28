@@ -283,7 +283,8 @@ class PasswordRecovery(Base):
 
 # 데이터베이스 초기화 및 기본 데이터 삽입
 def initialize_database():
-    Base.metadata.create_all(engine)
+    # Only create missing tables, do not recreate existing ones
+    Base.metadata.create_all(engine, checkfirst=True)
 
     # 기본 데이터 삽입
     if not session.query(User).filter_by(user_id="default_user").first():
@@ -304,9 +305,7 @@ def initialize_database():
     session.commit()
 
 #---------------------------------------------------------------db만들기 ----------------------------
-# 데이터베이스 초기화
-def initialize_database():
-    Base.metadata.create_all(engine)
+
 
 
 class UserManager:
