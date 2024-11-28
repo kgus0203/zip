@@ -854,10 +854,11 @@ class PostManager:
     def get_category_options(self):
         return session.query(FoodCategory).all()
 
-    def get_category_names(self):
+    def get_category_dict(self):
         categories = self.get_category_options()
-        # FoodCategory 객체에서 category 속성으로 접근
-        return [category.category for category in categories]
+        # 카테고리 이름을 key로, 카테고리 ID를 value로 하는 딕셔너리 생성
+        category_dict = {category.category: category.category_id for category in categories}
+        return category_dict
     def display_posts(self):
         posts = self.get_all_posts()
         for post in posts:
