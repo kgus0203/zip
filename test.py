@@ -1081,7 +1081,7 @@ class ThemeManager:
         session.close()
         
         # Return the saved theme or default to 'dark'
-        return setting.current_theme if setting else 'dark'
+        return setting.current_theme if setting and setting.current_theme in ["light", "dark"] else 'dark'
 
     def save_theme(self, theme):
         """ Save the selected theme to the database """
@@ -1102,6 +1102,12 @@ class ThemeManager:
         """ Toggle between light and dark themes and update UI """
         previous_theme = self.th.themes["current_theme"]
         new_theme = "light" if previous_theme == "dark" else "dark"
+        
+        # Ensure the new theme exists in the themes dictionary
+        if new_theme not in self.th.themes:
+            st.error(f"Theme '{new_theme}' not found in theme dictionary")
+            return
+        
         theme_dict = self.th.themes[new_theme]
         
         # Apply the new theme settings
@@ -1123,7 +1129,6 @@ class ThemeManager:
         # Render the button and handle the click event
         if st.button(button_label, use_container_width=True):
             self.change_theme()
-
 #---------------------------- 유저 프로필 ---------------------------------
 class UserProfile:
     def __init__(self, session, upload_folder="profile_pictures"):
