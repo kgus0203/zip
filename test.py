@@ -1132,9 +1132,6 @@ class ThemeManager:
 #---------------------------- 유저 프로필 ---------------------------------
 class UserProfile:
     def __init__(self, upload_folder="profile_pictures"):
-        if not isinstance(upload_folder, (str, os.PathLike)):
-            raise TypeError(f"Expected a string or os.PathLike object for upload_folder, got {type(upload_folder)}")
-        
         self.upload_folder = upload_folder
 
         # Default profile picture URL
@@ -1206,7 +1203,7 @@ class Account:
 class SetView:
     def __init__(self, user_id, user_email):
         self.account = Account(user_id=user_id, user_email=user_email)
-        self.user_profile = UserProfile(session)
+        self.user_profile = UserProfile()
         self.theme_manager = ThemeManager()
         self.like_button = LikeButton()
 
