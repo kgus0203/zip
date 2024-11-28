@@ -105,7 +105,7 @@ def setting_page():
             go_back()
 
     # 설정 페이지 렌더링
-    view = setting.SetView(user_id, user_email)
+    view = SetView(user_id, user_email)
     view.render_user_profile()
     view.render_alarm_settings()
 
