@@ -1,5 +1,6 @@
 import sqlite3
 import streamlit as st
+import bcrypt
 
 def create_db():
    conn = sqlite3.connect('zip.db')
@@ -209,46 +210,46 @@ class UserDAO:
         finally:
             connection.close()
 
-    # user_id로 사용자 정보를 가져온다
-    def search_user(self, user_id):
-        connection = create_connection()
-        try:
-            cursor = connection.cursor()
-            query = "SELECT * FROM user WHERE user_id = ?"
-            cursor.execute(query, (user_id,))
-            result = cursor.fetchone()
-            return result
-        except sqlite3.Error as e:
-            st.error(f"DB 오류: {e}")
-        finally:
-            connection.close()
-       def insert_user(self, user):
-        connection = create_connection()
+ # user_id로 사용자 정보를 가져온다
+ def search_user(self, user_id):
+     connection = create_connection()
+     try:
+         cursor = connection.cursor()
+         query = "SELECT * FROM user WHERE user_id = ?"
+         cursor.execute(query, (user_id,))
+         result = cursor.fetchone()
+         return result
+     except sqlite3.Error as e:
+         st.error(f"DB 오류: {e}")
+     finally:
+         connection.close()
+    def insert_user(self, user):
+     connection = create_connection()
 
-        # 비밀번호 해싱 (bcrypt 사용)
-        hashed_password = bcrypt.hashpw(user.user_password.encode('utf-8'), bcrypt.gensalt())
+     # 비밀번호 해싱 (bcrypt 사용)
+     hashed_password = bcrypt.hashpw(user.user_password.encode('utf-8'), bcrypt.gensalt())
 
-        try:
-            cursor = connection.cursor()
-            query = "INSERT INTO user (user_id, user_password, user_email, user_is_online) VALUES (?, ?, ?, 0)"
-            cursor.execute(query, (user.user_id, hashed_password, user.user_email))
-            connection.commit()
-        except sqlite3.IntegrityError as e:  # UNIQUE 제약 조건으로 발생하는 오류 처리
-            if "user_email" in str(e):
-                st.error("이미 사용 중인 이메일입니다. 다른 이메일을 사용해주세요.")
-            elif "user_id" in str(e):
-                st.error("이미 사용 중인 아이디입니다. 다른 아이디를 사용해주세요.")
-            else:
-                st.error("회원가입 중 알 수 없는 오류가 발생했습니다.")
-            return  # 예외 발생 시 함수 종료
-        except sqlite3.Error as e:
-            st.error(f"DB 오류: {e}")
-            return  # 예외 발생 시 함수 종료
-        finally:
-            connection.close()
+     try:
+         cursor = connection.cursor()
+         query = "INSERT INTO user (user_id, user_password, user_email, user_is_online) VALUES (?, ?, ?, 0)"
+         cursor.execute(query, (user.user_id, hashed_password, user.user_email))
+         connection.commit()
+     except sqlite3.IntegrityError as e:  # UNIQUE 제약 조건으로 발생하는 오류 처리
+         if "user_email" in str(e):
+             st.error("이미 사용 중인 이메일입니다. 다른 이메일을 사용해주세요.")
+         elif "user_id" in str(e):
+             st.error("이미 사용 중인 아이디입니다. 다른 아이디를 사용해주세요.")
+         else:
+             st.error("회원가입 중 알 수 없는 오류가 발생했습니다.")
+         return  # 예외 발생 시 함수 종료
+     except sqlite3.Error as e:
+         st.error(f"DB 오류: {e}")
+         return  # 예외 발생 시 함수 종료
+     finally:
+         connection.close()
 
-        # 회원가입 성공 메시지 (오류가 없을 경우에만 실행)
-        st.success("회원가입이 완료되었습니다!")
+     # 회원가입 성공 메시지 (오류가 없을 경우에만 실행)
+     st.success("회원가입이 완료되었습니다!")
 
 # UserVO (사용자 정보 클래스)
 class UserVO:
