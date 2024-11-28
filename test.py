@@ -1152,7 +1152,7 @@ class UserProfile:
 
     def get_user_profile(self, user_id):
         """사용자의 프로필 정보를 데이터베이스에서 조회"""
-        return self.session.query(User).filter_by(user_id=user_id).first()
+        return session.query(User).filter_by(user_id=user_id).first()
 
     def update_profile_picture(self, user_id, image_path):
         """사용자의 프로필 사진 경로를 업데이트"""
