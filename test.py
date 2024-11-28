@@ -45,6 +45,67 @@ def home_page():
     with col3:
         if st.button("ID/PW 찾기", key="home_forgot_button"):
             change_page('User manager')  # ID/PW 찾기 페이지로 이동
+
+#로그인 페이지
+def login_page():
+    st.title("로그인")
+    user_id = st.text_input("아이디", key="login_user_id_input")
+    user_password = st.text_input("비밀번호", type='password', key="login_password_input")
+
+    col1, col2 = st.columns([1, 1])  # 버튼을 나란히 배치
+    with col1:
+        if st.button("로그인", key="login_submit_button"):
+            if not user_id or not user_password:
+                st.error("아이디와 비밀번호를 입력해 주세요.")
+            else:
+                sign_in = SignIn(user_id, user_password)
+                if sign_in.sign_in_event():  # 로그인 성공 시
+                    st.session_state['user_id'] = user_id  # 로그인한 사용자 ID 저장
+                    st.session.state['user_password']=user_password
+                    change_page('after_login')  # 로그인 후 홈화면으로 이동
+                else:
+                    st.error("로그인에 실패했습니다. 아이디 또는 비밀번호를 확인해 주세요.")
+    with col2:
+        if st.button("뒤로가기", key="login_back_button"):
+            go_back()  # 뒤로가기 로직 호출
+
+
+
+#회원가입 페이지
+def signup_page():
+    st.title("회원가입")
+
+    # 사용자 입력 받기
+    user_id = st.text_input("아이디")
+    user_password = st.text_input("비밀번호", type='password')
+    email = st.text_input("이메일")
+    # 회원가입 처리 객체 생성
+    signup = SignUp(user_id, user_password, email)
+    col1, col2 = st.columns([1, 1])  # 버튼을 나란히 배치
+    with col1:
+        if st.button("회원가입", key="signup_submit_button"):
+            if not user_id or not user_password or not email:
+                st.error("모든 필드를 입력해 주세요.")
+            else:
+                if not signup.validate_email(email):
+                    st.error("유효한 이메일 주소를 입력해 주세요.")
+                    return
+                # 비밀번호 길이 체크
+                if not signup.check_length():
+                    return  # 비밀번호가 너무 짧으면 더 이상 진행하지 않음
+
+                # 사용자 ID 중복 체크
+                if not signup.check_user():
+                    return  # 중복 아이디가 있으면 더 이상 진행하지 않음
+
+                # 모든 검증을 통과하면 회원가입 진행
+                signup.sign_up_event()
+
+    with col2:
+        if st.button("뒤로가기", key="signup_back_button"):
+            go_back()  # 뒤로가기 로직 호출
+
+
 # 테이블 모델 정의
 class User(Base):
     __tablename__ = 'user'
