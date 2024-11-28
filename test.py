@@ -827,7 +827,7 @@ class PostManager:
 
             st.write(f"**등록 날짜**: {post.upload_date}, **수정 날짜**: {post.modify_date}")
             st.write("---")
-     def display_posts_on_home(self):
+    def display_posts_on_home(self):
         # 데이터베이스에서 포스팅 데이터를 가져옵니다.
         posts = self.get_all_posts()
 
@@ -842,8 +842,6 @@ class PostManager:
                 if i + j < len(posts):
                     post = posts[i + j]  # 현재 포스트 데이터
                     with col:
-                        # 제목 출력
-
                         st.subheader(post["p_title"])
 
                         # 이미지 출력 (있는 경우)
