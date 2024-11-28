@@ -864,7 +864,7 @@ class PostManager:
                 self.toggle_like(post_id)
     def fetch_location_data(self, post_id):
         # Query the database using SQLAlchemy
-        location_data = self.session.query(
+        location_data = session.query(
             Location.location_name,
             Location.address_name,
             Location.latitude,
