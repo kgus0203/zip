@@ -299,10 +299,10 @@ page_functions = {
 }
 
 # 현재 페이지 디버깅
-st.write(f"Current Page: {st.session_state['current_page']}")  # 디버깅용 코드
+st.write(f"Current Page: {Page.st.session_state['Page.current_page']}")  # 디버깅용 코드
 
 # 현재 페이지 렌더링
-if st.session_state["current_page"] in page_functions:
-    page_functions[st.session_state["current_page"]]()  # 매핑된 함수 호출
+if Page.st.session_state["current_page"] in page_functions:
+    page_functions[Page.st.session_state["current_page"]]()  # 매핑된 함수 호출
 else:
-    st.error(f"페이지 {st.session_state['current_page']}를 찾을 수 없습니다.")
+    Page.st.error(f"페이지 {Page.st.session_state['current_page']}를 찾을 수 없습니다.")
