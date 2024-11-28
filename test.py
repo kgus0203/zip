@@ -119,7 +119,9 @@ def initialize_database():
             session.add(FoodCategory(category=category))
     
     session.commit()
-    
+
+#------------------db만들기 ----------------------------
+
 # SQLAlchemy Base 선언
 Base = declarative_base()
 
@@ -250,25 +252,56 @@ def login_page():
     with col2:
         if st.button("뒤로가기"):
             st.session_state['current_page'] = 'Signup'
+            
+# 페이지 함수 매핑
+page_functions = {
+    'Home': home_page,
+    'Signup': signup_page,
+    'Login': login_page,
+}
+if 'current_page' not in st.session_state:
+    st.session_state.current_page = 'Home'
 
-# Streamlit 앱 실행
-def main():
-   # 페이지 함수 매핑
-    page_functions = {
-        'Home': home_page,
-        'Signup': signup_page,
-        'Login': login_page,
-    }
-    
-    # 현재 페이지 디버깅
-    st.write(f"Current Page: {st.session_state['current_page']}")  # 디버깅용 코드
-    
-    # 현재 페이지 렌더링
-    if st.session_state["current_page"] in page_functions:
-        page_functions[st.session_state["current_page"]]()  # 매핑된 함수 호출
+# 페이지 전환 함수
+def change_page(page_name):
+    if "history" not in st.session_state:
+        st.session_state["history"] = []
+    if st.session_state["current_page"] != page_name:
+        st.session_state["history"].append(st.session_state["current_page"])
+    st.session_state["current_page"] = page_name
+    st.rerun()
+
+
+# 뒤로가기 함수
+def go_back():
+    if 'history' in st.session_state and st.session_state.history:
+        st.session_state.current_page = st.session_state.history.pop()  # 이전 페이지로 이동
+        st.rerun()
     else:
-        st.error(f"페이지 {st.session_state['current_page']}를 찾을 수 없습니다.")
+        st.warning("이전 페이지가 없습니다.")  # 방문 기록이 없을 경우 처리
+        st.rerun()
 
-if __name__ == "__main__":
-    initialize_database()
-    main()
+# 홈 페이지 함수 (로그인 전)
+def home_page():
+    col1, col2, col3 = st.columns([1, 1, 1])  # 동일한 너비의 세 개 열 생성
+    with col1:
+        if st.button("로그인", key="home_login_button"):
+            change_page('Login')  # 로그인 페이지로 이동
+    with col2:
+        if st.button("회원가입", key="home_signup_button"):
+            change_page('Signup')  # 회원가입 페이지로 이동
+    with col3:
+        if st.button("ID/PW 찾기", key="home_forgot_button"):
+            change_page('User manager')  # ID/PW 찾기 페이지로 이동
+
+initialize_database()
+# 현재 페이지 디버깅
+st.write(f"Current Page: {st.session_state['current_page']}")  # 디버깅용 코드
+
+# 현재 페이지 렌더링
+if st.session_state["current_page"] in page_functions:
+    page_functions[st.session_state["current_page"]]()  # 매핑된 함수 호출
+else:
+    st.error(f"페이지 {st.session_state['current_page']}를 찾을 수 없습니다.")
+    
+
