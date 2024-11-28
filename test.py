@@ -113,16 +113,6 @@ def setting_page():
     theme_manager.render_button()
 
     view.render_posts()
-    # SetView 및 ThemeManager 인스턴스 생성 및 렌더링
-    view = SetView(user_id, user_email)
-    view.render_user_profile()
-    view.render_alarm_settings()
-    
-    theme_manager = ThemeManager()
-    theme_manager.render_button()
-
-    view.render_posts()
-
 
 def usermanager_page():
     st.title("사용자 관리 페이지")
@@ -1191,18 +1181,9 @@ class UserProfile:
                 st.error("파일을 업로드해주세요.")
 
 
-class Account:
-    def __init__(self, user_id, user_email):
-        self.user_id = user_id
-        self.user_email = user_email
-
-    def get_user_info(self):
-        return {"user_id": self.user_id, "user_email": self.user_email}
-
 
 class SetView:
     def __init__(self, user_id, user_email):
-        self.account = Account(user_id=user_id, user_email=user_email)
         self.user_profile = UserProfile()
         self.theme_manager = ThemeManager()
         self.like_button = LikeButton()
@@ -1215,8 +1196,7 @@ class SetView:
         else:
             st.write("알람이 해제되었습니다.")
     def render_user_profile(self):
-        user_info = self.account.get_user_info()
-        # Display user profile
+        user_info = self.user_profile
         self.user_profile.display_profile(user_info["user_id"])
     
         # Edit Profile Button (popup simulation)
