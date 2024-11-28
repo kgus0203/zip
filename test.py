@@ -113,7 +113,7 @@ def usermanager_page():
 def change_page(page_name):
     """페이지 이동 함수"""
     st.session_state['current_page'] = page_name  # 세션에 현재 페이지 정보 저장
-    st.experimental_rerun()  # 페이지를 다시 로드하여 새 페이지로 전환
+    st.rerun()  # 페이지를 다시 로드하여 새 페이지로 전환
 
         
 #회원가입 페이지
