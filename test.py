@@ -1238,9 +1238,9 @@ class LikeButton:
             self.fetch_and_store_posts()
 
     def fetch_liked_posts(self):
-        liked_posts = session.query(Posting.p_id, Posting.p_title).filter(Posting.like_num > 0).all()
+        liked_posts = session.query(Posting.p_content, Posting.p_title).filter(Posting.like_num > 0).all()
         session.close()
-        return [(post.p_content, post.p_title) for post in liked_posts]
+        return [(post.p_title, post.p_content) for post in liked_posts]
 
     def display_liked_posts(self):
         liked_posts = self.fetch_liked_posts()
