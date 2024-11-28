@@ -780,34 +780,7 @@ class PostManager:
             st.session_state.posts = []
             self.fetch_and_store_posts()
         self.category_manager=CategoryManager()
-    def fetch_location_data(self, p_id):
-        # SQLAlchemy query: Get location data based on p_id
-        location_data = self.session.query(
-            Location.location_name,
-            Location.address_name,
-            Location.latitude,
-            Location.longitude
-        ).join(Posting, Posting.p_location == Location.location_id).filter(Posting.p_id == p_id).all()
 
-        # If location_data is not empty, convert it to a DataFrame
-        if location_data:
-            self.locations_df = pd.DataFrame(location_data, columns=['location_name', 'address_name', 'latitude', 'longitude'])
-        else:
-            self.locations_df = pd.DataFrame(columns=['location_name', 'address_name', 'latitude', 'longitude'])
-
-        return self.locations_df
-
-    def create_map_with_markers(self):
-        # Check if the DataFrame is empty
-        if self.locations_df is None or self.locations_df.empty:
-            st.error("위치가 존재하지 않습니다")
-            return
-
-        # Display place details
-        for index, row in self.locations_df.iterrows():
-            name = row['location_name']
-            address = row['address_name']
-            st.write(f"장소 이름: {name}")
             st.write(f"주소: {address}")
     
     def save_file(self, file):
@@ -879,7 +852,7 @@ class PostManager:
         
         return self.locations_df
     
-    def create_map_with_markers(self):
+    def create_location_name(self):
         # Check if the DataFrame is empty
         if self.locations_df is None or self.locations_df.empty:
             st.error("위치가 존재하지 않습니다")
@@ -948,7 +921,7 @@ class PostManager:
 
             # 위치 데이터가 존재할 때만 지도 생성
             if self.locations_df is not None and not self.locations_df.empty:
-                self.create_map_with_markers()
+                self.create_location_name()
                 st.title("Location Map")
                 self.display_map()
 
@@ -1028,7 +1001,7 @@ class PostManager:
                             except Exception as e:
                                 st.error(f"이미지를 불러오는 데 실패했습니다: {e}")
                         else:
-                            st.write("이미지가 없습니다.")  
+                            self.create_location_name()
                         with st.expander('더보기'):
                                     self.display_post(post.p_id)
 
