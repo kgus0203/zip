@@ -300,7 +300,7 @@ class SignIn:
        dao = UserDAO()
        
        # 사용자 정보를 가져옵니다.
-       result = dao.search_user(self.user_id)
+       result = dao.check_user_id_exists(self.user_id)
        
        if result:
            # result는 튜플 형태 (user_id, user_password, user_email, user_is_online)
