@@ -317,7 +317,7 @@ class SignIn:
             if dao.check_password(stored_hashed_password, self.user_password):  # bcrypt로 비밀번호 비교
                 st.session_state["user_id"] = self.user_id  # 로그인 성공 시 세션에 user_id 저장
                 self.user_is_online = 1
-                pages.change_page('after_login')
+                change_page('HOme')
                 return True
             else:
                 st.error("비밀번호가 잘못되었습니다.")
@@ -333,7 +333,7 @@ class SignIn:
             st.session_state.user_id = ''  # Clear the session variable
             st.session_state.user_password =''
             st.warning("로그아웃 완료")
-            pages.change_page('Home')
+            change_page('Home')
 
 #-------------------------------------------------------------페이지 이동 -------------------------------------------------------------
 
@@ -383,9 +383,6 @@ def login_page():
               if sign_in.sign_in_event():  # 로그인 성공 시
                   st.session_state['user_id'] = user_id  # 로그인한 사용자 ID 저장
                   st.session.state['user_password']=user_password
-
-                  #alter_login으로 바꿔야함
-                  change_page('Home')  # 로그인 후 홈화면으로 이동
               else:
                   st.error("로그인에 실패했습니다. 아이디 또는 비밀번호를 확인해 주세요.")
   with col2:
