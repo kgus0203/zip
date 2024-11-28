@@ -1075,31 +1075,24 @@ class ThemeManager:
             }
 
     def get_saved_theme(self):
-        """ Fetch the saved theme from the database (or fallback to 'dark') """
-        session = Session()
         setting = session.query(Settings).filter(Settings.id == 1).first()
         session.close()
-        
-        # Return the saved theme or default to 'dark'
+
         return setting.current_theme if setting and setting.current_theme in ["light", "dark"] else 'dark'
 
     def save_theme(self, theme):
-        """ Save the selected theme to the database """
-        session = Session()
         setting = session.query(Settings).filter(Settings.id == 1).first()
         
         if setting:
             setting.current_theme = theme
         else:
-            # If the settings row doesn't exist, create it
-            setting = Settings(id=1, current_theme=theme)
+            setting = Settings(id=1, current_theme="light")
             session.add(setting)
         
         session.commit()
         session.close()
 
     def change_theme(self):
-        """ Toggle between light and dark themes and update UI """
         previous_theme = self.th.themes["current_theme"]
         new_theme = "light" if previous_theme == "dark" else "dark"
         
