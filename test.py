@@ -1093,23 +1093,18 @@ class ThemeManager:
         session.commit()
         session.close()
 
-    def change_theme(self):
-        """ Change between light and dark themes """
+     def change_theme(self):
         previous_theme = self.th.themes["current_theme"]
         new_theme = "light" if previous_theme == "dark" else "dark"
-        
-        # Apply the new theme settings
-        theme_dict = self.th.themes.get(new_theme)
-        if theme_dict:
-            for key, value in theme_dict.items():
-                if key.startswith("theme"):
-                    st._config.set_option(key, value)
+        theme_dict = self.th.themes[new_theme]
+        for key, value in theme_dict.items():
+            if key.startswith("theme"):
+                st._config.set_option(key, value)
 
-        # Save the theme in the database and update session state
+        # 데이터베이스 저장 및 세션 상태 업데이트
         self.save_theme(new_theme)
         self.th.themes["current_theme"] = new_theme
-        st.rerun()
-
+        st.rerun()  # UI 새로고침
     def render_button(self):
         # Ensure the current theme exists in the session state
         current_theme = self.th.themes.get("current_theme", "light")  # Default to 'light' if missing
