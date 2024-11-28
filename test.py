@@ -332,6 +332,30 @@ def friend_and_group_sidebar(user_id):
         if st.button("삭제 확인"):
             # 삭제 로직 호출
             st.write(f"{delete_user_id}님을 친구 목록에서 삭제했습니다.")  # 여기에 삭제 로직 추가 가능
+# 친구 상태 표시 함수
+def display_friend(name, online):
+    status_color = "status-on" if online else "status-off"
+    st.sidebar.markdown(
+        f"""
+        <div class="friend-row">
+            <span>{name}</span>
+            <div class="status-circle {status_color}"></div>
+        </div>
+        """,
+        unsafe_allow_html=True
+
+    )
+#-------------------------------------디비-----------------------------------------------------------------------------
+
+class User(Base):
+    __tablename__ = 'user'
+    user_id = Column(String, primary_key=True)
+    user_password = Column(String, nullable=False)
+    user_email = Column(String, nullable=False, unique=True)
+    user_is_online = Column(Boolean, default=False)
+    user_mannerscore = Column(Integer, default=0)
+    profile_picture_path = Column(String, nullable=True)
+
 
 class Friend(Base):
     __tablename__ = 'friend'
