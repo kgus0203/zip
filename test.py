@@ -1231,7 +1231,7 @@ class SetView:
         with st.expander('관심목록',icon='💗'):
             self.like_button.display_liked_posts()
 
-
+#-----------------------------------------------------좋아요 목록 --------------------------------------------------------------
 
 class LikeButton:
     def __init__(self):
@@ -1251,7 +1251,7 @@ class LikeButton:
         if liked_posts:
             for post in liked_posts:
                 post_id, post_title = post
-                st.write(f"Liked Post ID: {post_id}, Title: {post_title}")
+                st.write(f"Title: {post_title}, content : {post_content}")
         else:
             st.write("좋아요를 누른 포스팅이 없습니다.")
 
