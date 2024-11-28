@@ -140,20 +140,19 @@ def upload_post() :
     
     location_search = LocationSearch()
     location_search.display_location_on_map()
-    location_id= location_search.get_selected_location_id()
+
 
     col1, col2 = st.columns([6, 2])
     with col1:
         if st.button("게시물 등록"):
 
-            post_manager.add_post(title, content, image_file, file_file, selected_category_id,location_id)
+            location_search.add_post(title, content, image_file, file_file, selected_category_id)
 
             st.success("게시물이 등록되었습니다.")
-
-
-        with col2:
-            if st.button("뒤로가기"):
-                change_page("after_login")  # 뒤로가기 로직 호출
+            
+    with col2:
+        if st.button("뒤로가기"):
+            change_page("after_login")  # 뒤로가기 로직 호출
                 
         
 #회원가입 페이지
@@ -747,6 +746,29 @@ class LocationSearch:
     def get_selected_location_id(self):
         """선택된 location_id를 반환"""
         return self.selected_location_id
+        
+    def add_post(self, title, content, image_file, file_file, category):
+        location_id = self.get_selected_location_id()  # Get the selected location_id
+    
+        image_path = self.save_file(image_file) if image_file else ''
+        file_path = self.save_file(file_file) if file_file else ''
+        upload_date = modify_date = datetime.now()
+    
+        # Create a new post object
+        new_post = Posting(
+            p_title=title,
+            p_content=content,
+            p_image_path=image_path,
+            file_path=file_path,
+            p_location=location_id,  # Foreign key to the location_id
+            p_category=category,
+            upload_date=upload_date,
+            modify_date=modify_date
+        )
+    
+        # Add the new post to the session and commit the transaction
+        self.session.add(new_post)
+        self.session.commit()
 
 class PostManager:
     def __init__(self, upload_folder='uploaded_files'):
@@ -766,26 +788,6 @@ class PostManager:
                 f.write(file.getbuffer())
             return file_path
         return ''
-
-    def add_post(self, title, content, image_file, file_file, category,location_id):
-        
-        image_path = self.save_file(image_file) if image_file else ''
-        file_path = self.save_file(file_file) if file_file else ''
-        upload_date = modify_date = datetime.now()
-
-        # Create a new post object
-        new_post = Posting(
-            p_title=title,
-            p_content=content,
-            p_image_path=image_path,
-            file_path=file_path,
-            p_location=location_id,
-            p_category=category,
-            upload_date=upload_date,
-            modify_date=modify_date
-        )
-        session.add(new_post)
-        session.commit()
 
     def update_post(self, post_id, title, content, image_file, file_file, category):
         post = session.query(Posting).filter_by(p_id=post_id).first()
