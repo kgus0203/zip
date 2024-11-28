@@ -781,7 +781,6 @@ class PostManager:
             self.fetch_and_store_posts()
         self.category_manager=CategoryManager()
 
-            st.write(f"주소: {address}")
     
     def save_file(self, file):
         if file:
