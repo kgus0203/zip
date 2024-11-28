@@ -1056,9 +1056,10 @@ class CategoryManager:
 class ThemeManager:
     def __init__(self):
         self.th = st.session_state
+        # Ensure the themes dictionary exists in the session state
         if "themes" not in self.th:
             self.th.themes = {
-                "current_theme": self.get_saved_theme(),  # Load saved theme from DB or default to light
+                "current_theme": self.get_saved_theme(),  # Load saved theme from DB or default to dark
                 "light": {
                     "theme.base": "dark",
                     "theme.backgroundColor": "black",
@@ -1074,13 +1075,17 @@ class ThemeManager:
             }
 
     def get_saved_theme(self):
+        """ Fetch the saved theme from the database (or fallback to 'dark') """
+        session = Session()
         setting = session.query(Settings).filter(Settings.id == 1).first()
         session.close()
         
-        # Return the theme or default to 'light'
-        return setting.current_theme if setting else 'light'
+        # Return the saved theme or default to 'dark'
+        return setting.current_theme if setting else 'dark'
 
     def save_theme(self, theme):
+        """ Save the selected theme to the database """
+        session = Session()
         setting = session.query(Settings).filter(Settings.id == 1).first()
         
         if setting:
@@ -1094,23 +1099,28 @@ class ThemeManager:
         session.close()
 
     def change_theme(self):
+        """ Toggle between light and dark themes and update UI """
         previous_theme = self.th.themes["current_theme"]
         new_theme = "light" if previous_theme == "dark" else "dark"
         theme_dict = self.th.themes[new_theme]
+        
+        # Apply the new theme settings
         for key, value in theme_dict.items():
             if key.startswith("theme"):
                 st._config.set_option(key, value)
 
-        # 데이터베이스 저장 및 세션 상태 업데이트
+        # Save the new theme in the database and update session state
         self.save_theme(new_theme)
         self.th.themes["current_theme"] = new_theme
-        st.rerun()  # UI 새로고침
+        st.rerun()  # Refresh the UI
+
     def render_button(self):
+        """ Render the theme toggle button """
         # Ensure the current theme exists in the session state
-        current_theme = self.th.themes.get("current_theme", "light")  # Default to 'light' if missing
+        current_theme = self.th.themes.get("current_theme", "dark")  # Default to 'dark' if missing
         button_label = self.th.themes.get(current_theme, {}).get("button_face", "Unknown theme")  # Default label if missing
 
-        # Render button and handle click event
+        # Render the button and handle the click event
         if st.button(button_label, use_container_width=True):
             self.change_theme()
 
