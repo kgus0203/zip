@@ -294,7 +294,7 @@ class SignIn:
 
     def sign_in_event(self):
         dao = UserDAO()
-        result = dao.search_user(self.user_id)
+        result = dao.check_user_id_exists(self.user_id)
 
         if result:
             # 저장된 해시된 비밀번호 가져오기
