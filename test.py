@@ -270,9 +270,9 @@ class UserDAO:
 
     def check_password(self, hashed_password, plain_password):
     # hashed_password가 문자열이라면 bytes로 변환
-    if isinstance(hashed_password, str):
-        hashed_password = hashed_password.encode('utf-8')
-    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password)
+        if isinstance(hashed_password, str):
+            hashed_password = hashed_password.encode('utf-8')
+        return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password)
 
 # 회원가입 클래스
 class SignUp:
