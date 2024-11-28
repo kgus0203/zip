@@ -113,10 +113,7 @@ def usermanager_page():
     if st.button("뒤로가기", key="forgot_back_button"):
         change_page("Home")  # change_page는 페이지 이동 함수로 정의되어 있어야 합니다。
 
-def change_page(page_name):
-    """페이지 이동 함수"""
-    st.session_state['current_page'] = page_name  # 세션에 현재 페이지 정보 저장
-    st.rerun()  # 페이지를 다시 로드하여 새 페이지로 전환
+
 def upload_post() :
     st.header("게시물 등록")
     title = st.text_input("게시물 제목")
@@ -189,7 +186,7 @@ def signup_page():
 
     with col2:
         if st.button("뒤로가기", key="signup_back_button"):
-            go_back()  # 뒤로가기 로직 호출
+            change_page("Home")  # 뒤로가기 로직 호출
 
 
 def view_post():
