@@ -8,7 +8,7 @@ from sqlalchemy.orm import declarative_base, relationship, sessionmaker
 Base = declarative_base()
 
 # 데이터베이스 URL 설정
-DATABASE_URL = "sqlite:///app.db"
+DATABASE_URL = "sqlite:///zip.db"
 
 # 데이터베이스 엔진 및 세션 생성
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
