@@ -1059,10 +1059,6 @@ class CategoryManager:
         return category_dict
 #-------------------------------------------------마이페이지----------------------------------------------
 
-class Settings(Base):
-    __tablename__ = "settings"
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    current_theme = Column(String, default="dark")  # 기본 테마 설정
 
 class ThemeManager:
     def __init__(self, session: Session):
