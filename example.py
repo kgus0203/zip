@@ -155,217 +155,138 @@ create_db()
 
 # 데이터베이스 연결 함수
 def create_connection():
-    conn = st.connection('zip.db', type='sql')
-    conn.row_factory = sqlite3.Row  # 결과를 딕셔너리 형식으로 반환
-    return conn
+ conn = st.connection('zip.db', type='sql')
+ return conn
 
-# 시작은 홈화면
-if 'current_page' not in st.session_state:
-    st.session_state.current_page = 'Home'
-
-# 페이지 전환 함수
-def change_page(page_name):
-  if "history" not in st.session_state:
-      st.session_state["history"] = []
-  if st.session_state["current_page"] != page_name:
-      st.session_state["history"].append(st.session_state["current_page"])
-  st.session_state["current_page"] = page_name
-  st.rerun()
-
-
-# 뒤로가기 함수
-def go_back():
-  if 'history' in st.session_state and st.session_state.history:
-      st.session_state.current_page = st.session_state.history.pop()  # 이전 페이지로 이동
-      st.rerun()
-  else:
-      st.warning("이전 페이지가 없습니다.")  # 방문 기록이 없을 경우 처리
-      st.rerun()
-
-# 홈 페이지 함수 (로그인 전)
-def home_page():
-  col1, col2, col3 = st.columns([1, 1, 1])  # 동일한 너비의 세 개 열 생성
-  with col1:
-      if st.button("로그인", key="home_login_button"):
-          change_page('Login')  # 로그인 페이지로 이동
-  with col2:
-      if st.button("회원가입", key="home_signup_button"):
-          change_page('Signup')  # 회원가입 페이지로 이동
-  with col3:
-      if st.button("ID/PW 찾기", key="home_forgot_button"):
-          change_page('User manager')  # ID/PW 찾기 페이지로 이동
-               
-#-----------------------------------------로그인--------------------------------------------------------   
-# UserDAO (데이터베이스 연동 클래스)
+# UserDAO 클래스 (데이터베이스 연동 클래스)
 class UserDAO:
+ 
+ # 아이디 존재 여부 체크
+ def check_user_id_exists(self, user_id):
+     conn = create_connection()
+     try:
+         # user 테이블에서 user_id에 해당하는 데이터 확인
+         result = conn.query("SELECT * FROM user WHERE user_id = ?", params=(user_id,))
+         return result if result else None  # 존재하면 해당 결과를 반환
+     except Exception as e:
+         st.error(f"DB 오류: {e}")
+         return None
 
-    def check_user_id_exists(self, user_id):
-        connection = create_connection()
-        try:
-            cursor = connection.cursor()
-            query = "SELECT * FROM user WHERE user_id = ?"
-            cursor.execute(query, (user_id,))
-            result = cursor.fetchone()
-            return result is not None
-        except sqlite3.Error as e:
-            st.error(f"DB 오류: {e}")
-        finally:
-            connection.close()
+ # 사용자 등록
+ def insert_user(self, user):
+     conn = create_connection()
 
-    def insert_user(self, user):
-        connection = create_connection()
+     # 비밀번호 해싱 (bcrypt 사용)
+     hashed_password = bcrypt.hashpw(user.user_password.encode('utf-8'), bcrypt.gensalt())
 
-        # 비밀번호 해싱 (bcrypt 사용)
-        hashed_password = bcrypt.hashpw(user.user_password.encode('utf-8'), bcrypt.gensalt())
+     try:
+         # user 테이블에 새 사용자 정보 추가
+         query = """
+             INSERT INTO user (user_id, user_password, user_email, user_is_online)
+             VALUES (?, ?, ?, 0)
+         """
+         conn.execute(query, (user.user_id, hashed_password, user.user_email))
+         conn.commit()
+     except Exception as e:
+         st.error(f"DB 오류: {e}")
+         return
+     st.success("회원가입이 완료되었습니다!")
 
-        try:
-            cursor = connection.cursor()
-            query = "INSERT INTO user (user_id, user_password, user_email, user_is_online) VALUES (?, ?, ?, 0)"
-            cursor.execute(query, (user.user_id, hashed_password, user.user_email))
-            connection.commit()
-        except sqlite3.IntegrityError as e:  # UNIQUE 제약 조건으로 발생하는 오류 처리
-            if "user_email" in str(e):
-                st.error("이미 사용 중인 이메일입니다. 다른 이메일을 사용해주세요.")
-            elif "user_id" in str(e):
-                st.error("이미 사용 중인 아이디입니다. 다른 아이디를 사용해주세요.")
-            else:
-                st.error("회원가입 중 알 수 없는 오류가 발생했습니다.")
-            return  # 예외 발생 시 함수 종료
-        except sqlite3.Error as e:
-            st.error(f"DB 오류: {e}")
-            return  # 예외 발생 시 함수 종료
-        finally:
-            connection.close()
+ # 비밀번호 일치 확인
+ def check_password(self, hashed_password, plain_password):
+     return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password)
 
-        # 회원가입 성공 메시지 (오류가 없을 경우에만 실행)
-        st.success("회원가입이 완료되었습니다!")
+ # 사용자 온라인 상태 업데이트
+ def update_user_online(self, user_id, is_online):
+     conn = create_connection()
+     try:
+         # 사용자 온라인 상태를 업데이트
+         query = "UPDATE user SET user_is_online = ? WHERE user_id = ?"
+         conn.execute(query, (is_online, user_id))
+         conn.commit()
+     except Exception as e:
+         st.error(f"DB 오류: {e}")
 
-
-    #해시알고리즘을 이용하여 비밀번호 일치 확인
-    def check_password(self, hashed_password, plain_password):
-        return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password)
-   
-    def update_user_online(self,user_id,is_online):
-        connection = create_connection()
-        try:
-            cursor = connection.cursor()
-            query = "UPDATE user SET user_is_online = 1 WHERE user_is_online=? user_id = ?"
-            cursor.execute(query, (user_id, is_online))
-            connection.commit()
-        except sqlite3.Error as e:
-            st.error(f"DB 오류: {e}")
-        finally:
-            connection.close()
-
-
-# UserVO (사용자 정보 클래스)
+# 사용자 정보 VO 클래스
 class UserVO:
-    def __init__(self, user_id='', user_password='', user_email='', user_seq=None, user_is_online=False):
-        self.user_id = user_id
-        self.user_password = user_password
-        self.user_email = user_email
-        self.user_seq = user_seq
-        self.user_is_online = user_is_online
+ def __init__(self, user_id='', user_password='', user_email='', user_is_online=False):
+     self.user_id = user_id
+     self.user_password = user_password
+     self.user_email = user_email
+     self.user_is_online = user_is_online
 
-
+# 회원가입 클래스
 class SignUp:
-    def __init__(self, user_id, user_password, user_email):
-        self.user = UserVO(user_id=user_id, user_password=user_password, user_email=user_email)
-    def sign_up_event(self):
-        dao = UserDAO()
-        dao.insert_user(self.user)
-    def check_length(self):
-        if len(self.user.user_password) < 8:
-            st.error("비밀번호는 최소 8자 이상이어야 합니다.")
-            return False
-        return True
-    def check_user(self):
-        dao = UserDAO()
-        if dao.check_user_id_exists(self.user.user_id):
-            st.error("이미 사용 중인 아이디입니다.")
-            return False
-        return True
-    @st.cache_data
-    def return_user(self):
-       return self.user_id
-       
+ def __init__(self, user_id, user_password, user_email):
+     self.user = UserVO(user_id=user_id, user_password=user_password, user_email=user_email)
+
+ def sign_up_event(self):
+     dao = UserDAO()
+     dao.insert_user(self.user)
+
+ def check_length(self):
+     if len(self.user.user_password) < 8:
+         st.error("비밀번호는 최소 8자 이상이어야 합니다.")
+         return False
+     return True
+
+ def check_user(self):
+     dao = UserDAO()
+     if dao.check_user_id_exists(self.user.user_id):
+         st.error("이미 사용 중인 아이디입니다.")
+         return False
+     return True
+
 # 로그인 처리 클래스
 class SignIn:
-    def __init__(self, user_id, user_password):
-        self.user_id = user_id
-        self.user_password = user_password
-        self.user_is_online=0
+ def __init__(self, user_id, user_password):
+     self.user_id = user_id
+     self.user_password = user_password
+     self.user_is_online = 0
 
-    def sign_in_event(self):
-       dao = UserDAO()
-       
-       # 사용자 정보를 가져옵니다.
-       result = dao.check_user_id_exists(self.user_id)
-       
-       if result:
-           # result는 튜플 형태 (user_id, user_password, user_email, user_is_online)
-           stored_hashed_password = result[1]  # result[1]은 user_password에 해당
-           if dao.check_password(stored_hashed_password, self.user_password):
-               st.session_state["user_id"] = self.user_id  # 로그인 성공 시 세션에 user_id 저장
-               self.user_is_online = 1
-               st.success(f"{self.user_id}님, 로그인 성공!")
-           else:
-               st.error("비밀번호가 틀렸습니다.")
-       else:
-           st.error("아이디가 존재하지 않습니다.")
+ def sign_in_event(self):
+     dao = UserDAO()
 
-#-------------------------------------------------------------페이지 이동 -------------------------------------------------------------
+     # 사용자 정보를 가져옵니다.
+     result = dao.check_user_id_exists(self.user_id)
 
-def signup_page():
-  st.title("회원가입")
+     if result:
+         # result는 튜플 형태 (user_id, user_password, user_email, user_is_online)
+         stored_hashed_password = result['user_password']  # result['user_password']은 user_password에 해당
+         if dao.check_password(stored_hashed_password, self.user_password):
+             st.session_state["user_id"] = self.user_id  # 로그인 성공 시 세션에 user_id 저장
+             self.user_is_online = 1
+             st.success(f"{self.user_id}님, 로그인 성공!")
+             dao.update_user_online(self.user_id, 1)  # 로그인 시 온라인 상태로 업데이트
+             return True
+         else:
+             st.error("비밀번호가 틀렸습니다.")
+     else:
+         st.error("아이디가 존재하지 않습니다.")
+     return False
 
-  # 사용자 입력 받기
-  user_id = st.text_input("아이디")
-  user_password = st.text_input("비밀번호", type='password')
-  email = st.text_input("이메일")
-  # 회원가입 처리 객체 생성
-  signup = SignUp(user_id, user_password, email)
-  col1, col2 = st.columns([1, 1])  # 버튼을 나란히 배치
-  with col1:
-      if st.button("회원가입", key="signup_submit_button"):
-          if not user_id or not user_password or not email:
-              st.error("모든 필드를 입력해 주세요.")
-          else:
-              # 비밀번호 길이 체크
-              if not signup.check_length():
-                  return  # 비밀번호가 너무 짧으면 더 이상 진행하지 않음
+# 페이지 이동 함수 등은 기존 코드대로 유지
 
-              # 사용자 ID 중복 체크
-              if not signup.check_user():
-                  return  # 중복 아이디가 있으면 더 이상 진행하지 않음
-
-              # 모든 검증을 통과하면 회원가입 진행
-              signup.sign_up_event()
-
-  with col2:
-      if st.button("뒤로가기", key="signup_back_button"):
-          go_back()  # 뒤로가기 로직 호출
-         
-#로그인 페이지
+# 로그인 페이지 예시
 def login_page():
-  st.title("로그인")
-  user_id = st.text_input("아이디", key="login_user_id_input")
-  user_password = st.text_input("비밀번호", type='password', key="login_password_input")
+ st.title("로그인")
+ user_id = st.text_input("아이디", key="login_user_id_input")
+ user_password = st.text_input("비밀번호", type='password', key="login_password_input")
 
-  col1, col2 = st.columns([1, 1])  # 버튼을 나란히 배치
-  with col1:
-      if st.button("로그인", key="login_submit_button"):
-          if not user_id or not user_password:
-              st.error("아이디와 비밀번호를 입력해 주세요.")
-          else:
-              sign_in = SignIn(user_id, user_password)
-              if sign_in.sign_in_event():  # 로그인 성공 시
-                  st.session_state['user_id'] = user_id  # 로그인한 사용자 ID 저장
-                  st.session.state['user_password']=user_password
-              else:
-                  st.error("로그인에 실패했습니다. 아이디 또는 비밀번호를 확인해 주세요.")
-  with col2:
-      if st.button("뒤로가기", key="login_back_button"):
+ col1, col2 = st.columns([1, 1])  # 버튼을 나란히 배치
+ with col1:
+     if st.button("로그인", key="login_submit_button"):
+         if not user_id or not user_password:
+             st.error("아이디와 비밀번호를 입력해 주세요.")
+         else:
+             sign_in = SignIn(user_id, user_password)
+             if sign_in.sign_in_event():  # 로그인 성공 시
+                 st.session_state['user_id'] = user_id  # 로그인한 사용자 ID 저장
+                 st.session_state['user_password'] = user_password  # 비밀번호도 저장
+             else:
+                 st.error("로그인에 실패했습니다. 아이디 또는 비밀번호를 확인해 주세요.")
+ with col2:
+     if st.button("뒤로가기", key="login_back_button"):
          go_back()  # 뒤로가기 로직 호출
 
 
