@@ -1250,7 +1250,7 @@ class LikeButton:
         # Display liked posts with the like button
         if liked_posts:
             for post in liked_posts:
-                post_id, post_title = post
+                post_content, post_title = post
                 st.write(f"Title: {post_title}, content : {post_content}")
         else:
             st.write("좋아요를 누른 포스팅이 없습니다.")
