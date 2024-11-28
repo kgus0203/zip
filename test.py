@@ -1084,8 +1084,6 @@ class ThemeManager:
         return setting.current_theme if setting else 'light'
 
     def save_theme(self, theme):
-        # Save the theme to the database using SQLAlchemy
-
         setting = session.query(Settings).filter(Settings.id == 1).first()
         
         if setting:
@@ -1099,16 +1097,18 @@ class ThemeManager:
         session.close()
 
     def change_theme(self):
+        """ Change between light and dark themes """
         previous_theme = self.th.themes["current_theme"]
         new_theme = "light" if previous_theme == "dark" else "dark"
+        
+        # Apply the new theme settings
+        theme_dict = self.th.themes.get(new_theme)
+        if theme_dict:
+            for key, value in theme_dict.items():
+                if key.startswith("theme"):
+                    st._config.set_option(key, value)
 
-        # Apply theme
-        theme_dict = self.th.themes[new_theme]
-        for key, value in theme_dict.items():
-            if key.startswith("theme"):
-                st._config.set_option(key, value)
-
-        # Save theme in the database and update session state
+        # Save the theme in the database and update session state
         self.save_theme(new_theme)
         self.th.themes["current_theme"] = new_theme
         st.rerun()
