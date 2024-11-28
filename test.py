@@ -85,7 +85,7 @@ def login_page():
                     st.error("로그인에 실패했습니다. 아이디 또는 비밀번호를 확인해 주세요.")
     with col2:
         if st.button("뒤로가기", key="login_back_button"):
-            change_page("Home")  # 뒤로가기 로직 호출
+            go_back() # 뒤로가기 로직 호출
             
 #세팅 페이지
 def setting_page():
@@ -145,7 +145,7 @@ def usermanager_page():
     
     # "뒤로가기" 버튼을 눌렀을 때 첫 페이지로 이동
     if st.button("뒤로가기", key="forgot_back_button"):
-        change_page("Home")  # change_page는 페이지 이동 함수로 정의되어 있어야 합니다。
+         go_back()
 
 
 def upload_post() :
@@ -186,7 +186,7 @@ def upload_post() :
             
     with col2:
         if st.button("뒤로가기"):
-            change_page("after_login")  # 뒤로가기 로직 호출
+             go_back()  # 뒤로가기 로직 호출
                 
         
 #회원가입 페이지
@@ -210,7 +210,7 @@ def signup_page():
 
     with col2:
         if st.button("뒤로가기", key="signup_back_button"):
-            change_page("Home")  # 뒤로가기 로직 호출
+             go_back() # 뒤로가기 로직 호출
 
 
 def view_post():
