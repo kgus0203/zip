@@ -834,6 +834,7 @@ class PostManager:
             btn_label = "좋아요 취소" if post.like_num == 1 else "좋아요"
             if st.button(btn_label, key=post_id, use_container_width=True):
                 self.toggle_like(post_id)
+                
     def fetch_location_data(self, post_id):
         # Query the database using SQLAlchemy
         location_data = session.query(
@@ -1000,7 +1001,13 @@ class PostManager:
                             except Exception as e:
                                 st.error(f"이미지를 불러오는 데 실패했습니다: {e}")
                         else:
-                            self.create_location_name()
+                            
+                            self.fetch_location_data(post.p_id)
+
+                            # 위치 데이터가 존재할 때만 지도 생성
+                            if self.locations_df is not None and not self.locations_df.empty:
+                                self.create_location_name()
+                                self.display_map()
                         with st.expander('더보기'):
                                     self.display_post(post.p_id)
 
