@@ -186,3 +186,4 @@ class Page():
         with col3:
             if st.button("ID/PW 찾기", key="home_forgot_button"):
                 self.change_page('User manager')  # ID/PW 찾기 페이지로 이동
+st.title('로그인')
