@@ -14,6 +14,7 @@ import secrets
 from sqlalchemy.ext.declarative import declarative_base
 import pandas as pd
 import os
+import requests
 
 # SQLAlchemy Base 선언
 Base = declarative_base()
