@@ -175,7 +175,7 @@ def go_back():
       st.rerun()
 
 # 홈 페이지 함수 (로그인 전)
-def home_page(self):
+def home_page():
   col1, col2, col3 = st.columns([1, 1, 1])  # 동일한 너비의 세 개 열 생성
   with col1:
       if st.button("로그인", key="home_login_button"):
