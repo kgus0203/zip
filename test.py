@@ -639,7 +639,6 @@ class SignIn:
 #------------------------------------------포스팅---------------------------------
 
 class LocationGet:
-
     # locations 테이블에 저장
     def save_location(self, location_name, address_name, latitude, longitude):
         new_location = Location(
@@ -685,7 +684,7 @@ class LocationSearch:
             return None
     
     def save_or_get_location(self, name, address, latitude, longitude):
-        location = self.session.query(Location).filter_by(location_name=name, address_name=address).first()
+        location = session.query(Location).filter_by(location_name=name, address_name=address).first()
         
         if location:
             return location.location_id  # 이미 존재하면 location_id 반환
@@ -697,8 +696,8 @@ class LocationSearch:
             latitude=latitude,
             longitude=longitude
         )
-        self.db_session.add(new_location)
-        self.db_session.commit()
+        session.add(new_location)
+        session.commit()
         return new_location.location_id
 
     def display_location_on_map(self):
