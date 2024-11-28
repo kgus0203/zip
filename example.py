@@ -300,16 +300,16 @@ class SignIn:
         dao = UserDAO()
         result = dao.check_user_id_exists(self.user_id)
 
-       if result:
-        stored_hashed_password = result['user_password']
-        if dao.check_password(stored_hashed_password, self.user_password):
-            st.session_state["user_id"] = self.user_id  # 로그인
-            self.user_is_online = 1
-            st.success(f"{self.user_id}님, 로그인 성공!")
+        if result:
+            stored_hashed_password = result['user_password']
+            if dao.check_password(stored_hashed_password, self.user_password):
+               st.session_state["user_id"] = self.user_id  # 로그인
+               self.user_is_online = 1
+               st.success(f"{self.user_id}님, 로그인 성공!")
+            else:
+               st.error("비밀번호가 틀렸습니다.")
         else:
-            st.error("비밀번호가 틀렸습니다.")
-    else:
-        st.error("아이디가 존재하지 않습니다.")
+            st.error("아이디가 존재하지 않습니다.")
     def log_out_event(self):
         # This can be triggered by a logout button
         if st.button("로그아웃", key="logout_button"):
