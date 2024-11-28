@@ -3,7 +3,11 @@ from sqlalchemy import (
     create_engine, Column, Integer, String, ForeignKey, Boolean, DateTime, Text, Float, func, CheckConstraint
 )
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
+import string
 import bcrypt
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+from email.header import Header
 
 # SQLAlchemy Base 선언
 Base = declarative_base()
@@ -73,28 +77,33 @@ def login_page():
             go_back()  # 뒤로가기 로직 호출
 
 def usermanager_page():
-
     st.title("사용자 관리 페이지")
+    
+    # 사용자에게 이메일 입력 받기
     email = st.text_input('이메일을 입력하세요: ')
 
+    # "확인" 버튼을 눌렀을 때
     if st.button("확인", key="forgot_confirm_button"):
         smtp_email = "kgus0203001@gmail.com"  # 발신 이메일 주소
-        smtp_password = "pwhj fwkw yqzg ujha"  # 발신 이메일 비밀번호
-        user_manager = login.UserManager(smtp_email, smtp_password)
+        smtp_password = "your_smtp_password_here"  # 발신 이메일 비밀번호 (보안상의 이유로 환경 변수나 다른 방법으로 관리하는 것이 좋음)
+        
+        user_manager = UserManager(smtp_email, smtp_password)
 
         # 이메일 등록 여부 확인
         user_info = user_manager.is_email_registered(email)
         if user_info:
-            st.success(f"비밀번호 복구 메일을 전송했습니다")
+            st.success(f"비밀번호 복구 메일을 전송했습니다.")
             # 복구 이메일 전송
-            user_manager.send_recovery_email(email)
+            token = user_manager.generate_token()  # 토큰 생성
+            user_manager.save_recovery_token(email, token)  # 토큰 저장
+            user_manager.send_recovery_email(email, token)  # 이메일 전송
         else:
             st.warning("등록되지 않은 이메일입니다.")
-
+    
+    # "뒤로가기" 버튼을 눌렀을 때 첫 페이지로 이동
     if st.button("뒤로가기", key="forgot_back_button"):
-                    # 첫 페이지로 이동
-                    change_page("Home")
-
+        change_page("Home")  # change_page는 페이지 이동 함수로 정의되어 있어야 합니다.
+        
 #회원가입 페이지
 def signup_page():
     st.title("회원가입")
@@ -252,6 +261,15 @@ class Settings(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     current_theme = Column(String, nullable=True)
 
+class PasswordRecovery(Base):
+    __tablename__ = 'password_recovery'
+    
+    id = Column(Integer, primary_key=True)
+    user_email = Column(String, ForeignKey('user.user_email'), nullable=False)
+    token = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    user = relationship("User")
+
 # 데이터베이스 초기화 및 기본 데이터 삽입
 def initialize_database():
     Base.metadata.create_all(engine)
@@ -283,6 +301,94 @@ Base = declarative_base()
 DATABASE_URL = "sqlite:///zip.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(bind=engine)
+class UserManager:
+    def __init__(self, smtp_email, smtp_password, db_url="sqlite:///zip.db"):
+        self.smtp_email = smtp_email
+        self.smtp_password = smtp_password
+        self.db_url = db_url
+        self.engine = create_engine(self.db_url, echo=True)
+        self.Session = sessionmaker(bind=self.engine)
+        Base.metadata.create_all(self.engine)
+
+    def create_session(self):
+        """새로운 세션을 생성"""
+        return self.Session()
+
+    def is_email_registered(self, email):
+        """이메일이 데이터베이스에 등록되어 있는지 확인"""
+        session = self.create_session()
+        user = session.query(User).filter_by(user_email=email).first()
+        session.close()
+        return user is not None
+
+    def generate_token(self, length=16):
+        """비밀번호 복구를 위한 랜덤 토큰 생성"""
+        characters = string.ascii_letters + string.digits
+        return ''.join(secrets.choice(characters) for _ in range(length))
+
+    def send_recovery_email(self, email, token):
+        """이메일로 비밀번호 복구 토큰을 전송"""
+        subject = "Password Recovery Token"
+        body = (
+            f"안녕하세요,\n\n"
+            f"비밀번호 복구 요청이 접수되었습니다. 아래의 복구 토큰을 사용하세요:\n\n"
+            f"{token}\n\n"
+            f"이 요청을 본인이 하지 않은 경우, 이 이메일을 무시해 주세요."
+        )
+
+        # MIME 메시지 생성
+        msg = MIMEMultipart()
+        msg['From'] = Header(self.smtp_email, 'utf-8')
+        msg['To'] = Header(email, 'utf-8')
+        msg['Subject'] = Header(subject, 'utf-8')
+        msg.attach(MIMEText(body, 'plain', 'utf-8'))
+
+        try:
+            with smtplib.SMTP("smtp.gmail.com", 587) as connection:
+                connection.starttls()  # 암호화 시작
+                connection.login(user=self.smtp_email, password=self.smtp_password)  # 로그인
+                connection.sendmail(from_addr=self.smtp_email, to_addrs=email, msg=msg.as_string())  # 이메일 전송
+            print(f"Recovery email sent to {email}.")
+        except smtplib.SMTPException as e:
+            print(f"Failed to send email: {e}")
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+
+    def save_recovery_token(self, email, token):
+        """토큰을 데이터베이스에 저장"""
+        session = self.create_session()
+        recovery = PasswordRecovery(user_email=email, token=token)
+        session.add(recovery)
+        session.commit()
+        session.close()
+
+    def verify_token(self, email, token):
+        """사용자가 입력한 토큰 검증"""
+        session = self.create_session()
+        recovery = session.query(PasswordRecovery).filter_by(user_email=email, token=token).first()
+        session.close()
+        # 토큰이 1시간 이내에 생성된 경우에만 유효
+        if recovery and (datetime.utcnow() - recovery.created_at).seconds < 3600:
+            return True
+        return False
+
+    def reset_password(self, email, new_password):
+        """비밀번호를 새로 설정"""
+        session = self.create_session()
+        hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt())
+        user = session.query(User).filter_by(user_email=email).first()
+        if user:
+            user.user_password = hashed_password
+            session.commit()
+        session.close()
+
+    def recover_password(self, email, new_password, token):
+        """토큰을 통해 비밀번호 복구"""
+        if not self.verify_token(email, token):
+            print("유효하지 않은 토큰입니다.")
+            return
+        self.reset_password(email, new_password)
+        print("비밀번호가 성공적으로 복구되었습니다.")
 
 # 데이터베이스 모델 정의
 class User(Base):
