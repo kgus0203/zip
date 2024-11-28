@@ -291,10 +291,11 @@ class change_pasges():
             if st.button("뒤로가기", key="signup_back_button"):
                 self.page.go_back()  # 뒤로가기 로직 호출
 
+
 # 페이지 함수 매핑
 page_functions = {
-    'Home': home_page,
-    'Signup': signup_page,
+    'Home': page.home_page,
+    'Signup': change_pages.signup_page,
 }
 
 # 현재 페이지 디버깅
