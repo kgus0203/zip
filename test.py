@@ -198,15 +198,6 @@ def signup_page():
             if not user_id or not user_password or not email:
                 st.error("모든 필드를 입력해 주세요.")
             else:
-
-                # 비밀번호 길이 체크
-                if not signup.check_length():
-                    return  # 비밀번호가 너무 짧으면 더 이상 진행하지 않음
-
-                # 사용자 ID 중복 체크
-                if not signup.check_user():
-                    return  # 중복 아이디가 있으면 더 이상 진행하지 않음
-
                 # 모든 검증을 통과하면 회원가입 진행
                 signup.sign_up_event()
 
