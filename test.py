@@ -685,8 +685,7 @@ class LocationSearch:
             return None
     
     def save_or_get_location(self, name, address, latitude, longitude):
-        """위치가 존재하는지 확인하고, 없으면 새로 저장"""
-        location = self.db_session.query(Location).filter_by(location_name=name, address_name=address).first()
+        location = self.session.query(Location).filter_by(location_name=name, address_name=address).first()
         
         if location:
             return location.location_id  # 이미 존재하면 location_id 반환
