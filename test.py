@@ -654,7 +654,7 @@ class LocationGet:
     # 저장된 장소들 가져오기
     def get_all_locations(self):
         locations = session.query(Location).all()
-        return locations\
+        return locations
         
 class LocationSearch:
     def __init__(self):
