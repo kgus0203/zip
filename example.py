@@ -258,7 +258,7 @@ class SignUp:
         return True
 
 
- def signup_page(self):
+ def signup_page():
      st.title("회원가입")
 
      # 사용자 입력 받기
