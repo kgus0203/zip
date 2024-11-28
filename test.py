@@ -28,7 +28,8 @@ SessionLocal = sessionmaker(bind=engine)
 session = SessionLocal()
 #-----------------------------------------------페이지 전환 ----------------------------------------------------------
 
-
+if 'current_page' not in st.session_state:
+    st.session_state.current_page = 'Home'
 
 
 # 페이지 전환 함수
