@@ -207,10 +207,6 @@ def after_login():
 
     # 친구 관리 사이드바 추가
     friend_and_group_sidebar(user_id)
-    
-    # 데이터베이스 연결
-    session = Session()
-
     # 사용자 프로필 정보 가져오기
     user = session.query(User).filter(User.user_id == user_id).first()
 
