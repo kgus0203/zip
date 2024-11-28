@@ -87,7 +87,7 @@ def login_page():
             change_page("Home")  # 뒤로가기 로직 호출
             
 #세팅 페이지
-def setting_page(session):
+def setting_page():
     # 세션 상태에서 사용자 ID 가져오기
     user_id = st.session_state.get("user_id")
 
