@@ -15,7 +15,6 @@ from sqlalchemy.ext.declarative import declarative_base
 import pandas as pd
 import os
 import requests
-from typing import Dict
 
 # SQLAlchemy Base 선언
 Base = declarative_base()
@@ -1189,7 +1188,7 @@ class Account:
         self.user_id = user_id
         self.user_email = user_email
 
-    def get_user_info(self) -> Dict:
+    def get_user_info(self):
         return {"user_id": self.user_id, "user_email": self.user_email}
 
 
