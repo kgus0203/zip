@@ -546,13 +546,7 @@ class UserManager:
             return
         self.reset_password(email, new_password)
         print("비밀번호가 성공적으로 복구되었습니다.")
-# 데이터베이스 모델 정의
-class User(Base):
-    __tablename__ = 'user'
-    user_id = Column(String, primary_key=True)
-    user_password = Column(String, nullable=False)
-    user_email = Column(String, unique=True, nullable=False)
-    user_is_online = Column(Boolean, default=False)
+
 
 #-------------------------------------------------------------로그인---------------------------------------------------
 # DAO 클래스
