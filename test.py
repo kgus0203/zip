@@ -269,8 +269,10 @@ class UserDAO:
             st.error(f"DB 오류: {e}")
 
     def check_password(self, hashed_password, plain_password):
-        """비밀번호 일치 여부 확인"""
-        return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password)
+    # hashed_password가 문자열이라면 bytes로 변환
+    if isinstance(hashed_password, str):
+        hashed_password = hashed_password.encode('utf-8')
+    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password)
 
 # 회원가입 클래스
 class SignUp:
