@@ -450,8 +450,8 @@ class Posting(Base):
 
 class Settings(Base):
     __tablename__ = 'settings'
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    current_theme = Column(String, nullable=True)
+    id = Column(Integer, primary_key=True)
+    current_theme = Column(String, nullable=True, default='dark') 
 
 
 # 데이터베이스 초기화 및 기본 데이터 삽입
