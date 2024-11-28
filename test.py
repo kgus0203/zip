@@ -92,7 +92,7 @@ def setting_page():
     user_id = st.session_state.get("user_id")
     if not user_id:
         st.error("로그인이 필요합니다.")
-        return
+        go_back()
     # 사용자 이메일 가져오기
     user = session.query(User).filter_by(user_id=user_id).first()
     user_email = user.user_email if user else None
