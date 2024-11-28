@@ -236,7 +236,52 @@ def after_login():
         
     post_manager=PostManager()
     post_manager.display_posts_on_home()
+    
+def friend_and_group_sidebar(user_id):
+    st.sidebar.title("그룹 관리")  # '그룹 관리'를 title 스타일로 표시
+    if st.sidebar.button("그룹 관리"):
+        st.session_state["current_page"] = "Group Management"  # 페이지를 'Group Management'로 설정
+        st.rerun()  # 페이지 새로고침
 
+    # 친구 관리 상위 요소
+    st.sidebar.title("친구 관리")  # '친구 관리'도 title 스타일로 표시
+    # 친구찾기 버튼
+    if st.sidebar.button("친구찾기"):
+        friend_user_id = st.text_input("추가할 친구 ID:")
+        if st.button("팔로우 요청 보내기"):
+            if friend_user_id:
+                friend.follow_friend(user_id, friend_user_id)
+            else:
+                st.error("친구 ID를 입력하세요.")
+
+    # 친구 대기 버튼
+    if st.sidebar.button("친구 대기"):
+        pending_requests = friend.get_follow_requests(user_id)
+        if pending_requests:
+            st.subheader("친구 요청 대기 목록")
+            for req in pending_requests:
+                st.write(f"요청자: {req['user_id']}")
+                if st.button(f"수락: {req['user_id']}"):
+                    friend.handle_follow_request(user_id, req['user_id'], "accept")
+                if st.button(f"거절: {req['user_id']}"):
+                    friend.handle_follow_request(user_id, req['user_id'], "reject")
+        else:
+            st.write("대기 중인 요청이 없습니다.")
+
+    # 차단/해제 버튼
+    if st.sidebar.button("차단/해제"):
+        blocked_user_id = st.text_input("차단/해제할 친구 ID:")
+        if st.button("차단"):
+            st.write(f"{blocked_user_id}님을 차단했습니다.")  # 여기에 차단 로직 추가 가능
+        if st.button("차단 해제"):
+            st.write(f"{blocked_user_id}님 차단을 해제했습니다.")  # 여기에 차단 해제 로직 추가 가능
+
+    # 친구 삭제 버튼
+    if st.sidebar.button("삭제"):
+        delete_user_id = st.text_input("삭제할 친구 ID:")
+        if st.button("삭제 확인"):
+            # 삭제 로직 호출
+            st.write(f"{delete_user_id}님을 친구 목록에서 삭제했습니다.")  # 여기에 삭제 로직 추가 가능
 
 class Friend(Base):
     __tablename__ = 'friend'
