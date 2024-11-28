@@ -1061,7 +1061,7 @@ class CategoryManager:
 
 
 class ThemeManager:
-    def __init__(self, session: Session):
+    def __init__(self, session):
         self.session = session
         self.th = st.session_state
         if "themes" not in self.th:
