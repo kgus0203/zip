@@ -3,7 +3,7 @@ import streamlit as st
 import bcrypt
 
 def create_db():
-   conn = sqlite3.connect('zip.db')
+   conn = st.connection('databse/zip.db')
    cursor = conn.cursor()
 
 
