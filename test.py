@@ -651,7 +651,7 @@ class SignIn:
             st.session_state.user_id = ''  # Clear the session variable
             st.session_state.user_password =''
             st.warning("로그아웃 완료")
-            pages.change_page('Home')
+            change_page('Home')
 
 #------------------------------------------포스팅---------------------------------
 
