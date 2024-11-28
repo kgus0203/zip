@@ -1227,7 +1227,7 @@ class SetView:
 
 
 class LikeButton:
-    def __init__(self, engine):
+    def __init__(self):
        
         if "posts" not in st.session_state:
             st.session_state.posts = []
