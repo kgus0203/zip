@@ -292,7 +292,7 @@ class SignUp:
 # 로그인 처리 클래스
 class SignIn:
     def __init__(self, user_id, user_password):
-         self.user_id = user_id
+        self.user_id = user_id
         self.user_password = user_password
         self.user_is_online=0
 
