@@ -128,7 +128,7 @@ def usermanager_page():
     st.title("사용자 관리 페이지")
     
     # 사용자에게 이메일 입력 받기
-    email = st.text_input('이메일을 입력하세요: ')
+    email = st.text_input('이메일을 입력하세요: ',key='usermanager_email')
 
     # "확인" 버튼을 눌렀을 때
     if st.button("확인", key="forgot_confirm_button"):
@@ -155,7 +155,7 @@ def usermanager_page():
 
 def upload_post() :
     st.header("게시물 등록")
-    title = st.text_input("게시물 제목")
+    title = st.text_input("게시물 제목",key='post_title')
     content = st.text_area("게시물 내용")
     image_file = st.file_uploader("이미지 파일", type=['jpg', 'png', 'jpeg'])
     file_file = st.file_uploader("일반 파일", type=['pdf', 'docx', 'txt', 'png', 'jpg'])
@@ -199,9 +199,9 @@ def signup_page():
     st.title("회원가입")
 
     # 사용자 입력 받기
-    user_id = st.text_input("아이디")
-    user_password = st.text_input("비밀번호", type='password')
-    email = st.text_input("이메일")
+    user_id = st.text_input("아이디",key='user_id')
+    user_password = st.text_input("비밀번호", type='password',key='user_password')
+    email = st.text_input("이메일",key='user_email')
     # 회원가입 처리 객체 생성
     signup = SignUp(user_id, user_password, email)
     col1, col2 = st.columns([1, 1])  # 버튼을 나란히 배치
@@ -259,7 +259,7 @@ def id_pw_change_page():
 
     # 새로운 ID/PW 입력 및 저장
     elif st.session_state['id_pw_change_step'] == "input_new_value":
-        new_value = st.text_input(f"새로 사용할 {st.session_state['action']}를 입력하세요")
+        new_value = st.text_input(f"새로 사용할 {st.session_state['action']}를 입력하세요",key='new_email')
         if new_value and st.button("저장"):
             change = login.ChangeIDPW(
                 user_id=st.session_state['current_user_id'],
@@ -325,7 +325,7 @@ def friend_and_group_sidebar(user_id):
     st.sidebar.title("친구 관리")  # '친구 관리'도 title 스타일로 표시
     # 친구찾기 버튼
     if st.sidebar.button("친구찾기"):
-        friend_user_id = st.text_input("추가할 친구 ID:")
+        friend_user_id = st.text_input("추가할 친구 ID:",key='follow_friend')
         if st.button("팔로우 요청 보내기"):
             if friend_user_id:
                 friend.follow_friend(user_id, friend_user_id)
@@ -348,7 +348,7 @@ def friend_and_group_sidebar(user_id):
 
     # 차단/해제 버튼
     if st.sidebar.button("차단/해제"):
-        blocked_user_id = st.text_input("차단/해제할 친구 ID:")
+        blocked_user_id = st.text_input("차단/해제할 친구 ID:",key='cut_friend')
         if st.button("차단"):
             st.write(f"{blocked_user_id}님을 차단했습니다.")  # 여기에 차단 로직 추가 가능
         if st.button("차단 해제"):
@@ -356,7 +356,7 @@ def friend_and_group_sidebar(user_id):
 
     # 친구 삭제 버튼
     if st.sidebar.button("삭제"):
-        delete_user_id = st.text_input("삭제할 친구 ID:")
+        delete_user_id = st.text_input("삭제할 친구 ID:",key='delete_frined')
         if st.button("삭제 확인"):
             # 삭제 로직 호출
             st.write(f"{delete_user_id}님을 친구 목록에서 삭제했습니다.")  # 여기에 삭제 로직 추가 가능
@@ -747,7 +747,7 @@ class LocationSearch:
     def display_location_on_map(self):
         col1, col2 = st.columns([8, 1])
         with col1:
-            query = st.text_input("검색할 장소를 입력하세요:", "영남대역")  # 기본값: 영남대역
+            query = st.text_input("검색할 장소를 입력하세요:", "영남대역",key='place')  # 기본값: 영남대역
         with col2:
             st.button("검색")
 
