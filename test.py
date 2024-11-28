@@ -119,6 +119,7 @@ def initialize_database():
             session.add(FoodCategory(category=category))
     
     session.commit()
+    
 # SQLAlchemy Base 선언
 Base = declarative_base()
 
@@ -252,18 +253,21 @@ def login_page():
 
 # Streamlit 앱 실행
 def main():
-    if "current_page" not in st.session_state:
-        st.session_state["current_page"] = "Login"
-
-    if st.session_state["current_page"] == "Login":
-        login_page()
-    elif st.session_state["current_page"] == "Signup":
-        # Signup 페이지를 구현
-        st.write("회원가입 페이지")
-    elif st.session_state["current_page"] == "Home":
-        st.write("홈 페이지")
+   # 페이지 함수 매핑
+    page_functions = {
+        'Home': home_page,
+        'Signup': signup_page,
+        'Login': login_page,
+    }
+    
+    # 현재 페이지 디버깅
+    st.write(f"Current Page: {st.session_state['current_page']}")  # 디버깅용 코드
+    
+    # 현재 페이지 렌더링
+    if st.session_state["current_page"] in page_functions:
+        page_functions[st.session_state["current_page"]]()  # 매핑된 함수 호출
     else:
-        st.error("페이지를 찾을 수 없습니다.")
+        st.error(f"페이지 {st.session_state['current_page']}를 찾을 수 없습니다.")
 
 if __name__ == "__main__":
     initialize_database()
