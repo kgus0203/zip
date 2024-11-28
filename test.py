@@ -116,6 +116,43 @@ def change_page(page_name):
     """페이지 이동 함수"""
     st.session_state['current_page'] = page_name  # 세션에 현재 페이지 정보 저장
     st.rerun()  # 페이지를 다시 로드하여 새 페이지로 전환
+def upload_post() :
+    st.header("게시물 등록")
+    title = st.text_input("게시물 제목")
+    content = st.text_area("게시물 내용")
+    image_file = st.file_uploader("이미지 파일", type=['jpg', 'png', 'jpeg'])
+    file_file = st.file_uploader("일반 파일", type=['pdf', 'docx', 'txt', 'png', 'jpg'])
+
+
+    # 카테고리 선택을 위한 Selectbox
+    post_manager = posting.PostManager('uploads')  # DB 경로 설정
+    category_names = post_manager.get_category_names()  # 카테고리 이름만 가져옴
+
+
+    # Selectbox에서 카테고리 선택
+    selected_category_name = st.selectbox("카테고리", category_names)
+
+
+   # 선택한 카테고리 이름에 해당하는 category_id 구하기
+    categories = post_manager.get_category_options()
+    category_dict = {category[1]: category[0] for category in categories}
+    selected_category_id = category_dict[selected_category_name]
+
+
+    location_search = posting.LocationSearch()
+    location_search.display_location_on_map()
+    col1, col2 = st.columns([6, 2])
+    with col1:
+        if st.button("게시물 등록"):
+
+            post_manager.add_post(title, content, image_file, file_file, selected_category_id,)
+
+            st.success("게시물이 등록되었습니다.")
+
+
+        with col2:
+            if st.button("뒤로가기"):
+                go_back()  # 뒤로가기 로직 호출
 
         
 #회원가입 페이지
