@@ -1100,31 +1100,15 @@ class ThemeManager:
         # 동적으로 버튼 텍스트 가져오기
         current_theme = self.th.themes["current_theme"]
         button_label = (
-            localization.get_text("dark_mode")
+            "dark_mode"
             if current_theme == "light"
-            else localization.get_text("light_mode")
+            else "light_mode"
         )
 
         # 버튼 렌더링 및 클릭 이벤트 처리
         if st.button(button_label, use_container_width=True):
             self.change_theme()
 
-    def select_language(self):
-        lang_options = ["ko", "en", "jp"]  # 지원하는 언어 목록
-
-        # 드롭다운을 왼쪽에 배치
-        selected_lang = st.selectbox(
-            localization.get_text("select_language"),  # "언어 선택" 문자열을 로컬라이제이션에서 가져옴
-            lang_options,
-            index=lang_options.index(st.session_state.current_language),  # 현재 언어에 맞게 기본값 설정
-            key="language_select",
-            help=localization.get_text("choose_language"),  # 툴팁 문자열
-        )
-
-        if st.session_state.current_language != selected_lang:
-            st.session_state.current_language = selected_lang  # 선택한 언어로 변경
-            st.session_state.localization.lang = selected_lang  # Localization 객체의 언어도 변경
-            st.rerun()  # 페이지를 다시 로드
 
 class UserProfile:
     def __init__(self, session, upload_folder="profile_pictures"):
