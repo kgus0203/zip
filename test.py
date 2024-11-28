@@ -17,8 +17,8 @@ def create_connection(db_file):
          conn = sqlite3.connect(db_file)
      except Exception as e:
          st.write(e)
-
-    return conn
+     
+         return conn
 
 def create_database():
      st.markdown("# Create Database")
