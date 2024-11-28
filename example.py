@@ -154,7 +154,7 @@ create_db()
 # 시작은 홈화면
 if 'current_page' not in st.session_state:
     st.session_state.current_page = 'Home'
-class Page():
+class Page:
     # 페이지 전환 함수
     def change_page(self,page_name):
         if "history" not in st.session_state:
@@ -256,7 +256,7 @@ class SignUp:
             return False
         return True
 
-class change_pasges():
+class Change_pages:
    #회원가입 페이지
     def signup_page(self):
         st.title("회원가입")
@@ -295,7 +295,7 @@ class change_pasges():
 # 페이지 함수 매핑
 page_functions = {
     'Home': Page.home_page,
-    'Signup': change_pages.signup_page,
+    'Signup': Change_pages.signup_page,
 }
 
 # 현재 페이지 디버깅
