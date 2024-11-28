@@ -300,6 +300,7 @@ def after_login():
         signin.log_out_event()
     with col4:
         if st.button("내 프로필", key="profile_button"):
+            st.session_state['user_id'] = user_id
             change_page("Setting")
     if st.button('View Post', key='posting_button'):
         change_page('View Post')
