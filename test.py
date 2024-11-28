@@ -1062,7 +1062,23 @@ class ThemeManager:
         self.th = st.session_state
         if "themes" not in self.th:
             self.th.themes = {
-                "current_theme": self.get_saved_theme(),  # DB에서 테마 로드 또는 기본값으로 설정
+                "current_theme": self.get_saved_theme(),  # Load saved theme from DB or default to light
+                "light": {
+                    "theme.base": "dark",
+                    "theme.backgroundColor": "black",
+                    "theme.primaryColor": "#c98bdb",
+                    "theme.secondaryBackgroundColor": "#5591f5",
+                    "theme.textColor": "white",
+                    "button_face": "어두운 모드 🌜"
+                },
+                "dark": {
+                    "theme.base": "light",
+                    "theme.backgroundColor": "white",
+                    "theme.primaryColor": "#5591f5",
+                    "theme.secondaryBackgroundColor": "#82E1D7",
+                    "theme.textColor": "#0a1464",
+                    "button_face": "밝은 모드 🌞"
+                }
             }
 
     def get_saved_theme(self):
@@ -1167,6 +1183,8 @@ class UserProfile:
                 st.rerun()
             else:
                 st.error("파일을 업로드해주세요.")
+
+
 class Account:
     def __init__(self, user_id, user_email):
         self.user_id = user_id
@@ -1182,49 +1200,34 @@ class SetView:
         self.account = Account(user_id=user_id, user_email=user_email)
         self.user_profile = UserProfile(session)
         self.theme_manager = ThemeManager(session)
+        self.like_button = LikeButton()
 
-    def render_user_profile(self):
+
+      def render_user_profile(self):
         user_info = self.account.get_user_info()
-        self.user_profile.display_profile(user_info['user_id'])
+        # Display user profile
+        self.user_profile.display_profile(user_info["user_id"])
 
-        # 프로필 편집 버튼 (확장형 UI)
-        with st.expander("edit_my_info"):
-            # 이메일 변경
-            new_email = st.text_input(
-                "new_email_address", value=user_info['user_email']
-            )
-            if st.button("change_email"):
+        # Edit Profile Button (popup simulation)
+        with st.expander("내 정보 수정하기"):
+            # Change Email
+            new_email = st.text_input("새 이메일 주소", value=user_info["user_email"])
+            if st.button("이메일 변경"):
                 self.account.update_email(new_email)
-                st.success(localization.get_text("email_updated"))
-                st.rerun()
+                st.success("이메일이 변경되었습니다.")
 
-            # 프로필 사진 업로드
-            uploaded_file = st.file_uploader(
-               "upload_new_profile_picture", type=["jpg", "png", "jpeg"]
-            )
+            # Profile Picture Upload
+            uploaded_file = st.file_uploader("새 프로필 사진 업로드", type=["jpg", "png", "jpeg"])
             if uploaded_file is not None:
                 image_path = self.user_profile.save_file(uploaded_file)
-                self.user_profile.update_profile_picture(user_info.user_id, image_path)
-                st.success("profile_picture_updated")
+                self.user_profile.update_profile_picture(user_info["user_id"], image_path)
+                st.success("프로필 사진이 성공적으로 업데이트되었습니다.")
                 st.rerun()
 
-    def render_alarm_settings(self):
-        """알람 설정 UI"""
-        alarm_enabled = st.checkbox("set_alarm", value=False)
-        if alarm_enabled:
-            st.write("alarm_set")
-        else:
-            st.write("alarm_disabled")
-
     def render_posts(self):
-        """좋아요한 게시물 표시"""
-        with st.expander("favorites", icon='💗'):
-            liked_posts = self.account.get_liked_posts()
-            if liked_posts:
-                for post in liked_posts:
-                    st.write(post.title)
-            else:
-                st.write("no_liked_posts")
+        with st.expander('관심목록',icon='💗'):
+            self.like_button.display_liked_posts()
+
 
 # 페이지 함수 매핑
 page_functions = {
