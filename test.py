@@ -892,11 +892,14 @@ class PostManager:
             st.write(f"장소 이름: {name}")
             st.write(f"주소: {address}")
     
-    def display_map(self, key):
-        # If the location data exists, display the map with markers
-        if self.locations_df is not None and not self.locations_df.empty:
-            # Plot the location data on the map
-            st.map(self.locations_df[['latitude', 'longitude']], use_container_width=True, key=key)
+    def display_map(self):
+
+        if self.locations_df is None or self.locations_df.empty:
+            st.error("위치 데이터가 없습니다.")
+            return
+    
+        # Use the latitude and longitude columns to display the map
+        st.map(self.locations_df[['latitude', 'longitude']], use_container_width=True)
             
     def edit_post(self, post_id):
         post = session.query(Posting).filter_by(p_id=post_id).first()
@@ -947,7 +950,7 @@ class PostManager:
             if self.locations_df is not None and not self.locations_df.empty:
                 self.create_map_with_markers()
                 st.title("Location Map")
-                self.display_map(key=f"map_{post.p_id}")
+                self.display_map()
 
             st.write(f"**등록 날짜**: {post.upload_date}, **수정 날짜**: {post.modify_date}")
             st.write("---")
