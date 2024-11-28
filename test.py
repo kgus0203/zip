@@ -85,17 +85,20 @@ def login_page():
     with col2:
         if st.button("뒤로가기", key="login_back_button"):
             change_page("Home")  # 뒤로가기 로직 호출
+            
 #세팅 페이지
-def setting_page():
+def setting_page(session):
+    # 세션 상태에서 사용자 ID 가져오기
     user_id = st.session_state.get("user_id")
 
-    with sqlite3.connect('zip.db') as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT user_email FROM user WHERE user_id = ?", (user_id,))
-        result = cursor.fetchone()
+    # SQLAlchemy를 사용하여 사용자 이메일 가져오기
+    user_email = None
+    if user_id:
+        user = session.query(User).filter_by(user_id=user_id).first()
+        if user:
+            user_email = user.user_email
 
-    user_email = result[0] if result else None
-
+    # 레이아웃 구성
     col1, col2 = st.columns([8, 2])
     with col1:
         st.title("내 페이지")
@@ -103,10 +106,12 @@ def setting_page():
         if st.button("뒤로가기"):
             go_back()
 
-    view = setting.SetView(user_id, user_email)
+    # SetView 및 ThemeManager 인스턴스 생성 및 렌더링
+    view = setting.SetView(session, user_id, user_email)
     view.render_user_profile()
     view.render_alarm_settings()
-    theme_manager = setting.ThemeManager()
+    
+    theme_manager = setting.ThemeManager(session)
     theme_manager.render_button()
 
     view.render_posts()
