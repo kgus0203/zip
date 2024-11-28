@@ -1190,7 +1190,15 @@ class Account:
         self.user_email = user_email
 
     def get_user_info(self) -> dict:
-        return {"user_id": self.user_id, "user_email": self.user_email}
+        # 사용자 정보를 데이터베이스에서 조회
+        user = session.query(User).filter_by(user_id=self.user_id).first()
+        session.close()
+
+        # 사용자 정보가 있으면 반환, 없으면 빈 딕셔너리 반환
+        if user:
+            return {"user_id": user.user_id, "user_email": user.user_email}
+        else:
+            return {"user_id": None, "user_email": None}
 
     def update_email(self, new_email: str):
         """Update the user's email in the database."""
