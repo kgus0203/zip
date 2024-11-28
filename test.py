@@ -862,8 +862,8 @@ class PostManager:
                     unsafe_allow_html=True
                 )
 
-    else:
-        st.error("해당 게시물을 찾을 수 없습니다.")
+        else:
+            st.error("해당 게시물을 찾을 수 없습니다.")
     def display_posts_on_home(self):
         # 데이터베이스에서 포스팅 데이터를 가져옵니다.
         posts = self.get_all_posts()
