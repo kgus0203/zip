@@ -408,6 +408,7 @@ page_functions = {
     'Signup': signup_page,
     'Login': login_page,
     'ID PW 변경': id_pw_change_page,
+    'User manager' : usermanager_page,
 }
 if 'current_page' not in st.session_state:
     st.session_state.current_page = 'Home'
