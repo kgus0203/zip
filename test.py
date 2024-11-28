@@ -996,7 +996,6 @@ class PostManager:
 
                         # 이미지 출력 (있는 경우)
                         if post.p_image_path:
-                            try:
                                 self.create_location_name()
                                 st.image(post.p_image_path, use_container_width=True)
                                 
