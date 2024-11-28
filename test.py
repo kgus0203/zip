@@ -333,6 +333,15 @@ def friend_and_group_sidebar(user_id):
         if st.button("삭제 확인"):
             # 삭제 로직 호출
             st.write(f"{delete_user_id}님을 친구 목록에서 삭제했습니다.")  # 여기에 삭제 로직 추가 가능
+class User(Base):
+    __tablename__ = 'user'
+    user_id = Column(String, primary_key=True)
+    user_password = Column(String, nullable=False)
+    user_email = Column(String, nullable=False, unique=True)
+    user_is_online = Column(Boolean, default=False)
+    user_mannerscore = Column(Integer, default=0)
+    profile_picture_path = Column(String, nullable=True)
+    __table_args__ = {'extend_existing': True}
 
 class Friend(Base):
     __tablename__ = 'friend'
