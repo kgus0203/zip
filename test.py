@@ -115,77 +115,152 @@ def initialize_database():
             session.add(FoodCategory(category=category))
     
     session.commit()
+# SQLAlchemy Base 선언
+Base = declarative_base()
 
-# 유틸리티 함수
-def hash_password(password):
-    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+# 데이터베이스 연결 설정
+DATABASE_URL = "sqlite:///zip.db"
+engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
+SessionLocal = sessionmaker(bind=engine)
 
-def check_password(hashed_password, plain_password):
-    return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+# 데이터베이스 모델 정의
+class User(Base):
+    __tablename__ = 'user'
+    user_id = Column(String, primary_key=True)
+    user_password = Column(String, nullable=False)
+    user_email = Column(String, unique=True, nullable=False)
+    user_is_online = Column(Boolean, default=False)
 
-# 회원가입 페이지
-def signup_page():
-    st.title("회원가입")
-    user_id = st.text_input("아이디")
-    user_email = st.text_input("이메일")
-    user_password = st.text_input("비밀번호", type="password")
-    if st.button("회원가입"):
-        if not user_id or not user_email or not user_password:
-            st.error("모든 필드를 입력해주세요.")
-        elif len(user_password) < 8:
-            st.error("비밀번호는 8자 이상이어야 합니다.")
-        else:
-            existing_user = session.query(User).filter_by(user_id=user_id).first()
-            if existing_user:
-                st.error("이미 존재하는 아이디입니다.")
+# 데이터베이스 초기화
+def initialize_database():
+    Base.metadata.create_all(engine)
+
+# DAO 클래스
+class UserDAO:
+    def __init__(self):
+        self.session = SessionLocal()
+
+    def check_user_id_exists(self, user_id):
+        """아이디 존재 여부 체크"""
+        try:
+            return self.session.query(User).filter_by(user_id=user_id).first()
+        except Exception as e:
+            st.error(f"DB 오류: {e}")
+            return None
+
+    def insert_user(self, user_id, user_password, user_email):
+        """새 사용자 추가"""
+        hashed_password = bcrypt.hashpw(user_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        new_user = User(user_id=user_id, user_password=hashed_password, user_email=user_email)
+        try:
+            self.session.add(new_user)
+            self.session.commit()
+            st.success("회원가입이 완료되었습니다!")
+        except Exception as e:
+            self.session.rollback()
+            st.error(f"DB 오류: {e}")
+
+    def update_user_online(self, user_id, is_online):
+        """사용자 온라인 상태 업데이트"""
+        try:
+            user = self.session.query(User).filter_by(user_id=user_id).first()
+            if user:
+                user.user_is_online = is_online
+                self.session.commit()
+        except Exception as e:
+            self.session.rollback()
+            st.error(f"DB 오류: {e}")
+
+    def check_password(self, hashed_password, plain_password):
+        """비밀번호 일치 여부 확인"""
+        return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+
+# 회원가입 클래스
+class SignUp:
+    def __init__(self, user_id, user_password, user_email):
+        self.user_id = user_id
+        self.user_password = user_password
+        self.user_email = user_email
+
+    def sign_up_event(self):
+        dao = UserDAO()
+        if not self.check_length():
+            return False
+        if not self.check_user():
+            return False
+        dao.insert_user(self.user_id, self.user_password, self.user_email)
+        return True
+
+    def check_length(self):
+        """비밀번호 길이 체크"""
+        if len(self.user_password) < 8:
+            st.error("비밀번호는 최소 8자 이상이어야 합니다.")
+            return False
+        return True
+
+    def check_user(self):
+        """아이디 중복 체크"""
+        dao = UserDAO()
+        if dao.check_user_id_exists(self.user_id):
+            st.error("이미 사용 중인 아이디입니다.")
+            return False
+        return True
+
+# 로그인 처리 클래스
+class SignIn:
+    def __init__(self, user_id, user_password):
+        self.user_id = user_id
+        self.user_password = user_password
+
+    def sign_in_event(self):
+        dao = UserDAO()
+        user = dao.check_user_id_exists(self.user_id)
+        if user:
+            if dao.check_password(user.user_password, self.user_password):
+                st.session_state["user_id"] = self.user_id  # 세션에 사용자 ID 저장
+                dao.update_user_online(self.user_id, True)  # 온라인 상태 업데이트
+                st.success(f"{self.user_id}님, 로그인 성공!")
+                return True
             else:
-                hashed_password = hash_password(user_password)
-                new_user = User(
-                    user_id=user_id,
-                    user_password=hashed_password,
-                    user_email=user_email
-                )
-                session.add(new_user)
-                session.commit()
-                st.success("회원가입이 완료되었습니다!")
+                st.error("비밀번호가 틀렸습니다.")
+        else:
+            st.error("아이디가 존재하지 않습니다.")
+        return False
 
 # 로그인 페이지
 def login_page():
     st.title("로그인")
     user_id = st.text_input("아이디")
-    user_password = st.text_input("비밀번호", type="password")
-    if st.button("로그인"):
-        user = session.query(User).filter_by(user_id=user_id).first()
-        if user and check_password(user.user_password, user_password):
-            st.session_state["user_id"] = user_id
-            user.user_is_online = True
-            session.commit()
-            st.success(f"{user_id}님, 환영합니다!")
-        else:
-            st.error("아이디 또는 비밀번호가 잘못되었습니다.")
+    user_password = st.text_input("비밀번호", type='password')
 
-# 메인 페이지
-def main_page():
-    st.title("메인 페이지")
-    if "user_id" in st.session_state:
-        st.success(f"로그인 상태: {st.session_state['user_id']}")
-        if st.button("로그아웃"):
-            user = session.query(User).filter_by(user_id=st.session_state['user_id']).first()
-            if user:
-                user.user_is_online = False
-                session.commit()
-            del st.session_state["user_id"]
-            st.experimental_rerun()
-    else:
-        st.info("로그인이 필요합니다.")
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("로그인"):
+            if not user_id or not user_password:
+                st.error("아이디와 비밀번호를 입력해 주세요.")
+            else:
+                sign_in = SignIn(user_id, user_password)
+                if sign_in.sign_in_event():
+                    st.session_state['current_page'] = 'Home'  # 로그인 성공 시 페이지 이동
+    with col2:
+        if st.button("뒤로가기"):
+            st.session_state['current_page'] = 'Signup'
 
 # Streamlit 앱 실행
 def main():
-    initialize_database()
-    if "user_id" not in st.session_state:
+    if "current_page" not in st.session_state:
+        st.session_state["current_page"] = "Login"
+
+    if st.session_state["current_page"] == "Login":
         login_page()
+    elif st.session_state["current_page"] == "Signup":
+        # Signup 페이지를 구현
+        st.write("회원가입 페이지")
+    elif st.session_state["current_page"] == "Home":
+        st.write("홈 페이지")
     else:
-        main_page()
+        st.error("페이지를 찾을 수 없습니다.")
 
 if __name__ == "__main__":
+    initialize_database()
     main()
