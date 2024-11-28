@@ -190,16 +190,6 @@ def id_pw_change_page():
                 st.session_state.user.clear()  # 세션 초기화로 로그아웃 처리
                 change_page("Home")  # 첫 페이지로 이동
 
-# 테이블 모델 정의
-class User(Base):
-    __tablename__ = 'user'
-    user_id = Column(String, primary_key=True)
-    user_password = Column(String, nullable=False)
-    user_email = Column(String, nullable=False, unique=True)
-    user_is_online = Column(Boolean, default=False)
-    user_mannerscore = Column(Integer, default=0)
-    profile_picture_path = Column(String, nullable=True)
-    __table_args__ = {'extend_existing': True}
 
 class Friend(Base):
     __tablename__ = 'friend'
