@@ -767,8 +767,8 @@ class LocationSearch:
         )
     
         # Add the new post to the session and commit the transaction
-        self.session.add(new_post)
-        self.session.commit()
+        session.add(new_post)
+        session.commit()
 
 class PostManager:
     def __init__(self, upload_folder='uploaded_files'):
