@@ -1180,10 +1180,26 @@ class UserProfile:
             else:
                 st.error("파일을 업로드해주세요.")
 
+class Account:
+    def __init__(self, user_id, user_email):
+        self.user_id = user_id
+        self.user_email = user_email
 
+    def get_user_info(self) -> dict:
+        return {"user_id": self.user_id, "user_email": self.user_email}
+
+    def update_email(self, new_email: str):
+        """Update the user's email in the database."""
+        user = session.query(User).filter_by(user_id=self.user_id).first()
+        if user:
+            user.user_email = new_email
+            self.session.commit()
+        else:
+            raise ValueError("User not found")
 
 class SetView:
     def __init__(self, user_id, user_email):
+        self.account = Account(user_id=user_id, user_email=user_email)
         self.user_profile = UserProfile()
         self.theme_manager = ThemeManager()
         self.like_button = LikeButton()
@@ -1196,7 +1212,7 @@ class SetView:
         else:
             st.write("알람이 해제되었습니다.")
     def render_user_profile(self):
-        user_info = self.user_profile
+        user_info = self.account.get_user_info()
         self.user_profile.display_profile(user_info["user_id"])
     
         # Edit Profile Button (popup simulation)
