@@ -111,7 +111,7 @@ def setting_page():
     view.render_user_profile()
     view.render_alarm_settings()
     
-    theme_manager = setting.ThemeManager(session)
+    theme_manager = ThemeManager(session)
     theme_manager.render_button()
 
     view.render_posts()
