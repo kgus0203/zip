@@ -13,6 +13,7 @@ from datetime import datetime
 import secrets
 from sqlalchemy.ext.declarative import declarative_base
 import pandas as pd
+import os
 
 # SQLAlchemy Base 선언
 Base = declarative_base()
@@ -564,8 +565,7 @@ class LocationGet:
         return locations\
         
 class LocationSearch:
-    def __init__(self, db_session: Session):
-        self.db_session = db_session  # SQLAlchemy 세션 객체를 전달받음
+    def __init__(self):
         self.selected_location_id = None
     
     def search_location(self, query):
@@ -676,7 +676,10 @@ class PostManager:
             return file_path
         return ''
 
-    def add_post(self, title, content, image_file, file_file, location, category):
+    def add_post(self, title, content, image_file, file_file, category):
+        location_search=LocationSearch()
+        location_id=location_search.get_selected_id
+        
         image_path = self.save_file(image_file) if image_file else ''
         file_path = self.save_file(file_file) if file_file else ''
         upload_date = modify_date = datetime.now()
@@ -687,7 +690,7 @@ class PostManager:
             p_content=content,
             p_image_path=image_path,
             file_path=file_path,
-            p_location=location,
+            p_location=location_id,
             p_category=category,
             upload_date=upload_date,
             modify_date=modify_date
