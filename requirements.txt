@@ -1,3 +1,4 @@
 bcrypt
 sqlalchemy
 streamlit_sqlalchemy
+streamlit sqlalchemy bcrypt
