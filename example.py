@@ -3,7 +3,7 @@ import streamlit as st
 import bcrypt
 
 def create_db():
-   conn = st.connection('databse/zip.db')
+   conn = st.connection('zip.db', type='sql')
    cursor = conn.cursor()
 
 
@@ -155,7 +155,7 @@ create_db()
 
 # 데이터베이스 연결 함수
 def create_connection():
-    conn = st.connection('zip.db')
+    conn = st.connection('zip.db', type='sql')
     conn.row_factory = sqlite3.Row  # 결과를 딕셔너리 형식으로 반환
     return conn
 
