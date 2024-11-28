@@ -186,4 +186,122 @@ class Page():
         with col3:
             if st.button("ID/PW 찾기", key="home_forgot_button"):
                 self.change_page('User manager')  # ID/PW 찾기 페이지로 이동
-st.title('로그인')
+               
+# 데이터베이스 연결 함수
+def create_connection():
+    conn = sqlite3.connect('zip.db')
+    conn.row_factory = sqlite3.Row  # 결과를 딕셔너리 형식으로 반환
+    return conn
+# UserDAO (데이터베이스 연동 클래스)
+class UserDAO:
+    # 아이디 중복 체크
+    def check_user_id_exists(self, user_id):
+        connection = create_connection()
+        try:
+            cursor = connection.cursor()
+            query = "SELECT * FROM user WHERE user_id = ?"
+            cursor.execute(query, (user_id,))
+            result = cursor.fetchone()
+            return result is not None
+        except sqlite3.Error as e:
+            st.error(f"DB 오류: {e}")
+        finally:
+            connection.close()
+
+    # user_id로 사용자 정보를 가져온다
+    def search_user(self, user_id):
+        connection = create_connection()
+        try:
+            cursor = connection.cursor()
+            query = "SELECT * FROM user WHERE user_id = ?"
+            cursor.execute(query, (user_id,))
+            result = cursor.fetchone()
+            return result
+        except sqlite3.Error as e:
+            st.error(f"DB 오류: {e}")
+        finally:
+            connection.close()
+
+# UserVO (사용자 정보 클래스)
+class UserVO:
+    def __init__(self, user_id='', user_password='', user_email='', user_seq=None, user_is_online=False):
+        self.user_id = user_id
+        self.user_password = user_password
+        self.user_email = user_email
+        self.user_seq = user_seq
+        self.user_is_online = user_is_online
+
+
+class SignUp:
+    def __init__(self, user_id, user_password, user_email):
+        self.user = UserVO(user_id=user_id, user_password=user_password, user_email=user_email)
+    def sign_up_event(self):
+        dao = UserDAO()
+        dao.insert_user(self.user)
+    def check_length(self):
+        if len(self.user.user_password) < 8:
+            st.error("비밀번호는 최소 8자 이상이어야 합니다.")
+            return False
+        return True
+    def check_user(self):
+        dao = UserDAO()
+        if dao.check_user_id_exists(self.user.user_id):
+            st.error("이미 사용 중인 아이디입니다.")
+            return False
+        return True
+
+    def validate_email(self,email):
+        email_regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+        if not re.match(email_regex, email):
+            return False
+        return True
+
+class change_pasges():
+   #회원가입 페이지
+    def signup_page(self):
+        st.title("회원가입")
+
+        # 사용자 입력 받기
+        user_id = st.text_input("아이디")
+        user_password = st.text_input("비밀번호", type='password')
+        email = st.text_input("이메일")
+        # 회원가입 처리 객체 생성
+        signup = SignUp(user_id, user_password, email)
+        col1, col2 = st.columns([1, 1])  # 버튼을 나란히 배치
+        with col1:
+            if st.button("회원가입", key="signup_submit_button"):
+                if not user_id or not user_password or not email:
+                    st.error("모든 필드를 입력해 주세요.")
+                else:
+                    if not signup.validate_email(email):
+                        st.error("유효한 이메일 주소를 입력해 주세요.")
+                        return
+                    # 비밀번호 길이 체크
+                    if not signup.check_length():
+                        return  # 비밀번호가 너무 짧으면 더 이상 진행하지 않음
+
+                    # 사용자 ID 중복 체크
+                    if not signup.check_user():
+                        return  # 중복 아이디가 있으면 더 이상 진행하지 않음
+
+                    # 모든 검증을 통과하면 회원가입 진행
+                    signup.sign_up_event()
+
+        with col2:
+            if st.button("뒤로가기", key="signup_back_button"):
+                self.page.go_back()  # 뒤로가기 로직 호출
+
+# 페이지 함수 매핑
+page_functions = {
+    'Home': home_page,
+    'Signup': signup_page,
+}
+
+# 현재 페이지 디버깅
+st.write(f"Current Page: {st.session_state['current_page']}")  # 디버깅용 코드
+
+# 현재 페이지 렌더링
+if st.session_state["current_page"] in page_functions:
+    page_functions[st.session_state["current_page"]]()  # 매핑된 함수 호출
+else:
+    st.error(f"페이지 {st.session_state['current_page']}를 찾을 수 없습니다.")
