@@ -108,7 +108,7 @@ def setting_page():
             go_back()
 
     # SetView 및 ThemeManager 인스턴스 생성 및 렌더링
-    view = SetView(session, user_id, user_email)
+    view = SetView(user_id, user_email)
     view.render_user_profile()
     view.render_alarm_settings()
     
