@@ -87,9 +87,7 @@ def signup_page():
             if not user_id or not user_password or not email:
                 st.error("모든 필드를 입력해 주세요.")
             else:
-                if not signup.validate_email(email):
-                    st.error("유효한 이메일 주소를 입력해 주세요.")
-                    return
+
                 # 비밀번호 길이 체크
                 if not signup.check_length():
                     return  # 비밀번호가 너무 짧으면 더 이상 진행하지 않음
