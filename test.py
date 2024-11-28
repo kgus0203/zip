@@ -11,7 +11,18 @@ from email.header import Header
 import smtplib
 from datetime import datetime
 import secrets
+# 데이터베이스 연결
+def create_connection():
+    engine = create_engine('sqlite:///zip.db')  # SQLite 연결
+    Session = sessionmaker(bind=engine)
+    session = Session()
+    return session, engine
 
+# 테이블 생성
+def create_tables():
+    session, engine = create_connection()
+    Base.metadata.create_all(engine)
+    session.close()
 # SQLAlchemy Base 선언
 Base = declarative_base()
 
