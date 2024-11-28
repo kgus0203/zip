@@ -827,9 +827,37 @@ class PostManager:
 
             st.write(f"**등록 날짜**: {post.upload_date}, **수정 날짜**: {post.modify_date}")
             st.write("---")
-
-
-            
+     def display_posts_on_home(self):
+            # 데이터베이스에서 포스팅 데이터를 가져옵니다.
+            posts = self.get_all_posts()
+    
+            if not posts:
+                st.write("현재 추천 포스팅이 없습니다.")
+                return
+    
+            # 포스트를 두 개씩 나열
+            for i in range(0, len(posts), 2):
+                cols = st.columns(2)  # 두 개의 컬럼 생성
+                for j, col in enumerate(cols):
+                    if i + j < len(posts):
+                        post = posts[i + j]  # 현재 포스트 데이터
+                        with col:
+                            # 제목 출력
+    
+                            st.subheader(post["p_title"])
+    
+                            # 이미지 출력 (있는 경우)
+                            if post["p_image_path"]:
+                                try:
+                                    st.image(post["p_image_path"], use_container_width=True)
+                                    with st.expander('더보기'):
+                                        self.display_post(post["p_id"])
+                                except Exception as e:
+                                    st.error(f"이미지를 불러오는 데 실패했습니다: {e}")
+                            else:
+                                st.write("이미지가 없습니다.")
+    
+                
 # 페이지 함수 매핑
 page_functions = {
     'Home': home_page,
