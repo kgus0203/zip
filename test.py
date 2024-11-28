@@ -902,6 +902,7 @@ page_functions = {
     'User manager' : usermanager_page,
     'after_login': after_login,
     'View Post': view_post,
+    'Upload Post': upload_post,
 }
 if 'current_page' not in st.session_state:
     st.session_state.current_page = 'Home'
