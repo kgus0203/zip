@@ -149,8 +149,20 @@ def signup_page():
     with col2:
         if st.button("뒤로가기", key="signup_back_button"):
             go_back()  # 뒤로가기 로직 호출
-
-
+def view_post():
+    col1, col2, col3 = st.columns([6, 2, 2])  # 비율 6 : 2 : 2
+    with col1:
+        st.title("게시물 목록")  # 제목을 왼쪽에 배치
+    with col2:
+        if st.button("뒤로가기"):
+            go_back()  # 뒤로가기 로직 호출
+    with col3:
+        if st.button("글 작성"):
+            change_page('Upload Post')
+    # PostManager 인스턴스를 생성
+    post_manager = posting.PostManager()
+    # display_posts 메서드를 호출
+    post_manager.display_posts()
 def id_pw_change_page():
     st.title("<ID/PW 변경>")
 
