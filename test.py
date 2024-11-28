@@ -136,7 +136,7 @@ def upload_post() :
 
    # 선택한 카테고리 이름에 해당하는 category_id 구하기
     categories = category_manager.get_category_options()
-    category_dict = {category[1]: category[0] for category in categories}
+    category_dict = {category.category: category.category_id for category in categories}
     selected_category_id = category_dict[selected_category_name]
 
 
