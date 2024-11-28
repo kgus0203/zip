@@ -1183,8 +1183,17 @@ class UserProfile:
                 st.rerun()
             else:
                 st.error("파일을 업로드해주세요.")
+class Account:
+    def __init__(self, user_id, user_email):
+        self.user_id = user_id
+        self.user_email = user_email
+
+    def get_user_info(self) -> Dict:
+        return {"user_id": self.user_id, "user_email": self.user_email}
+
+
 class SetView:
-    def __init__(self, session, user_id, user_email):
+    def __init__(self, user_id, user_email):
         self.session = session
         self.account = Account(session, user_id=user_id, user_email=user_email)
         self.user_profile = UserProfile(session)
