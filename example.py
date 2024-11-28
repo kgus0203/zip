@@ -198,7 +198,7 @@ def home_page():
 #-----------------------------------------로그인--------------------------------------------------------   
 # UserDAO (데이터베이스 연동 클래스)
 class UserDAO:
- # 아이디 중복 체크
+    @st.cache_data
     def check_user_id_exists(self, user_id):
         connection = create_connection()
         try:
@@ -212,7 +212,8 @@ class UserDAO:
         finally:
             connection.close()
    
-    # user_id로 사용자 정보를 가져온다
+    # user_id로 사용자 정보를 가져온다 (캐시 적용 가능)
+    @st.cache_data
     def search_user(self, user_id):
         connection = create_connection()
         try:
