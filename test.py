@@ -1127,6 +1127,8 @@ class ThemeManager:
         # Render the button and handle the click event
         if st.button(button_label, use_container_width=True):
             self.change_theme()
+
+
 #---------------------------- 유저 프로필 ---------------------------------
 class UserProfile:
     def __init__(self, upload_folder="profile_pictures"):
@@ -1281,7 +1283,6 @@ if 'current_page' not in st.session_state:
 
 
 
-initialize_database()
 # 현재 페이지 디버깅
 st.write(f"Current Page: {st.session_state['current_page']}")  # 디버깅용 코드
 
