@@ -1131,7 +1131,7 @@ class ThemeManager:
             st.rerun()  # 페이지를 다시 로드
 
 class UserProfile:
-    def __init__(self, session: Session, upload_folder="profile_pictures"):
+    def __init__(self, session, upload_folder="profile_pictures"):
         self.session = session
         self.upload_folder = upload_folder
         self.default_profile_picture = (
