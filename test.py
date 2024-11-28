@@ -1189,7 +1189,7 @@ class SetView:
         self.session = session
         self.account = Account(user_id=user_id, user_email=user_email)
         self.user_profile = UserProfile(session)
-        self.theme_manager = ThemeManager(session)
+        self.theme_manager = ThemeManager()
         self.like_button = LikeButton()
 
     def render_alarm_settings(self):
