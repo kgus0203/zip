@@ -947,7 +947,7 @@ class PostManager:
             if self.locations_df is not None and not self.locations_df.empty:
                 self.create_map_with_markers()
                 st.title("Location Map")
-                self.display_map(key=f"map_{post.p_id})
+                self.display_map(f"map_{post.p_id})
 
             st.write(f"**등록 날짜**: {post.upload_date}, **수정 날짜**: {post.modify_date}")
             st.write("---")
