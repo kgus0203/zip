@@ -1201,9 +1201,7 @@ class SetView:
 
     def render_user_profile(self):
         user_info = self.account.get_user_info()
-        
-        # 사용자 프로필 표시
-        self.user_profile.display_profile(user_info.user_id)
+        self.user_profile.display_profile(user_info['user_id'])
 
         # 프로필 편집 버튼 (확장형 UI)
         with st.expander(localization.get_text("edit_my_info")):
