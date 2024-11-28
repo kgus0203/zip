@@ -156,7 +156,7 @@ def upload_post() :
 
         with col2:
             if st.button("뒤로가기"):
-                go_back()  # 뒤로가기 로직 호출
+                change_page("alter_login")  # 뒤로가기 로직 호출
                 
         
 #회원가입 페이지
