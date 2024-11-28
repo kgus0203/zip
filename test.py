@@ -88,15 +88,16 @@ def login_page():
             
 #세팅 페이지
 def setting_page():
+    # 세션 상태에서 사용자 ID 가져오기
     user_id = st.session_state.get("user_id")
-    try:
-        # ORM으로 사용자 이메일 가져오기
-        user = session.query(User).filter_by(user_id=user_id).first()
-        user_email = user.user_email if user else None
-    finally:
-        session.close()
+    if not user_id:
+        st.error("로그인이 필요합니다.")
+        return
+    # 사용자 이메일 가져오기
+    user = session.query(User).filter_by(user_id=user_id).first()
+    user_email = user.user_email if user else None
 
-    # UI 구성
+    # 레이아웃 설정
     col1, col2 = st.columns([8, 2])
     with col1:
         st.title("내 페이지")
@@ -104,15 +105,18 @@ def setting_page():
         if st.button("뒤로가기"):
             go_back()
 
-    # 설정 페이지 렌더링
+    # View 렌더링
     view = SetView(user_id, user_email)
     view.render_user_profile()
     view.render_alarm_settings()
 
-    theme_manager = ThemeManager()
+    theme_manager = setting.ThemeManager()
     theme_manager.render_button()
 
     view.render_posts()
+
+    # SQLAlchemy 세션 닫기
+    session.close()
 
 def usermanager_page():
     st.title("사용자 관리 페이지")
