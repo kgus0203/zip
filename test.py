@@ -800,6 +800,7 @@ page_functions = {
     'Login': login_page,
     'ID PW 변경': id_pw_change_page,
     'User manager' : usermanager_page,
+    'after_login': after_login,
 }
 if 'current_page' not in st.session_state:
     st.session_state.current_page = 'Home'
