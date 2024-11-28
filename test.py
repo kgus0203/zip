@@ -855,8 +855,7 @@ class PostManager:
                                 except Exception as e:
                                     st.error(f"이미지를 불러오는 데 실패했습니다: {e}")
                             else:
-                                st.write("이미지가 없습니다.")
-    
+                                st.write("이미지가 없습니다.")  
                 
 # 페이지 함수 매핑
 page_functions = {
