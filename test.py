@@ -1232,7 +1232,7 @@ class SetView:
         # Edit Profile Button (popup simulation)
         with st.expander("내 정보 수정하기"):
             # Change Email
-            new_email = st.text_input("새 이메일 주소", value=user_info["user_email"])
+            new_email = st.text_input("새 이메일 주소", value=self.user_email)
             if st.button("이메일 변경"):
                 self.account.update_email(new_email)
                 st.success("이메일이 변경되었습니다.")
