@@ -207,17 +207,19 @@ def after_login():
 
     # 친구 관리 사이드바 추가
     friend_and_group_sidebar(user_id)
+    
     # 데이터베이스 연결
-    conn = sqlite3.connect('zip.db')
-    cursor = conn.cursor()
+    session = Session()
 
     # 사용자 프로필 정보 가져오기
-    cursor.execute("SELECT profile_picture_path FROM user WHERE user_id = ?", (user_id,))
-    result = cursor.fetchone()
-    conn.close()
+    user = session.query(User).filter(User.user_id == user_id).first()
+
+    # 세션 종료
+    session.close()
 
     # 프로필 이미지 경로 설정 (없을 경우 기본 이미지 사용)
-    profile_image_url = result[0] if result and result[0] else 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png'
+    profile_image_url = user.profile_picture_path if user and user.profile_picture_path else 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png'
+    
     # 사용자 ID 표시 및 로그아웃 버튼
     signin = SignIn(user_id, user_password)
     col1, col2, col3, col4 = st.columns([1, 4, 1, 1])
@@ -234,7 +236,7 @@ def after_login():
     if st.button('View Post', key='posting_button'):
         change_page('View Post')
         
-    post_manager=PostManager()
+    post_manager = PostManager()
     post_manager.display_posts_on_home()
     
 def friend_and_group_sidebar(user_id):
