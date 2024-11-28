@@ -1207,7 +1207,7 @@ class SetView:
         with st.expander("edit_my_info"):
             # 이메일 변경
             new_email = st.text_input(
-                "new_email_address", value=user_info.user_email
+                "new_email_address", value=user_info['user_email']
             )
             if st.button("change_email"):
                 self.account.update_email(new_email)
