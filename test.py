@@ -769,7 +769,7 @@ class PostManager:
 
     def add_post(self, title, content, image_file, file_file, category):
         location_search=LocationSearch()
-        location_id=location_search.get_selected_id
+        location_id=location_search.get_selected_location_id
         
         image_path = self.save_file(image_file) if image_file else ''
         file_path = self.save_file(file_file) if file_file else ''
