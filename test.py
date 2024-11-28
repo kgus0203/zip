@@ -140,7 +140,7 @@ def upload_post() :
     selected_category_id = category_dict[selected_category_name]
 
 
-    location_search = posting.LocationSearch()
+    location_search = LocationSearch()
     location_search.display_location_on_map()
     col1, col2 = st.columns([6, 2])
     with col1:
