@@ -1000,11 +1000,9 @@ class PostManager:
                                 self.create_location_name()
                                 st.image(post.p_image_path, use_container_width=True)
                                 
-                            except Exception as e:
-                                st.error(f"이미지를 불러오는 데 실패했습니다: {e}")
-                else:
-                    with st.expander('더보기'):
-                        self.display_post(post.p_id)
+                           
+                        with st.expander('더보기'):
+                            self.display_post(post.p_id)
 
 #----------------------------------------------------카테고리 -----------------------------
 class CategoryManager:    
