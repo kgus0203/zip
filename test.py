@@ -941,13 +941,13 @@ class PostManager:
             with st.expander("수정"):
                 self.edit_post(post.p_id)
                 
-            self.fetch_location_data(post['p_id'])
+            self.fetch_location_data(post.p_id)
 
             # 위치 데이터가 존재할 때만 지도 생성
             if self.locations_df is not None and not self.locations_df.empty:
                 self.create_map_with_markers()
                 st.title("Location Map")
-                self.display_map(key=f"map_{post.p_id}")
+                self.display_map(key=f"map_{post.p_id)
 
             st.write(f"**등록 날짜**: {post.upload_date}, **수정 날짜**: {post.modify_date}")
             st.write("---")
