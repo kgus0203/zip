@@ -11,18 +11,7 @@ from email.header import Header
 import smtplib
 from datetime import datetime
 import secrets
-# 데이터베이스 연결
-def create_connection():
-    engine = create_engine('sqlite:///zip.db')  # SQLite 연결
-    Session = sessionmaker(bind=engine)
-    session = Session()
-    return session, engine
 
-# 테이블 생성
-def create_tables():
-    session, engine = create_connection()
-    Base.metadata.create_all(engine)
-    session.close()
 # SQLAlchemy Base 선언
 Base = declarative_base()
 
@@ -285,9 +274,8 @@ class Settings(Base):
 
 class PasswordRecovery(Base):
     __tablename__ = 'password_recovery'
-
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    user_email = Column(String, nullable=False)
+    id = Column(Integer, primary_key=True, index=True)
+    user_email = Column(String, index=True, nullable=False)
     token = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -314,30 +302,20 @@ def initialize_database():
     session.commit()
 
 #---------------------------------------------------------------db만들기 ----------------------------
+# 데이터베이스 초기화
+def initialize_database():
+    Base.metadata.create_all(engine)
 
-# SQLAlchemy Base 선언
-Base = declarative_base()
-
-# 데이터베이스 연결 설정
-DATABASE_URL = "sqlite:///zip.db"
-engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
-SessionLocal = sessionmaker(bind=engine)
 
 class UserManager:
-    def __init__(self, smtp_email, smtp_password):
+    def __init__(self, smtp_email, smtp_password, db_session):
         self.smtp_email = smtp_email
         self.smtp_password = smtp_password
-
-    # 데이터베이스 연결
-    def create_connection(self):
-        session, _ = create_connection()
-        return session
+        self.db_session = db_session  # 세션을 외부에서 주입 받음
 
     # 이메일이 등록되어 있는지 확인
     def is_email_registered(self, email):
-        session = self.create_connection()
-        user = session.query(User).filter_by(user_email=email).first()
-        session.close()
+        user = self.db_session.query(User).filter_by(user_email=email).first()
         return user
 
     # 복구 토큰 생성
@@ -375,12 +353,19 @@ class UserManager:
 
     # 토큰을 테이블에 저장
     def save_recovery_token(self, email, token):
-        session = self.create_connection()
         recovery_entry = PasswordRecovery(user_email=email, token=token, created_at=datetime.utcnow())
-        session.add(recovery_entry)
-        session.commit()
-        session.close()
+        self.db_session.add(recovery_entry)
+        self.db_session.commit()
         print(f"Recovery token for {email} saved successfully.")
+
+    # 복구 토큰을 검증
+    def verify_recovery_token(self, email, token):
+        recovery_entry = self.db_session.query(PasswordRecovery).filter_by(user_email=email, token=token).first()
+        if recovery_entry:
+            return True
+        else:
+            return False
+
 # 데이터베이스 모델 정의
 class User(Base):
     __tablename__ = 'user'
@@ -389,9 +374,6 @@ class User(Base):
     user_email = Column(String, unique=True, nullable=False)
     user_is_online = Column(Boolean, default=False)
 
-# 데이터베이스 초기화
-def initialize_database():
-    Base.metadata.create_all(engine)
 #-------------------------------------------------------------로그인---------------------------------------------------
 # DAO 클래스
 class UserDAO:
