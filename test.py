@@ -977,7 +977,29 @@ class PostManager:
 
         else:
             st.error("해당 게시물을 찾을 수 없습니다.")
-            
+
+    
+    def get_post_by_id(self, post_id):
+        # Query the Posting table using SQLAlchemy's ORM query
+        post =  session.query(Posting).filter_by(p_id=post_id).first()
+
+        # If the post exists, convert it to a dictionary, else return None
+        if post:
+            return {
+                "p_id": post.p_id,
+                "p_title": post.p_title,
+                "p_content": post.p_content,
+                "p_image_path": post.p_image_path,
+                "file_path": post.file_path,
+                "p_location": post.p_location,
+                "p_category": post.p_category,
+                "like_num": post.like_num,
+                "file": post.file,
+                "upload_date": post.upload_date,
+                "modify_date": post.modify_date
+            }
+        else:
+            return None         
     def display_posts_on_home(self):
         # 데이터베이스에서 포스팅 데이터를 가져옵니다.
         posts = self.get_all_posts()
