@@ -270,7 +270,7 @@ class UserDAO:
 
     def check_password(self, hashed_password, plain_password):
         """비밀번호 일치 여부 확인"""
-        return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password.encode('utf-8'))
+        return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password)
 
 # 회원가입 클래스
 class SignUp:
