@@ -1053,7 +1053,7 @@ class CategoryManager:
         categories = self.get_category_options()
         category_dict = {category.category: category.category_id for category in categories}
         return category_dict
-#-------------------------------------------------마이페이지----------------------------------------------
+#-------------------------------------------------테마----------------------------------------------
 
 
 class ThemeManager:
@@ -1066,16 +1066,12 @@ class ThemeManager:
                 "light": {
                     "theme.base": "dark",
                     "theme.backgroundColor": "black",
-                    "theme.primaryColor": "#c98bdb",
-                    "theme.secondaryBackgroundColor": "#5591f5",
                     "theme.textColor": "white",
                     "button_face": "어두운 모드 🌜"
                 },
                 "dark": {
                     "theme.base": "light",
                     "theme.backgroundColor": "white",
-                    "theme.primaryColor": "#5591f5",
-                    "theme.secondaryBackgroundColor": "#82E1D7",
                     "theme.textColor": "#0a1464",
                     "button_face": "밝은 모드 🌞"
                 }
@@ -1125,7 +1121,7 @@ class ThemeManager:
         if st.button(button_label, use_container_width=True):
             self.change_theme()
 
-
+#---------------------------- 유저 프로필 ---------------------------------
 class UserProfile:
     def __init__(self, session, upload_folder="profile_pictures"):
         self.session = session
@@ -1228,6 +1224,35 @@ class SetView:
         with st.expander('관심목록',icon='💗'):
             self.like_button.display_liked_posts()
 
+
+class Posting(Base):
+    __tablename__ = 'posting'
+    p_id = Column(Integer, primary_key=True)
+    p_title = Column(String)
+    like_num = Column(Integer, default=0)
+
+
+class LikeButton:
+    def __init__(self, engine):
+       
+        if "posts" not in st.session_state:
+            st.session_state.posts = []
+            self.fetch_and_store_posts()
+
+    def fetch_liked_posts(self):
+        liked_posts = session.query(Posting.p_id, Posting.p_title).filter(Posting.like_num > 0).all()
+        session.close()
+        return [(post.p_id, post.p_title) for post in liked_posts]
+
+    def display_liked_posts(self):
+        liked_posts = self.fetch_liked_posts()
+        # Display liked posts with the like button
+        if liked_posts:
+            for post in liked_posts:
+                post_id, post_title = post
+                st.write(f"Liked Post ID: {post_id}, Title: {post_title}")
+        else:
+            st.write("좋아요를 누른 포스팅이 없습니다.")
 
 # 페이지 함수 매핑
 page_functions = {
