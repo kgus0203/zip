@@ -155,37 +155,37 @@ create_db()
 if 'current_page' not in st.session_state:
     st.session_state.current_page = 'Home'
 
- # 페이지 전환 함수
- def change_page(self,page_name):
-     if "history" not in st.session_state:
-         st.session_state["history"] = []
-     if st.session_state["current_page"] != page_name:
-         st.session_state["history"].append(st.session_state["current_page"])
-     st.session_state["current_page"] = page_name
-     st.rerun()
+# 페이지 전환 함수
+def change_page(self,page_name):
+  if "history" not in st.session_state:
+      st.session_state["history"] = []
+  if st.session_state["current_page"] != page_name:
+      st.session_state["history"].append(st.session_state["current_page"])
+  st.session_state["current_page"] = page_name
+  st.rerun()
 
 
- # 뒤로가기 함수
- def go_back(self):
-     if 'history' in st.session_state and st.session_state.history:
-         st.session_state.current_page = st.session_state.history.pop()  # 이전 페이지로 이동
-         st.rerun()
-     else:
-         st.warning("이전 페이지가 없습니다.")  # 방문 기록이 없을 경우 처리
-         st.rerun()
+# 뒤로가기 함수
+def go_back(self):
+  if 'history' in st.session_state and st.session_state.history:
+      st.session_state.current_page = st.session_state.history.pop()  # 이전 페이지로 이동
+      st.rerun()
+  else:
+      st.warning("이전 페이지가 없습니다.")  # 방문 기록이 없을 경우 처리
+      st.rerun()
 
- # 홈 페이지 함수 (로그인 전)
- def home_page(self):
-     col1, col2, col3 = st.columns([1, 1, 1])  # 동일한 너비의 세 개 열 생성
-     with col1:
-         if st.button("로그인", key="home_login_button"):
-             self.change_page('Login')  # 로그인 페이지로 이동
-     with col2:
-         if st.button("회원가입", key="home_signup_button"):
-             self.change_page('Signup')  # 회원가입 페이지로 이동
-     with col3:
-         if st.button("ID/PW 찾기", key="home_forgot_button"):
-             self.change_page('User manager')  # ID/PW 찾기 페이지로 이동
+# 홈 페이지 함수 (로그인 전)
+def home_page(self):
+  col1, col2, col3 = st.columns([1, 1, 1])  # 동일한 너비의 세 개 열 생성
+  with col1:
+      if st.button("로그인", key="home_login_button"):
+          self.change_page('Login')  # 로그인 페이지로 이동
+  with col2:
+      if st.button("회원가입", key="home_signup_button"):
+          self.change_page('Signup')  # 회원가입 페이지로 이동
+  with col3:
+      if st.button("ID/PW 찾기", key="home_forgot_button"):
+          self.change_page('User manager')  # ID/PW 찾기 페이지로 이동
                
 # 데이터베이스 연결 함수
 def create_connection():
