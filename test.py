@@ -260,11 +260,9 @@ def id_pw_change_page():
             )
             if st.session_state['action'] == "ID 변경" and change.update_id():
                 st.success("ID가 성공적으로 변경되었습니다. 로그아웃 후 첫 페이지로 이동합니다.")
-                st.session_state.user.clear()  # 세션 초기화로 로그아웃 처리
                 change_page("Home")  # 첫 페이지로 이동
             elif st.session_state['action'] == "비밀번호 변경" and change.update_password():
                 st.success("비밀번호가 성공적으로 변경되었습니다. 로그아웃 후 첫 페이지로 이동합니다.")
-                st.session_state.user.clear()  # 세션 초기화로 로그아웃 처리
                 change_page("Home")  # 첫 페이지로 이동
                 
 # 로그인 후 홈화면
