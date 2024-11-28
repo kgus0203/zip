@@ -3,6 +3,7 @@ from sqlalchemy import (
     create_engine, Column, Integer, String, ForeignKey, Boolean, DateTime, Text, Float, func, CheckConstraint
 )
 from sqlalchemy.orm import declarative_base, relationship, sessionmaker
+import bcrypt
 
 # SQLAlchemy Base 선언
 Base = declarative_base()
