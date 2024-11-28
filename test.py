@@ -749,9 +749,9 @@ class LocationSearch:
         
     def add_post(self, title, content, image_file, file_file, category):
         location_id = self.get_selected_location_id()  # Get the selected location_id
-    
-        image_path = self.save_file(image_file) if image_file else ''
-        file_path = self.save_file(file_file) if file_file else ''
+        post_manager=PostManager()
+        image_path = post_manager.save_file(image_file) if image_file else ''
+        file_path = post_manager.save_file(file_file) if file_file else ''
         upload_date = modify_date = datetime.now()
     
         # Create a new post object
