@@ -839,20 +839,20 @@ class PostManager:
 
             st.write(f"**등록 날짜**: {post.upload_date}, **수정 날짜**: {post.modify_date}")
             st.write("---")
-     def display_post(self, post_id):
+    def display_post(self, post_id):
         # 특정 게시물 가져오기
         post = self.get_post_by_id(post_id)
-
+    
         if post:
             # 게시물 정보 출력
             st.write(f"**Post ID**: {post['p_id']}")
             st.write(f"**Title**: {post['p_title']}")
             st.write(f"**Content**: {post['p_content']}")
-
+    
             # 이미지 출력
             if post.get('p_image_path') and os.path.exists(post['p_image_path']):
                 st.image(post['p_image_path'], width=200)
-
+    
             # 파일 출력
             if post.get('file_path') and os.path.exists(post['file_path']):
                 st.write("**Filename**:", os.path.basename(post['file_path']))
@@ -862,8 +862,8 @@ class PostManager:
                     unsafe_allow_html=True
                 )
 
-        else:
-            st.error("해당 게시물을 찾을 수 없습니다.")
+    else:
+        st.error("해당 게시물을 찾을 수 없습니다.")
     def display_posts_on_home(self):
         # 데이터베이스에서 포스팅 데이터를 가져옵니다.
         posts = self.get_all_posts()
