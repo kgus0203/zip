@@ -780,7 +780,36 @@ class PostManager:
             st.session_state.posts = []
             self.fetch_and_store_posts()
         self.category_manager=CategoryManager()
+    def fetch_location_data(self, p_id):
+        # SQLAlchemy query: Get location data based on p_id
+        location_data = self.session.query(
+            Location.location_name,
+            Location.address_name,
+            Location.latitude,
+            Location.longitude
+        ).join(Posting, Posting.p_location == Location.location_id).filter(Posting.p_id == p_id).all()
 
+        # If location_data is not empty, convert it to a DataFrame
+        if location_data:
+            self.locations_df = pd.DataFrame(location_data, columns=['location_name', 'address_name', 'latitude', 'longitude'])
+        else:
+            self.locations_df = pd.DataFrame(columns=['location_name', 'address_name', 'latitude', 'longitude'])
+
+        return self.locations_df
+
+    def create_map_with_markers(self):
+        # Check if the DataFrame is empty
+        if self.locations_df is None or self.locations_df.empty:
+            st.error("위치가 존재하지 않습니다")
+            return
+
+        # Display place details
+        for index, row in self.locations_df.iterrows():
+            name = row['location_name']
+            address = row['address_name']
+            st.write(f"장소 이름: {name}")
+            st.write(f"주소: {address}")
+    
     def save_file(self, file):
         if file:
             file_path = os.path.join(self.upload_folder, file.name)
@@ -833,7 +862,42 @@ class PostManager:
             btn_label = "좋아요 취소" if post.like_num == 1 else "좋아요"
             if st.button(btn_label, key=post_id, use_container_width=True):
                 self.toggle_like(post_id)
-
+    def fetch_location_data(self, post_id):
+        # Query the database using SQLAlchemy
+        location_data = self.session.query(
+            Location.location_name,
+            Location.address_name,
+            Location.latitude,
+            Location.longitude
+        ).join(Posting, Posting.p_location == Location.location_id).filter(Posting.p_id == post_id).all()
+        
+        # Convert the result to a Pandas DataFrame
+        if location_data:
+            self.locations_df = pd.DataFrame(location_data, columns=['location_name', 'address_name', 'latitude', 'longitude'])
+        else:
+            self.locations_df = pd.DataFrame(columns=['location_name', 'address_name', 'latitude', 'longitude'])
+        
+        return self.locations_df
+    
+    def create_map_with_markers(self):
+        # Check if the DataFrame is empty
+        if self.locations_df is None or self.locations_df.empty:
+            st.error("위치가 존재하지 않습니다")
+            return
+    
+        # Display place details
+        for index, row in self.locations_df.iterrows():
+            name = row['location_name']
+            address = row['address_name']
+            st.write(f"장소 이름: {name}")
+            st.write(f"주소: {address}")
+    
+    def display_map(self, key):
+        # If the location data exists, display the map with markers
+        if self.locations_df is not None and not self.locations_df.empty:
+            # Plot the location data on the map
+            st.map(self.locations_df[['latitude', 'longitude']], use_container_width=True, key=key)
+            
     def edit_post(self, post_id):
         post = session.query(Posting).filter_by(p_id=post_id).first()
 
@@ -854,6 +918,19 @@ class PostManager:
             if st.button("게시물 수정", key=f"button_{post.p_id}", use_container_width=True):
                 self.update_post(post_id, title, content, image_file, file_file, selected_category_id)
                 st.success("게시물이 수정되었습니다.")
+
+            location_search = LocationSearch(session)
+            
+            # Fetch location data based on the post ID
+            location_search.fetch_location_data(post['p_id'])
+            
+            # 위치 데이터가 존재할 때만 지도 생성
+            if location_search.locations_df is not None and not location_search.locations_df.empty:
+                location_search.create_map_with_markers()
+                st.title("Location Map")
+                location_search.display_map(key=f"map_{post['p_id']}")
+
+        
         else:
             st.error("해당 게시물이 존재하지 않습니다.")
             
@@ -875,9 +952,18 @@ class PostManager:
             # 게시물 수정 버튼
             with st.expander("수정"):
                 self.edit_post(post.p_id)
+                
+            self.fetch_location_data(post['p_id'])
+
+            # 위치 데이터가 존재할 때만 지도 생성
+            if self.locations_df is not None and not self.locations_df.empty:
+                self.create_map_with_markers()
+                st.title("Location Map")
+                self.display_map(key=f"map_{post['p_id']}")
 
             st.write(f"**등록 날짜**: {post.upload_date}, **수정 날짜**: {post.modify_date}")
             st.write("---")
+            
     def display_post(self, post_id):
         # 특정 게시물 가져오기
         post = self.get_post_by_id(post_id)
