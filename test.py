@@ -198,6 +198,7 @@ class User(Base):
     user_is_online = Column(Boolean, default=False)
     user_mannerscore = Column(Integer, default=0)
     profile_picture_path = Column(String, nullable=True)
+    __table_args__ = {'extend_existing': True}
 
 class Friend(Base):
     __tablename__ = 'friend'
