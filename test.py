@@ -126,7 +126,7 @@ def upload_post() :
 
     # 카테고리 선택을 위한 Selectbox
     post_manager =PostManager('uploads')  # DB 경로 설정
-    category_names = post_manager.get_category_options()  # 카테고리 이름만 가져옴
+    category_names = post_manager.get_category_names()  # 카테고리 이름만 가져옴
 
 
     # Selectbox에서 카테고리 선택
@@ -854,7 +854,9 @@ class PostManager:
                 st.success("게시물이 수정되었습니다.")
         else:
             st.error("해당 게시물이 존재하지 않습니다.")
-
+    def get_category_names(self):
+        categories = self.get_category_options()
+        return [category[1] for category in categories]  # 카테고리 이름만 리스트로 반환
     def display_posts(self):
         posts = self.get_all_posts()
         for post in posts:
