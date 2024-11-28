@@ -72,7 +72,7 @@ def login_page():
                 sign_in = SignIn(user_id, user_password)
                 if sign_in.sign_in_event():  # 로그인 성공 시
                     st.session_state['user_id'] = user_id  # 로그인한 사용자 ID 저장
-                    st.session.state['user_password']=user_password
+                    st.session_state['user_password'] = user_password
                     change_page('after_login')  # 로그인 후 홈화면으로 이동
                 else:
                     st.error("로그인에 실패했습니다. 아이디 또는 비밀번호를 확인해 주세요.")
