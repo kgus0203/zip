@@ -12,6 +12,7 @@ import smtplib
 from datetime import datetime
 import secrets
 from sqlalchemy.ext.declarative import declarative_base
+import pandas as pd
 
 # SQLAlchemy Base 선언
 Base = declarative_base()
@@ -80,7 +81,7 @@ def login_page():
         if st.button("뒤로가기", key="login_back_button"):
             go_back()  # 뒤로가기 로직 호출
 
-import streamlit as st
+
 
 def usermanager_page():
     st.title("사용자 관리 페이지")
@@ -189,6 +190,51 @@ def id_pw_change_page():
                 st.success("비밀번호가 성공적으로 변경되었습니다. 로그아웃 후 첫 페이지로 이동합니다.")
                 st.session_state.user.clear()  # 세션 초기화로 로그아웃 처리
                 change_page("Home")  # 첫 페이지로 이동
+                
+# 로그인 후 홈화면
+def after_login():
+    # 타이틀을 중앙에 크게 배치
+    st.markdown("<h1 style='text-align: center;'>맛ZIP</h1>", unsafe_allow_html=True)
+    # 사용자 정보
+    user_id = st.session_state.get("user_id")
+    user_password = st.session_state.get("user_password")
+    # 로그인 정보 없을 시 처리
+    if not user_id:
+        st.error("로그인 정보가 없습니다. 다시 로그인해주세요.")
+        change_page('Login')
+        return
+
+    # 친구 관리 사이드바 추가
+    friend_and_group_sidebar(user_id)
+    # 데이터베이스 연결
+    conn = sqlite3.connect('zip.db')
+    cursor = conn.cursor()
+
+    # 사용자 프로필 정보 가져오기
+    cursor.execute("SELECT profile_picture_path FROM user WHERE user_id = ?", (user_id,))
+    result = cursor.fetchone()
+    conn.close()
+
+    # 프로필 이미지 경로 설정 (없을 경우 기본 이미지 사용)
+    profile_image_url = result[0] if result and result[0] else 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png'
+    # 사용자 ID 표시 및 로그아웃 버튼
+    signin = SignIn(user_id, user_password)
+    col1, col2, col3, col4 = st.columns([1, 4, 1, 1])
+    with col1:
+        # 프로필 이미지를 클릭하면 페이지 이동
+        st.image(profile_image_url, use_container_width=100)
+    with col2:
+        st.write(f"**{user_id}**")
+    with col3:
+        signin.log_out_event()
+    with col4:
+        if st.button("내 프로필", key="profile_button"):
+            change_page("Setting")
+    if st.button('View Post', key='posting_button'):
+        change_page('View Post')
+        
+    post_manager=PostManager()
+    post_manager.display_posts_on_home()
 
 
 class Friend(Base):
@@ -498,6 +544,249 @@ class SignIn:
             st.session_state.user_password =''
             st.warning("로그아웃 완료")
             pages.change_page('Home')
+
+class LocationGet:
+
+    # locations 테이블에 저장
+    def save_location(self, location_name, address_name, latitude, longitude):
+        new_location = Location(
+            location_name=location_name,
+            address_name=address_name,
+            latitude=latitude,
+            longitude=longitude
+        )
+        session.add(new_location)
+        session.commit()
+
+    # 저장된 장소들 가져오기
+    def get_all_locations(self):
+        locations = session.query(Location).all()
+        return locations\
+        
+class LocationSearch:
+    def __init__(self, db_session: Session):
+        self.db_session = db_session  # SQLAlchemy 세션 객체를 전달받음
+        self.selected_location_id = None
+    
+    def search_location(self, query):
+        url = f"https://dapi.kakao.com/v2/local/search/keyword.json"
+        headers = {
+            "Authorization": "KakaoAK 6c1cbbc51f7ba2ed462ab5b62d3a3746"  # API 키를 헤더에 포함
+        }
+        params = {
+            "query": query,  # 검색할 장소 이름
+            "category_group_code": "SW8,FD6,CE7"  # 카테고리 코드 (예: 음식점, 카페 등)
+        }
+
+        response = requests.get(url, headers=headers, params=params)
+
+        if response.status_code == 200:
+            data = response.json()
+            documents = data.get("documents", [])
+            if documents:
+                return documents
+            else:
+                st.error("검색 결과가 없습니다.")
+                return None
+        else:
+            st.error(f"API 요청 오류: {response.status_code}")
+            return None
+    
+    def save_or_get_location(self, name, address, latitude, longitude):
+        """위치가 존재하는지 확인하고, 없으면 새로 저장"""
+        location = self.db_session.query(Location).filter_by(location_name=name, address_name=address).first()
+        
+        if location:
+            return location.location_id  # 이미 존재하면 location_id 반환
+
+        # 새로운 위치 저장
+        new_location = Location(
+            location_name=name,
+            address_name=address,
+            latitude=latitude,
+            longitude=longitude
+        )
+        self.db_session.add(new_location)
+        self.db_session.commit()
+        return new_location.location_id
+
+    def display_location_on_map(self):
+        col1, col2 = st.columns([8, 1])
+        with col1:
+            query = st.text_input("검색할 장소를 입력하세요:", "영남대역")  # 기본값: 영남대역
+        with col2:
+            st.button("검색")
+
+        if query:
+            # 카카오 API로 장소 검색
+            results = self.search_location(query)
+
+        if results:
+            # 지역 정보 추출
+            locations = [(place["place_name"], place["address_name"], float(place["y"]), float(place["x"]))
+                        for place in results]
+
+            # 지역 이름 선택
+            selected_place = st.selectbox("검색 결과를 선택하세요:", [name for name, _, _, _ in locations])
+            location_data = []
+            # 선택된 장소의 정보 찾기
+            for place in locations:
+                if place[0] == selected_place:
+                    name, address, latitude, longitude = place
+
+                    # Append to location data
+                    location_data.append({
+                        'name': name,
+                        'address': address,
+                        'latitude': latitude,
+                        'longitude': longitude
+                    })
+
+                    # Display place details
+                    col3, col4 = st.columns([4, 1])
+                    with col3:
+                        st.write(f"장소 이름: {name}")
+                        st.write(f"주소: {address}")
+                        # 여기서 데이터베이스에 저장
+                        self.selected_location_id = self.save_or_get_location(
+                            name, address, latitude, longitude)
+            if location_data:
+                df = pd.DataFrame(location_data)
+                st.map(df[['latitude', 'longitude']])
+
+    def get_selected_location_id(self):
+        """선택된 location_id를 반환"""
+        return self.selected_location_id
+   
+class PostManager:
+    def __init__(self, upload_folder='uploaded_files'):
+        self.upload_folder = upload_folder
+        if not os.path.exists(upload_folder):
+            os.makedirs(upload_folder)
+        self.locations_df = None
+        if "posts" not in st.session_state:
+            st.session_state.posts = []
+            self.fetch_and_store_posts()
+
+    def save_file(self, file):
+        if file:
+            file_path = os.path.join(self.upload_folder, file.name)
+            with open(file_path, 'wb') as f:
+                f.write(file.getbuffer())
+            return file_path
+        return ''
+
+    def add_post(self, title, content, image_file, file_file, location, category):
+        image_path = self.save_file(image_file) if image_file else ''
+        file_path = self.save_file(file_file) if file_file else ''
+        upload_date = modify_date = datetime.now()
+
+        # Create a new post object
+        new_post = Posting(
+            p_title=title,
+            p_content=content,
+            p_image_path=image_path,
+            file_path=file_path,
+            p_location=location,
+            p_category=category,
+            upload_date=upload_date,
+            modify_date=modify_date
+        )
+        session.add(new_post)
+        session.commit()
+
+    def update_post(self, post_id, title, content, image_file, file_file, category):
+        post = session.query(Posting).filter_by(p_id=post_id).first()
+
+        if post:
+            image_path = self.save_file(image_file) if image_file else post.p_image_path
+            file_path = self.save_file(file_file) if file_file else post.file_path
+            post.p_title = title
+            post.p_content = content
+            post.p_image_path = image_path
+            post.file_path = file_path
+            post.p_category = category
+            post.modify_date = datetime.now()
+            session.commit()
+
+    def delete_post(self, p_id):
+        post = session.query(Posting).filter_by(p_id=p_id).first()
+        if post:
+            session.delete(post)
+            session.commit()
+
+    def get_all_posts(self):
+        return session.query(Posting).all()
+
+    def fetch_and_store_posts(self):
+        posts = session.query(Posting.p_id, Posting.p_title).all()
+        st.session_state.posts = posts
+
+    def toggle_like(self, post_id):
+        post = session.query(Posting).filter_by(p_id=post_id).first()
+        if post:
+            if post.like_num == 1:
+                post.like_num = 0
+                st.warning("좋아요를 취소했습니다.")
+            else:
+                post.like_num = 1
+                st.success("포스팅을 좋아요 했습니다!")
+            session.commit()
+
+    def display_like_button(self, post_id):
+        post = session.query(Posting).filter_by(p_id=post_id).first()
+        if post:
+            btn_label = "좋아요 취소" if post.like_num == 1 else "좋아요"
+            if st.button(btn_label, key=post_id, use_container_width=True):
+                self.toggle_like(post_id)
+
+    def get_category_options(self):
+        return session.query(FoodCategory).all()
+
+    def edit_post(self, post_id):
+        post = session.query(Posting).filter_by(p_id=post_id).first()
+
+        if post:
+            title = st.text_input("게시물 제목", value=post.p_title, key=f"post_title_{post.p_id}")
+            content = st.text_area("게시물 내용", value=post.p_content, key=f"post_content_{post.p_id}")
+            image_file = st.file_uploader("이미지 파일", type=['jpg', 'png', 'jpeg'], key=f"image_upload_{post.p_id}")
+            file_file = st.file_uploader("일반 파일", type=['pdf', 'docx', 'txt', 'png', 'jpg'], key=f"file_upload_{post.p_id}")
+
+            selected_category_name = st.selectbox(
+                "카테고리", [category.category for category in self.get_category_options()],
+                key=f"category_selectbox_{post.p_id}"
+            )
+            categories = self.get_category_options()
+            category_dict = {category.category: category.category_id for category in categories}
+            selected_category_id = category_dict[selected_category_name]
+
+            if st.button("게시물 수정", key=f"button_{post.p_id}", use_container_width=True):
+                self.update_post(post_id, title, content, image_file, file_file, selected_category_id)
+                st.success("게시물이 수정되었습니다.")
+        else:
+            st.error("해당 게시물이 존재하지 않습니다.")
+
+    def display_posts(self):
+        posts = self.get_all_posts()
+        for post in posts:
+            st.write(f"Post ID: {post.p_id}, Title: {post.p_title}")
+            st.write(f"Content: {post.p_content}")
+            if post.p_image_path and os.path.exists(post.p_image_path):
+                st.image(post.p_image_path, width=200)
+            self.display_like_button(post.p_id)
+
+            # 게시물 삭제 버튼
+            if st.button(f"삭제", key=f"delete_{post.p_id}", use_container_width=True):
+                self.delete_post(post.p_id)
+                st.success(f"게시물 '{post.p_title}'가 삭제되었습니다.")
+                return self.display_posts()
+
+            # 게시물 수정 버튼
+            with st.expander("수정"):
+                self.edit_post(post.p_id)
+
+            st.write(f"**등록 날짜**: {post.upload_date}, **수정 날짜**: {post.modify_date}")
+            st.write("---")
 
 
             
