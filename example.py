@@ -198,6 +198,7 @@ def home_page():
 #-----------------------------------------로그인--------------------------------------------------------   
 # UserDAO (데이터베이스 연동 클래스)
 class UserDAO:
+    @st.cache_data
     def check_user_id_exists(self, user_id):
         connection = create_connection()
         try:
