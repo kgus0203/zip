@@ -919,7 +919,7 @@ class PostManager:
                 self.update_post(post_id, title, content, image_file, file_file, selected_category_id)
                 st.success("게시물이 수정되었습니다.")
 
-            location_search = LocationSearch(session)
+            location_search = LocationSearch()
             
             # Fetch location data based on the post ID
             location_search.fetch_location_data(post['p_id'])
