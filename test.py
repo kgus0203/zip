@@ -8,6 +8,8 @@ import bcrypt
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.header import Header
+import smtplib
+from datetime import datetime
 
 # SQLAlchemy Base 선언
 Base = declarative_base()
