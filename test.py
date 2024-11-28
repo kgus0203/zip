@@ -15,7 +15,7 @@ from sqlalchemy.ext.declarative import declarative_base
 import pandas as pd
 import os
 import requests
-from localization import Localization
+
 # SQLAlchemy Base 선언
 Base = declarative_base()
 
@@ -28,15 +28,6 @@ SessionLocal = sessionmaker(bind=engine)
 session = SessionLocal()
 #-----------------------------------------------페이지 전환 ----------------------------------------------------------
 
-
-# 초기화
-if 'localization' not in st.session_state:
-    st.session_state.localization = Localization(lang ='ko')  # 기본 언어는 한국어로 설정됨
-# 현재 언어 설정 초기화
-if 'current_language' not in st.session_state:
-    st.session_state.current_language = 'ko'  # 기본값으로 한국어 설정
-
-localization = st.session_state.localization
 
 
 
