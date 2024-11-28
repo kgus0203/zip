@@ -863,6 +863,7 @@ page_functions = {
     'ID PW 변경': id_pw_change_page,
     'User manager' : usermanager_page,
     'after_login': after_login,
+    'View Post': view_post,
 }
 if 'current_page' not in st.session_state:
     st.session_state.current_page = 'Home'
