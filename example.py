@@ -300,19 +300,16 @@ class SignIn:
         dao = UserDAO()
         result = dao.check_user_id_exists(self.user_id)
 
-        if result:
-            # 저장된 해시된 비밀번호 가져오기
-            stored_hashed_password = result['user_password']  # result는 딕셔너리 형태
-            if dao.check_password(stored_hashed_password, self.user_password):  # bcrypt로 비밀번호 비교
-                st.session_state["user_id"] = self.user_id  # 로그인 성공 시 세션에 user_id 저장
-                self.user_is_online = 1
-                change_page('Home')
-            else:
-                st.error("비밀번호가 잘못되었습니다.")
+       if result:
+        stored_hashed_password = result['user_password']
+        if dao.check_password(stored_hashed_password, self.user_password):
+            st.session_state["user_id"] = self.user_id  # 로그인
+            self.user_is_online = 1
+            st.success(f"{self.user_id}님, 로그인 성공!")
         else:
-            st.error("아이디가 존재하지 않습니다.")
-        return False
-
+            st.error("비밀번호가 틀렸습니다.")
+    else:
+        st.error("아이디가 존재하지 않습니다.")
     def log_out_event(self):
         # This can be triggered by a logout button
         if st.button("로그아웃", key="logout_button"):
