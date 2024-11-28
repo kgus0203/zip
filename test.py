@@ -126,7 +126,8 @@ def upload_post() :
 
     # 카테고리 선택을 위한 Selectbox
     post_manager =PostManager('uploads')  # DB 경로 설정
-    category_names = post_manager.get_category_names()  # 카테고리 이름만 가져옴
+    category_manager=CategoryManager()
+    category_names = category_manager.get_category_names()  # 카테고리 이름만 가져옴
 
 
     # Selectbox에서 카테고리 선택
@@ -134,7 +135,7 @@ def upload_post() :
 
 
    # 선택한 카테고리 이름에 해당하는 category_id 구하기
-    categories = post_manager.get_category_options()
+    categories = category_manager.get_category_options()
     category_dict = {category[1]: category[0] for category in categories}
     selected_category_id = category_dict[selected_category_name]
 
@@ -186,6 +187,8 @@ def signup_page():
     with col2:
         if st.button("뒤로가기", key="signup_back_button"):
             go_back()  # 뒤로가기 로직 호출
+
+
 def view_post():
     col1, col2, col3 = st.columns([6, 2, 2])  # 비율 6 : 2 : 2
     with col1:
@@ -632,6 +635,8 @@ class SignIn:
             st.warning("로그아웃 완료")
             pages.change_page('Home')
 
+#------------------------------------------포스팅---------------------------------
+
 class LocationGet:
 
     # locations 테이블에 저장
@@ -743,7 +748,7 @@ class LocationSearch:
     def get_selected_location_id(self):
         """선택된 location_id를 반환"""
         return self.selected_location_id
-   
+
 class PostManager:
     def __init__(self, upload_folder='uploaded_files'):
         self.upload_folder = upload_folder
@@ -753,6 +758,7 @@ class PostManager:
         if "posts" not in st.session_state:
             st.session_state.posts = []
             self.fetch_and_store_posts()
+        self.category_manager=CategoryManager()
 
     def save_file(self, file):
         if file:
@@ -842,7 +848,7 @@ class PostManager:
                 "카테고리", [category.category for category in self.get_category_options()],
                 key=f"category_selectbox_{post.p_id}"
             )
-            categories = self.get_category_options()
+            categories =self.category_manager.get_category_options()
             category_dict = {category.category: category.category_id for category in categories}
             selected_category_id = category_dict[selected_category_name]
 
@@ -851,14 +857,7 @@ class PostManager:
                 st.success("게시물이 수정되었습니다.")
         else:
             st.error("해당 게시물이 존재하지 않습니다.")
-    def get_category_options(self):
-        return session.query(FoodCategory).all()
-
-    def get_category_names(self):
-        categories = self.get_category_options()
-        # 카테고리 이름을 key로, 카테고리 ID를 value로 하는 딕셔너리 생성
-        category_dict = {category.category: category.category_id for category in categories}
-        return category_dict
+            
     def display_posts(self):
         posts = self.get_all_posts()
         for post in posts:
@@ -905,6 +904,7 @@ class PostManager:
 
         else:
             st.error("해당 게시물을 찾을 수 없습니다.")
+            
     def display_posts_on_home(self):
         # 데이터베이스에서 포스팅 데이터를 가져옵니다.
         posts = self.get_all_posts()
@@ -933,7 +933,18 @@ class PostManager:
                             st.write("이미지가 없습니다.")  
                         with st.expander('더보기'):
                                     self.display_post(post["p_id"])
-                
+
+#----------------------------------------------------카테고리 -----------------------------
+class CategoryManager:    
+    def get_category_options(self):
+            return session.query(FoodCategory).all()
+
+    def get_category_names(self):
+        categories = self.get_category_options()
+        category_dict = {category.category: category.category_id for category in categories}
+        return category_dict
+        
+
 # 페이지 함수 매핑
 page_functions = {
     'Home': home_page,
