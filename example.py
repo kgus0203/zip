@@ -156,7 +156,7 @@ if 'current_page' not in st.session_state:
     st.session_state.current_page = 'Home'
 
 # 페이지 전환 함수
-def change_page(self,page_name):
+def change_page(page_name):
   if "history" not in st.session_state:
       st.session_state["history"] = []
   if st.session_state["current_page"] != page_name:
@@ -166,7 +166,7 @@ def change_page(self,page_name):
 
 
 # 뒤로가기 함수
-def go_back(self):
+def go_back():
   if 'history' in st.session_state and st.session_state.history:
       st.session_state.current_page = st.session_state.history.pop()  # 이전 페이지로 이동
       st.rerun()
@@ -179,19 +179,20 @@ def home_page(self):
   col1, col2, col3 = st.columns([1, 1, 1])  # 동일한 너비의 세 개 열 생성
   with col1:
       if st.button("로그인", key="home_login_button"):
-          self.change_page('Login')  # 로그인 페이지로 이동
+          change_page('Login')  # 로그인 페이지로 이동
   with col2:
       if st.button("회원가입", key="home_signup_button"):
-          self.change_page('Signup')  # 회원가입 페이지로 이동
+          change_page('Signup')  # 회원가입 페이지로 이동
   with col3:
       if st.button("ID/PW 찾기", key="home_forgot_button"):
-          self.change_page('User manager')  # ID/PW 찾기 페이지로 이동
+          change_page('User manager')  # ID/PW 찾기 페이지로 이동
                
 # 데이터베이스 연결 함수
 def create_connection():
     conn = sqlite3.connect('zip.db')
     conn.row_factory = sqlite3.Row  # 결과를 딕셔너리 형식으로 반환
     return conn
+   
 # UserDAO (데이터베이스 연동 클래스)
 class UserDAO:
     # 아이디 중복 체크
@@ -289,7 +290,7 @@ class Change_pages:
 
         with col2:
             if st.button("뒤로가기", key="signup_back_button"):
-                self.page.go_back()  # 뒤로가기 로직 호출
+                go_back()  # 뒤로가기 로직 호출
 
 
 # 페이지 함수 매핑
@@ -299,7 +300,7 @@ page_functions = {
 }
 
 # 현재 페이지 디버깅
-st.write(f"Current Page: {st.session_state['Page.current_page']}")  # 디버깅용 코드
+st.write(f"Current Page: {st.session_state['current_page']}")  # 디버깅용 코드
 
 # 현재 페이지 렌더링
 if st.session_state["current_page"] in page_functions:
