@@ -1204,43 +1204,43 @@ class SetView:
         self.user_profile.display_profile(user_info['user_id'])
 
         # 프로필 편집 버튼 (확장형 UI)
-        with st.expander(localization.get_text("edit_my_info")):
+        with st.expander("edit_my_info"):
             # 이메일 변경
             new_email = st.text_input(
-                localization.get_text("new_email_address"), value=user_info.user_email
+                "new_email_address", value=user_info.user_email
             )
-            if st.button(localization.get_text("change_email")):
+            if st.button("change_email"):
                 self.account.update_email(new_email)
                 st.success(localization.get_text("email_updated"))
                 st.rerun()
 
             # 프로필 사진 업로드
             uploaded_file = st.file_uploader(
-                localization.get_text("upload_new_profile_picture"), type=["jpg", "png", "jpeg"]
+               "upload_new_profile_picture", type=["jpg", "png", "jpeg"]
             )
             if uploaded_file is not None:
                 image_path = self.user_profile.save_file(uploaded_file)
                 self.user_profile.update_profile_picture(user_info.user_id, image_path)
-                st.success(localization.get_text("profile_picture_updated"))
+                st.success("profile_picture_updated")
                 st.rerun()
 
     def render_alarm_settings(self):
         """알람 설정 UI"""
-        alarm_enabled = st.checkbox(localization.get_text("set_alarm"), value=False)
+        alarm_enabled = st.checkbox("set_alarm", value=False)
         if alarm_enabled:
-            st.write(localization.get_text("alarm_set"))
+            st.write("alarm_set")
         else:
-            st.write(localization.get_text("alarm_disabled"))
+            st.write("alarm_disabled")
 
     def render_posts(self):
         """좋아요한 게시물 표시"""
-        with st.expander(localization.get_text("favorites"), icon='💗'):
+        with st.expander("favorites", icon='💗'):
             liked_posts = self.account.get_liked_posts()
             if liked_posts:
                 for post in liked_posts:
                     st.write(post.title)
             else:
-                st.write(localization.get_text("no_liked_posts"))
+                st.write("no_liked_posts")
 
 # 페이지 함수 매핑
 page_functions = {
