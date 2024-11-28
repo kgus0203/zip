@@ -1198,7 +1198,13 @@ class SetView:
         self.theme_manager = ThemeManager(session)
         self.like_button = LikeButton()
 
+    def render_alarm_settings(self):
 
+        alarm_enabled = st.button("알람 설정", use_container_width=True)
+        if alarm_enabled:
+            st.write("알람이 설정되었습니다.")
+        else:
+            st.write("알람이 해제되었습니다.")
     def render_user_profile(self):
         user_info = self.account.get_user_info()
         # Display user profile
