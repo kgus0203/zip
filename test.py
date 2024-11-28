@@ -1211,7 +1211,8 @@ class Account:
 
 class SetView:
     def __init__(self, user_id, user_email):
-        self.account = Account(user_id=user_id, user_email=user_email)
+        self.user_id=user_id
+        self.user_email=user_email
         self.user_profile = UserProfile()
         self.theme_manager = ThemeManager()
         self.like_button = LikeButton()
@@ -1224,9 +1225,8 @@ class SetView:
         else:
             st.write("알람이 해제되었습니다.")
     def render_user_profile(self):
-        user_info = self.account.get_user_info()
-        self.user_profile.display_profile(user_info["user_id"])
-    
+        st.write(self.user_id)
+        st.write(self.user_email)
         # Edit Profile Button (popup simulation)
         with st.expander("내 정보 수정하기"):
             # Change Email
