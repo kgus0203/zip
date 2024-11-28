@@ -292,33 +292,27 @@ class SignUp:
 # 로그인 처리 클래스
 class SignIn:
     def __init__(self, user_id, user_password):
-        self.user_id = user_id
+         self.user_id = user_id
         self.user_password = user_password
         self.user_is_online=0
 
     def sign_in_event(self):
-        dao = UserDAO()
-        result = dao.check_user_id_exists(self.user_id)
-
-        if result:
-            stored_hashed_password = result['user_password']
-            if dao.check_password(stored_hashed_password, self.user_password):
-               st.session_state["user_id"] = self.user_id  # 로그인
+       dao = UserDAO()
+       
+       # 사용자 정보를 가져옵니다.
+       result = dao.search_user(self.user_id)
+       
+       if result:
+           # result는 튜플 형태 (user_id, user_password, user_email, user_is_online)
+           stored_hashed_password = result[1]  # result[1]은 user_password에 해당
+           if dao.check_password(stored_hashed_password, self.user_password):
+               st.session_state["user_id"] = self.user_id  # 로그인 성공 시 세션에 user_id 저장
                self.user_is_online = 1
                st.success(f"{self.user_id}님, 로그인 성공!")
-            else:
+           else:
                st.error("비밀번호가 틀렸습니다.")
-        else:
-            st.error("아이디가 존재하지 않습니다.")
-    def log_out_event(self):
-        # This can be triggered by a logout button
-        if st.button("로그아웃", key="logout_button"):
-            dao = UserDAO()
-            dao.update_user_online(st.session_state["user_id"], 0)  # Set is_online to 0 in D
-            st.session_state.user_id = ''  # Clear the session variable
-            st.session_state.user_password =''
-            st.warning("로그아웃 완료")
-            change_page('Home')
+       else:
+           st.error("아이디가 존재하지 않습니다.")
 
 #-------------------------------------------------------------페이지 이동 -------------------------------------------------------------
 
