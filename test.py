@@ -156,7 +156,7 @@ def upload_post() :
 
         with col2:
             if st.button("뒤로가기"):
-                change_page("alter_login")  # 뒤로가기 로직 호출
+                change_page("after_login")  # 뒤로가기 로직 호출
                 
         
 #회원가입 페이지
@@ -206,6 +206,7 @@ def view_post():
     post_manager = PostManager()
     # display_posts 메서드를 호출
     post_manager.display_posts()
+    
 def id_pw_change_page():
     st.title("<ID/PW 변경>")
 
