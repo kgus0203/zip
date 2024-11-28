@@ -290,8 +290,6 @@ def after_login():
     # 사용자 프로필 정보 가져오기
     user = session.query(User).filter(User.user_id == user_id).first()
 
-    # 세션 종료
-    session.close()
 
     # 프로필 이미지 경로 설정 (없을 경우 기본 이미지 사용)
     profile_image_url = user.profile_picture_path if user and user.profile_picture_path else 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png'
@@ -1131,8 +1129,7 @@ class ThemeManager:
             self.change_theme()
 #---------------------------- 유저 프로필 ---------------------------------
 class UserProfile:
-    def __init__(self, session, upload_folder="profile_pictures"):
-        self.session = session
+    def __init__(self, upload_folder="profile_pictures"):
         self.upload_folder = upload_folder
         self.default_profile_picture = (
             "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png"
@@ -1157,7 +1154,7 @@ class UserProfile:
         user = self.get_user_profile(user_id)
         if user:
             user.profile_picture_path = image_path
-            self.session.commit()
+            session.commit()
 
     def display_profile(self, user_id):
         """사용자 프로필 표시"""
@@ -1200,7 +1197,6 @@ class Account:
 
 class SetView:
     def __init__(self, user_id, user_email):
-        self.session = session
         self.account = Account(user_id=user_id, user_email=user_email)
         self.user_profile = UserProfile(session)
         self.theme_manager = ThemeManager()
