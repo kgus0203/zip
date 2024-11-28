@@ -1225,12 +1225,6 @@ class SetView:
             self.like_button.display_liked_posts()
 
 
-class Posting(Base):
-    __tablename__ = 'posting'
-    p_id = Column(Integer, primary_key=True)
-    p_title = Column(String)
-    like_num = Column(Integer, default=0)
-
 
 class LikeButton:
     def __init__(self, engine):
