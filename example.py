@@ -317,7 +317,7 @@ class SignIn:
             if dao.check_password(stored_hashed_password, self.user_password):  # bcrypt로 비밀번호 비교
                 st.session_state["user_id"] = self.user_id  # 로그인 성공 시 세션에 user_id 저장
                 self.user_is_online = 1
-                change_page('HOme')
+                change_page('Home')
                 return True
             else:
                 st.error("비밀번호가 잘못되었습니다.")
