@@ -1077,41 +1077,48 @@ class ThemeManager:
             }
 
     def get_saved_theme(self):
-        # 저장된 테마 가져오기
-        settings = session.query(Settings).filter_by(id=1).first()
-        return settings.current_theme if settings else "dark"
+        setting = session.query(Settings).filter(Settings.id == 1).first()
+        session.close()
+        
+        # Return the theme or default to 'light'
+        return setting.current_theme if setting else 'light'
 
     def save_theme(self, theme):
-        # 현재 테마를 데이터베이스에 저장
-        settings = session.query(Settings).filter_by(id=1).first()
-        if not settings:
-            settings = Settings(id=1, current_theme=theme)
-            self.session.add(settings)
+        # Save the theme to the database using SQLAlchemy
+
+        setting = session.query(Settings).filter(Settings.id == 1).first()
+        
+        if setting:
+            setting.current_theme = theme
         else:
-            settings.current_theme = theme
-        self.session.commit()
+            # If the settings row doesn't exist, create it
+            setting = Settings(id=1, current_theme=theme)
+            session.add(setting)
+        
+        session.commit()
+        session.close()
 
     def change_theme(self):
-        # 테마 변경
         previous_theme = self.th.themes["current_theme"]
         new_theme = "light" if previous_theme == "dark" else "dark"
 
-        # 테마 적용
-        theme_dict = self.th.themes.get(new_theme, {})
+        # Apply theme
+        theme_dict = self.th.themes[new_theme]
         for key, value in theme_dict.items():
             if key.startswith("theme"):
                 st._config.set_option(key, value)
 
-        # 데이터베이스 저장 및 세션 상태 업데이트
+        # Save theme in the database and update session state
         self.save_theme(new_theme)
         self.th.themes["current_theme"] = new_theme
-        st.rerun()  # UI 새로고침
+        st.rerun()
 
     def render_button(self):
-        current_theme = self.th.themes["current_theme"]
-        button_label = self.th.themes[current_theme]["button_face"]
+        # Ensure the current theme exists in the session state
+        current_theme = self.th.themes.get("current_theme", "light")  # Default to 'light' if missing
+        button_label = self.th.themes.get(current_theme, {}).get("button_face", "Unknown theme")  # Default label if missing
 
-        # 버튼 렌더링 및 클릭 이벤트 처리
+        # Render button and handle click event
         if st.button(button_label, use_container_width=True):
             self.change_theme()
 
