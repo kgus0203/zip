@@ -669,7 +669,6 @@ class SignIn:
         if st.button("로그아웃", key="logout_button"):
             dao = UserDAO()
             dao.update_user_online(st.session_state["user_id"], 0)  # Set is_online to 0 in D
-            st.session_state.user_id = ''  # Clear the session variable
             st.session_state.user_password =''
             st.warning("로그아웃 완료")
             change_page('Home')
