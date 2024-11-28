@@ -1203,7 +1203,7 @@ class SetView:
         self.like_button = LikeButton()
 
 
-   def render_user_profile(self):
+    def render_user_profile(self):
         user_info = self.account.get_user_info()
         # Display user profile
         self.user_profile.display_profile(user_info["user_id"])
