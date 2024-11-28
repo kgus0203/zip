@@ -155,7 +155,7 @@ create_db()
 
 # 데이터베이스 연결 함수
 def create_connection():
-    conn = sqlite3.connect('zip.db')
+    conn = st.connection('zip.db')
     conn.row_factory = sqlite3.Row  # 결과를 딕셔너리 형식으로 반환
     return conn
 
