@@ -257,46 +257,45 @@ class SignUp:
             return False
         return True
 
-class Change_pages:
-   #회원가입 페이지
-    def signup_page(self):
-        st.title("회원가입")
 
-        # 사용자 입력 받기
-        user_id = st.text_input("아이디")
-        user_password = st.text_input("비밀번호", type='password')
-        email = st.text_input("이메일")
-        # 회원가입 처리 객체 생성
-        signup = SignUp(user_id, user_password, email)
-        col1, col2 = st.columns([1, 1])  # 버튼을 나란히 배치
-        with col1:
-            if st.button("회원가입", key="signup_submit_button"):
-                if not user_id or not user_password or not email:
-                    st.error("모든 필드를 입력해 주세요.")
-                else:
-                    if not signup.validate_email(email):
-                        st.error("유효한 이메일 주소를 입력해 주세요.")
-                        return
-                    # 비밀번호 길이 체크
-                    if not signup.check_length():
-                        return  # 비밀번호가 너무 짧으면 더 이상 진행하지 않음
+ def signup_page(self):
+     st.title("회원가입")
 
-                    # 사용자 ID 중복 체크
-                    if not signup.check_user():
-                        return  # 중복 아이디가 있으면 더 이상 진행하지 않음
+     # 사용자 입력 받기
+     user_id = st.text_input("아이디")
+     user_password = st.text_input("비밀번호", type='password')
+     email = st.text_input("이메일")
+     # 회원가입 처리 객체 생성
+     signup = SignUp(user_id, user_password, email)
+     col1, col2 = st.columns([1, 1])  # 버튼을 나란히 배치
+     with col1:
+         if st.button("회원가입", key="signup_submit_button"):
+             if not user_id or not user_password or not email:
+                 st.error("모든 필드를 입력해 주세요.")
+             else:
+                 if not signup.validate_email(email):
+                     st.error("유효한 이메일 주소를 입력해 주세요.")
+                     return
+                 # 비밀번호 길이 체크
+                 if not signup.check_length():
+                     return  # 비밀번호가 너무 짧으면 더 이상 진행하지 않음
 
-                    # 모든 검증을 통과하면 회원가입 진행
-                    signup.sign_up_event()
+                 # 사용자 ID 중복 체크
+                 if not signup.check_user():
+                     return  # 중복 아이디가 있으면 더 이상 진행하지 않음
 
-        with col2:
-            if st.button("뒤로가기", key="signup_back_button"):
-                go_back()  # 뒤로가기 로직 호출
+                 # 모든 검증을 통과하면 회원가입 진행
+                 signup.sign_up_event()
+
+     with col2:
+         if st.button("뒤로가기", key="signup_back_button"):
+             go_back()  # 뒤로가기 로직 호출
 
 
 # 페이지 함수 매핑
 page_functions = {
     'Home': home_page,
-    'Signup': Change_pages.signup_page,
+    'Signup': signup_page,
 }
 
 # 현재 페이지 디버깅
