@@ -1196,7 +1196,7 @@ class Account:
 class SetView:
     def __init__(self, user_id, user_email):
         self.session = session
-        self.account = Account(session, user_id=user_id, user_email=user_email)
+        self.account = Account(user_id=user_id, user_email=user_email)
         self.user_profile = UserProfile(session)
         self.theme_manager = ThemeManager(session)
 
