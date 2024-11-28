@@ -28,6 +28,18 @@ SessionLocal = sessionmaker(bind=engine)
 session = SessionLocal()
 #-----------------------------------------------페이지 전환 ----------------------------------------------------------
 
+
+# 초기화
+if 'localization' not in st.session_state:
+    st.session_state.localization = Localization(lang ='ko')  # 기본 언어는 한국어로 설정됨
+# 현재 언어 설정 초기화
+if 'current_language' not in st.session_state:
+    st.session_state.current_language = 'ko'  # 기본값으로 한국어 설정
+
+localization = st.session_state.localization
+
+
+
 # 페이지 전환 함수
 def change_page(page_name):
     if "history" not in st.session_state:
@@ -82,7 +94,31 @@ def login_page():
     with col2:
         if st.button("뒤로가기", key="login_back_button"):
             change_page("Home")  # 뒤로가기 로직 호출
+#세팅 페이지
+def setting_page():
+    user_id = st.session_state.get("user_id")
 
+    with sqlite3.connect('zip.db') as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT user_email FROM user WHERE user_id = ?", (user_id,))
+        result = cursor.fetchone()
+
+    user_email = result[0] if result else None
+
+    col1, col2 = st.columns([8, 2])
+    with col1:
+        st.title("내 페이지")
+    with col2:
+        if st.button("뒤로가기"):
+            go_back()
+
+    view = setting.SetView(user_id, user_email)
+    view.render_user_profile()
+    view.render_alarm_settings()
+    theme_manager = setting.ThemeManager()
+    theme_manager.render_button()
+
+    view.render_posts()
 
 
 def usermanager_page():
@@ -1030,7 +1066,191 @@ class CategoryManager:
         categories = self.get_category_options()
         category_dict = {category.category: category.category_id for category in categories}
         return category_dict
+#-------------------------------------------------마이페이지----------------------------------------------
+
+class Settings(Base):
+    __tablename__ = "settings"
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    current_theme = Column(String, default="dark")  # 기본 테마 설정
+
+class ThemeManager:
+    def __init__(self, session: Session):
+        self.session = session
+        self.th = st.session_state
+        if "themes" not in self.th:
+            self.th.themes = {
+                "current_theme": self.get_saved_theme(),  # DB에서 테마 로드 또는 기본값으로 설정
+            }
+
+    def get_saved_theme(self):
+        # 저장된 테마 가져오기
+        settings = self.session.query(Settings).filter_by(id=1).first()
+        return settings.current_theme if settings else "dark"
+
+    def save_theme(self, theme):
+        # 현재 테마를 데이터베이스에 저장
+        settings = self.session.query(Settings).filter_by(id=1).first()
+        if not settings:
+            settings = Settings(id=1, current_theme=theme)
+            self.session.add(settings)
+        else:
+            settings.current_theme = theme
+        self.session.commit()
+
+    def change_theme(self):
+        # 테마 변경
+        previous_theme = self.th.themes["current_theme"]
+        new_theme = "light" if previous_theme == "dark" else "dark"
+
+        # 테마 적용
+        theme_dict = self.th.themes.get(new_theme, {})
+        for key, value in theme_dict.items():
+            if key.startswith("theme"):
+                st._config.set_option(key, value)
+
+        # 데이터베이스 저장 및 세션 상태 업데이트
+        self.save_theme(new_theme)
+        self.th.themes["current_theme"] = new_theme
+        st.rerun()  # UI 새로고침
+
+    def render_button(self):
+        # 동적으로 버튼 텍스트 가져오기
+        current_theme = self.th.themes["current_theme"]
+        button_label = (
+            localization.get_text("dark_mode")
+            if current_theme == "light"
+            else localization.get_text("light_mode")
+        )
+
+        # 버튼 렌더링 및 클릭 이벤트 처리
+        if st.button(button_label, use_container_width=True):
+            self.change_theme()
+
+    def select_language(self):
+        lang_options = ["ko", "en", "jp"]  # 지원하는 언어 목록
+
+        # 드롭다운을 왼쪽에 배치
+        selected_lang = st.selectbox(
+            localization.get_text("select_language"),  # "언어 선택" 문자열을 로컬라이제이션에서 가져옴
+            lang_options,
+            index=lang_options.index(st.session_state.current_language),  # 현재 언어에 맞게 기본값 설정
+            key="language_select",
+            help=localization.get_text("choose_language"),  # 툴팁 문자열
+        )
+
+        if st.session_state.current_language != selected_lang:
+            st.session_state.current_language = selected_lang  # 선택한 언어로 변경
+            st.session_state.localization.lang = selected_lang  # Localization 객체의 언어도 변경
+            st.rerun()  # 페이지를 다시 로드
+
+class UserProfile:
+    def __init__(self, session: Session, upload_folder="profile_pictures"):
+        self.session = session
+        self.upload_folder = upload_folder
+        self.default_profile_picture = (
+            "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png"
+        )
+        os.makedirs(self.upload_folder, exist_ok=True)
+
+    def save_file(self, uploaded_file):
+        """이미지를 저장하고 경로를 반환"""
+        if uploaded_file:
+            file_path = os.path.join(self.upload_folder, uploaded_file.name)
+            with open(file_path, "wb") as f:
+                f.write(uploaded_file.getbuffer())
+            return file_path
+        return None
+
+    def get_user_profile(self, user_id):
+        """사용자의 프로필 정보를 데이터베이스에서 조회"""
+        return self.session.query(User).filter_by(user_id=user_id).first()
+
+    def update_profile_picture(self, user_id, image_path):
+        """사용자의 프로필 사진 경로를 업데이트"""
+        user = self.get_user_profile(user_id)
+        if user:
+            user.profile_picture_path = image_path
+            self.session.commit()
+
+    def display_profile(self, user_id):
+        """사용자 프로필 표시"""
+        user = self.get_user_profile(user_id)
+        if user:
+            st.write(f"User Email: {user.user_email}")
+            profile_picture = user.profile_picture_path
+
+            # 프로필 사진 경로가 없거나 파일이 존재하지 않으면 기본 이미지 사용
+            if not profile_picture or not os.path.exists(profile_picture):
+                profile_picture = self.default_profile_picture
+
+            st.image(profile_picture, caption=user_id, width=300)
+        else:
+            st.error("사용자 정보를 찾을 수 없습니다.")
+
+    def upload_new_profile_picture(self, user_id):
+        """새 프로필 사진 업로드 및 저장"""
+        st.button("프로필 사진 변경", use_container_width=True)
+        uploaded_file = st.file_uploader("새 프로필 사진 업로드", type=["jpg", "png", "jpeg"])
+
+        if st.button("업로드"):
+            if uploaded_file:
+                image_path = self.save_file(uploaded_file)
+                self.update_profile_picture(user_id, image_path)
+                st.success("프로필 사진이 성공적으로 업데이트되었습니다.")
+                st.rerun()
+            else:
+                st.error("파일을 업로드해주세요.")
+class SetView:
+    def __init__(self, session, user_id, user_email):
+        self.session = session
+        self.account = Account(session, user_id=user_id, user_email=user_email)
+        self.user_profile = UserProfile(session)
+        self.theme_manager = ThemeManager(session)
+
+    def render_user_profile(self):
+        user_info = self.account.get_user_info()
         
+        # 사용자 프로필 표시
+        self.user_profile.display_profile(user_info.user_id)
+
+        # 프로필 편집 버튼 (확장형 UI)
+        with st.expander(localization.get_text("edit_my_info")):
+            # 이메일 변경
+            new_email = st.text_input(
+                localization.get_text("new_email_address"), value=user_info.user_email
+            )
+            if st.button(localization.get_text("change_email")):
+                self.account.update_email(new_email)
+                st.success(localization.get_text("email_updated"))
+                st.rerun()
+
+            # 프로필 사진 업로드
+            uploaded_file = st.file_uploader(
+                localization.get_text("upload_new_profile_picture"), type=["jpg", "png", "jpeg"]
+            )
+            if uploaded_file is not None:
+                image_path = self.user_profile.save_file(uploaded_file)
+                self.user_profile.update_profile_picture(user_info.user_id, image_path)
+                st.success(localization.get_text("profile_picture_updated"))
+                st.rerun()
+
+    def render_alarm_settings(self):
+        """알람 설정 UI"""
+        alarm_enabled = st.checkbox(localization.get_text("set_alarm"), value=False)
+        if alarm_enabled:
+            st.write(localization.get_text("alarm_set"))
+        else:
+            st.write(localization.get_text("alarm_disabled"))
+
+    def render_posts(self):
+        """좋아요한 게시물 표시"""
+        with st.expander(localization.get_text("favorites"), icon='💗'):
+            liked_posts = self.account.get_liked_posts()
+            if liked_posts:
+                for post in liked_posts:
+                    st.write(post.title)
+            else:
+                st.write(localization.get_text("no_liked_posts"))
 
 # 페이지 함수 매핑
 page_functions = {
@@ -1042,6 +1262,7 @@ page_functions = {
     'after_login': after_login,
     'View Post': view_post,
     'Upload Post': upload_post,
+    'Setting': setting_page,
 }
 if 'current_page' not in st.session_state:
     st.session_state.current_page = 'Home'
