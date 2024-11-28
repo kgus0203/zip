@@ -15,6 +15,8 @@ DATABASE_URL = "sqlite:///zip.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(bind=engine)
 session = SessionLocal()
+#-----------------------------------------------페이지 전환 ----------------------------------------------------------
+
 # 페이지 전환 함수
 def change_page(page_name):
     if "history" not in st.session_state:
@@ -104,6 +106,47 @@ def signup_page():
         if st.button("뒤로가기", key="signup_back_button"):
             go_back()  # 뒤로가기 로직 호출
 
+
+def id_pw_change_page():
+    st.title("<ID/PW 변경>")
+
+    # 현재 로그인된 사용자 ID 가져오기
+    user_id = st.session_state.get('logged_in_user')
+    if not user_id:
+        st.error("사용자 정보가 없습니다. 다시 로그인해주세요.")
+        change_page('Login')  # 로그인 페이지로 이동
+        return
+
+    # 초기화 상태 설정
+    if "id_pw_change_step" not in st.session_state:
+        st.session_state['id_pw_change_step'] = "select_action"
+
+    if "current_user_id" not in st.session_state:
+        st.session_state['current_user_id'] = user_id
+
+    # ID 또는 PW 변경 선택
+    if st.session_state['id_pw_change_step'] == "select_action":
+        action = st.radio("변경할 항목을 선택하세요", ["ID 변경", "비밀번호 변경"])
+        if st.button("다음"):
+            st.session_state['action'] = action
+            st.session_state['id_pw_change_step'] = "input_new_value"
+
+    # 새로운 ID/PW 입력 및 저장
+    elif st.session_state['id_pw_change_step'] == "input_new_value":
+        new_value = st.text_input(f"새로 사용할 {st.session_state['action']}를 입력하세요")
+        if new_value and st.button("저장"):
+            change = login.ChangeIDPW(
+                user_id=st.session_state['current_user_id'],
+                new_value=new_value
+            )
+            if st.session_state['action'] == "ID 변경" and change.update_id():
+                st.success("ID가 성공적으로 변경되었습니다. 로그아웃 후 첫 페이지로 이동합니다.")
+                st.session_state.user.clear()  # 세션 초기화로 로그아웃 처리
+                change_page("Home")  # 첫 페이지로 이동
+            elif st.session_state['action'] == "비밀번호 변경" and change.update_password():
+                st.success("비밀번호가 성공적으로 변경되었습니다. 로그아웃 후 첫 페이지로 이동합니다.")
+                st.session_state.user.clear()  # 세션 초기화로 로그아웃 처리
+                change_page("Home")  # 첫 페이지로 이동
 
 # 테이블 모델 정의
 class User(Base):
@@ -210,7 +253,7 @@ def initialize_database():
     
     session.commit()
 
-#------------------db만들기 ----------------------------
+#---------------------------------------------------------------db만들기 ----------------------------
 
 # SQLAlchemy Base 선언
 Base = declarative_base()
@@ -231,7 +274,7 @@ class User(Base):
 # 데이터베이스 초기화
 def initialize_database():
     Base.metadata.create_all(engine)
-
+#-------------------------------------------------------------로그인---------------------------------------------------
 # DAO 클래스
 class UserDAO:
     def __init__(self):
@@ -325,31 +368,25 @@ class SignIn:
         else:
             st.error("아이디가 존재하지 않습니다.")
         return False
+        
+    def log_out_event(self):
+        # This can be triggered by a logout button
+        if st.button("로그아웃", key="logout_button"):
+            dao = UserDAO()
+            dao.update_user_online(st.session_state["user_id"], 0)  # Set is_online to 0 in D
+            st.session_state.user_id = ''  # Clear the session variable
+            st.session_state.user_password =''
+            st.warning("로그아웃 완료")
+            pages.change_page('Home')
 
-# 로그인 페이지
-def login_page():
-    st.title("로그인")
-    user_id = st.text_input("아이디")
-    user_password = st.text_input("비밀번호", type='password')
 
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("로그인"):
-            if not user_id or not user_password:
-                st.error("아이디와 비밀번호를 입력해 주세요.")
-            else:
-                sign_in = SignIn(user_id, user_password)
-                if sign_in.sign_in_event():
-                    st.session_state['current_page'] = 'Home'  # 로그인 성공 시 페이지 이동
-    with col2:
-        if st.button("뒤로가기"):
-            st.session_state['current_page'] = 'Signup'
             
 # 페이지 함수 매핑
 page_functions = {
     'Home': home_page,
     'Signup': signup_page,
     'Login': login_page,
+    'ID PW 변경': id_pw_change_page,
 }
 if 'current_page' not in st.session_state:
     st.session_state.current_page = 'Home'
