@@ -72,7 +72,28 @@ def login_page():
         if st.button("뒤로가기", key="login_back_button"):
             go_back()  # 뒤로가기 로직 호출
 
+def usermanager_page():
 
+    st.title("사용자 관리 페이지")
+    email = st.text_input('이메일을 입력하세요: ')
+
+    if st.button("확인", key="forgot_confirm_button"):
+        smtp_email = "kgus0203001@gmail.com"  # 발신 이메일 주소
+        smtp_password = "pwhj fwkw yqzg ujha"  # 발신 이메일 비밀번호
+        user_manager = login.UserManager(smtp_email, smtp_password)
+
+        # 이메일 등록 여부 확인
+        user_info = user_manager.is_email_registered(email)
+        if user_info:
+            st.success(f"비밀번호 복구 메일을 전송했습니다")
+            # 복구 이메일 전송
+            user_manager.send_recovery_email(email)
+        else:
+            st.warning("등록되지 않은 이메일입니다.")
+
+    if st.button("뒤로가기", key="forgot_back_button"):
+                    # 첫 페이지로 이동
+                    change_page("Home")
 
 #회원가입 페이지
 def signup_page():
