@@ -919,18 +919,6 @@ class PostManager:
                 self.update_post(post_id, title, content, image_file, file_file, selected_category_id)
                 st.success("게시물이 수정되었습니다.")
 
-            location_search = LocationSearch()
-            
-            # Fetch location data based on the post ID
-            location_search.fetch_location_data(post['p_id'])
-            
-            # 위치 데이터가 존재할 때만 지도 생성
-            if location_search.locations_df is not None and not location_search.locations_df.empty:
-                location_search.create_map_with_markers()
-                st.title("Location Map")
-                location_search.display_map(key=f"map_{post['p_id']}")
-
-        
         else:
             st.error("해당 게시물이 존재하지 않습니다.")
             
