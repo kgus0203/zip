@@ -1238,7 +1238,7 @@ class SetView:
             uploaded_file = st.file_uploader("새 프로필 사진 업로드", type=["jpg", "png", "jpeg"])
             if uploaded_file is not None:
                 image_path = self.user_profile.save_file(uploaded_file)
-                self.user_profile.update_profile_picture(user_info["user_id"], image_path)
+                self.user_profile.update_profile_picture(user_id", image_path)
                 st.success("프로필 사진이 성공적으로 업데이트되었습니다.")
                 st.rerun()
 
