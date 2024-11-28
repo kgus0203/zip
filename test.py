@@ -10,6 +10,7 @@ from email.mime.text import MIMEText
 from email.header import Header
 import smtplib
 from datetime import datetime
+import secrets
 
 # SQLAlchemy Base 선언
 Base = declarative_base()
