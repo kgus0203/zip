@@ -1093,7 +1093,7 @@ class ThemeManager:
         session.commit()
         session.close()
 
-     def change_theme(self):
+    def change_theme(self):
         previous_theme = self.th.themes["current_theme"]
         new_theme = "light" if previous_theme == "dark" else "dark"
         theme_dict = self.th.themes[new_theme]
