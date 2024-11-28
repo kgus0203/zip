@@ -15,7 +15,7 @@ from sqlalchemy.ext.declarative import declarative_base
 import pandas as pd
 import os
 import requests
-
+from localization import Localization
 # SQLAlchemy Base 선언
 Base = declarative_base()
 
