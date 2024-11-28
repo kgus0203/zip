@@ -311,12 +311,6 @@ class Settings(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     current_theme = Column(String, nullable=True)
 
-class PasswordRecovery(Base):
-    __tablename__ = 'password_recovery'
-    id = Column(Integer, primary_key=True, index=True)
-    user_email = Column(String, index=True, nullable=False)
-    token = Column(String, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
 
 # 데이터베이스 초기화 및 기본 데이터 삽입
 def initialize_database():
