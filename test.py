@@ -139,15 +139,17 @@ def upload_post() :
     categories = category_manager.get_category_options()
     category_dict = {category.category: category.category_id for category in categories}
     selected_category_id = category_dict[selected_category_name]
-
-
+    
+    
     location_search = LocationSearch()
     location_search.display_location_on_map()
+    location_id= location_search.get_selected_location_id()
+
     col1, col2 = st.columns([6, 2])
     with col1:
         if st.button("게시물 등록"):
 
-            post_manager.add_post(title, content, image_file, file_file, selected_category_id,)
+            post_manager.add_post(title, content, image_file, file_file, selected_category_id,location_id)
 
             st.success("게시물이 등록되었습니다.")
 
@@ -155,7 +157,7 @@ def upload_post() :
         with col2:
             if st.button("뒤로가기"):
                 go_back()  # 뒤로가기 로직 호출
-
+                
         
 #회원가입 페이지
 def signup_page():
@@ -767,9 +769,7 @@ class PostManager:
             return file_path
         return ''
 
-    def add_post(self, title, content, image_file, file_file, category):
-        location_search=LocationSearch()
-        location_id=location_search.get_selected_location_id
+    def add_post(self, title, content, image_file, file_file, category,location_id):
         
         image_path = self.save_file(image_file) if image_file else ''
         file_path = self.save_file(file_file) if file_file else ''
