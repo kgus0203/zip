@@ -160,7 +160,7 @@ def view_post():
         if st.button("글 작성"):
             change_page('Upload Post')
     # PostManager 인스턴스를 생성
-    post_manager = posting.PostManager()
+    post_manager = PostManager()
     # display_posts 메서드를 호출
     post_manager.display_posts()
 def id_pw_change_page():
