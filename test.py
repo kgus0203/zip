@@ -125,7 +125,7 @@ def upload_post() :
 
 
     # 카테고리 선택을 위한 Selectbox
-    post_manager = posting.PostManager('uploads')  # DB 경로 설정
+    post_manager =PostManager('uploads')  # DB 경로 설정
     category_names = post_manager.get_category_names()  # 카테고리 이름만 가져옴
 
 
