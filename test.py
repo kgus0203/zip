@@ -842,7 +842,7 @@ class PostManager:
             file_file = st.file_uploader("일반 파일", type=['pdf', 'docx', 'txt', 'png', 'jpg'], key=f"file_upload_{post.p_id}")
 
             selected_category_name = st.selectbox(
-                "카테고리", [category.category for category in self.get_category_options()],
+                "카테고리", [category.category for category in self.category_manager.get_category_options()],
                 key=f"category_selectbox_{post.p_id}"
             )
             categories =self.category_manager.get_category_options()
