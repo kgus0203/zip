@@ -994,19 +994,15 @@ class PostManager:
                         st.subheader(post.p_title)
                         self.fetch_location_data(post.p_id)
 
-                        # 위치 데이터가 존재할 때만 지도 생성
-                        if self.locations_df is not None and not self.locations_df.empty:
-                            self.create_location_name()
-
                         # 이미지 출력 (있는 경우)
-                            if post.p_image_path:
-                                try:
-                                    st.image(post.p_image_path, use_container_width=True)
-                                    
-                                except Exception as e:
-                                    st.error(f"이미지를 불러오는 데 실패했습니다: {e}")
+                        if post.p_image_path and self.locations_df:
+                            try:
+                                self.create_location_name()
+                                st.image(post.p_image_path, use_container_width=True)
+                                
+                            except Exception as e:
+                                st.error(f"이미지를 불러오는 데 실패했습니다: {e}")
                         else:
-
                             with st.expander('더보기'):
                                     self.display_post(post.p_id)
 
