@@ -829,9 +829,6 @@ class PostManager:
             if st.button(btn_label, key=post_id, use_container_width=True):
                 self.toggle_like(post_id)
 
-    def get_category_options(self):
-        return session.query(FoodCategory).all()
-
     def edit_post(self, post_id):
         post = session.query(Posting).filter_by(p_id=post_id).first()
 
@@ -854,9 +851,13 @@ class PostManager:
                 st.success("게시물이 수정되었습니다.")
         else:
             st.error("해당 게시물이 존재하지 않습니다.")
+    def get_category_options(self):
+        return session.query(FoodCategory).all()
+
     def get_category_names(self):
         categories = self.get_category_options()
-        return [category[1] for category in categories]  # 카테고리 이름만 리스트로 반환
+        # FoodCategory 객체에서 category 속성으로 접근
+        return [category.category for category in categories]
     def display_posts(self):
         posts = self.get_all_posts()
         for post in posts:
