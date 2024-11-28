@@ -45,14 +45,18 @@ class Group(Base):
     status = Column(String, default='진행 중')
     update_date = Column(DateTime, default=func.now(), onupdate=func.now())
     modify_date = Column(DateTime, default=func.now(), onupdate=func.now())
-
+    
 class GroupMember(Base):
     __tablename__ = 'group_member'
     group_member_id = Column(Integer, primary_key=True, autoincrement=True)
     group_id = Column(Integer, ForeignKey('group.group_id'), nullable=False)
     user_id = Column(String, ForeignKey('user.user_id'), nullable=False)
-    role = Column(String, default='member', CheckConstraint("role IN ('admin', 'member')"))
-    joined_at = Column(DateTime, default=func.now())
+    role = Column(
+        String,
+        CheckConstraint("role IN ('admin', 'member')"),  # 위치 인수 대신 키워드로 전달
+        default='member'
+    )
+    joined_at = Column(Text, nullable=False, default="CURRENT_TIMESTAMP")
 
 class FoodCategory(Base):
     __tablename__ = 'food_categories'
