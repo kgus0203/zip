@@ -1207,7 +1207,6 @@ class ThemeManager:
         # Render the button and handle the click event
         if st.button(button_label, use_container_width=True,key='change_theme'):
             self.change_theme()
-            st.rerun()
 
 
 # ---------------------------- 유저 프로필 ---------------------------------
@@ -1318,7 +1317,6 @@ class SetView:
                 image_path = self.user_profile.save_file(uploaded_file)
                 self.user_profile.update_profile_picture(self.user_id, image_path)
                 st.success("프로필 사진이 성공적으로 업데이트되었습니다.")
-                st.rerun()
 
     def render_posts(self):
         with st.expander('관심목록', icon='💗'):
