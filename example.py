@@ -161,55 +161,69 @@ def create_connection():
  conn = sqlite3.connect.connection('zip.db')
  return conn
     
-
-# UserDAO 클래스 (데이터베이스 연동 클래스)
 class UserDAO:
- 
- # 아이디 존재 여부 체크
- def check_user_id_exists(self, user_id):
-     conn = create_connection()
-     try:
-         # user 테이블에서 user_id에 해당하는 데이터 확인
-         result = conn.query("SELECT * FROM user WHERE user_id = ?", params=(user_id,))
-         return result if result else None  # 존재하면 해당 결과를 반환
-     except Exception as e:
-         st.error(f"DB 오류: {e}")
-         return None
+    # 아이디 중복 체크
+    def check_user_id_exists(self, user_id):
+        connection = create_connection()
+        try:
+            cursor = connection.cursor()
+            query = "SELECT * FROM user WHERE user_id = ?"
+            cursor.execute(query, (user_id,))
+            result = cursor.fetchone()
+            return result is not None
+        except sqlite3.Error as e:
+            st.error(f"DB 오류: {e}")
+        finally:
+            connection.close()
 
- # 사용자 등록
- def insert_user(self, user):
-     conn = create_connection()
 
-     # 비밀번호 해싱 (bcrypt 사용)
-     hashed_password = bcrypt.hashpw(user.user_password.encode('utf-8'), bcrypt.gensalt())
+    # 비밀번호 해싱 및 사용자 추가
+    def insert_user(self, user):
+        connection = create_connection()
 
-     try:
-         # user 테이블에 새 사용자 정보 추가
-         query = """
-             INSERT INTO user (user_id, user_password, user_email, user_is_online)
-             VALUES (?, ?, ?, 0)
-         """
-         conn.execute(query, (user.user_id, hashed_password, user.user_email))
-         conn.commit()
-     except Exception as e:
-         st.error(f"DB 오류: {e}")
-         return
-     st.success("회원가입이 완료되었습니다!")
+        # 비밀번호 해싱 (bcrypt 사용)
+        hashed_password = bcrypt.hashpw(user.user_password.encode('utf-8'), bcrypt.gensalt())
 
- # 비밀번호 일치 확인
- def check_password(self, hashed_password, plain_password):
-     return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password)
+        try:
+            cursor = connection.cursor()
+            query = "INSERT INTO user (user_id, user_password, user_email, user_is_online) VALUES (?, ?, ?, 0)"
+            cursor.execute(query, (user.user_id, hashed_password, user.user_email))
+            connection.commit()
+        except sqlite3.IntegrityError as e:  # UNIQUE 제약 조건으로 발생하는 오류 처리
+            if "user_email" in str(e):
+                st.error("이미 사용 중인 이메일입니다. 다른 이메일을 사용해주세요.")
+            elif "user_id" in str(e):
+                st.error("이미 사용 중인 아이디입니다. 다른 아이디를 사용해주세요.")
+            else:
+                st.error("회원가입 중 알 수 없는 오류가 발생했습니다.")
+            return  # 예외 발생 시 함수 종료
+        except sqlite3.Error as e:
+            st.error(f"DB 오류: {e}")
+            return  # 예외 발생 시 함수 종료
+        finally:
+            connection.close()
 
- # 사용자 온라인 상태 업데이트
- def update_user_online(self, user_id, is_online):
-     conn = create_connection()
-     try:
-         # 사용자 온라인 상태를 업데이트
-         query = "UPDATE user SET user_is_online = ? WHERE user_id = ?"
-         conn.execute(query, (is_online, user_id))
-         conn.commit()
-     except Exception as e:
-         st.error(f"DB 오류: {e}")
+        # 회원가입 성공 메시지 (오류가 없을 경우에만 실행)
+        st.success("회원가입이 완료되었습니다!")
+
+
+    #해시알고리즘을 이용하여 비밀번호 일치 확인
+    def check_password(self, hashed_password, plain_password):
+        return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password)
+
+    def update_user_online(self,user_id,is_online):
+        connection = create_connection()
+        try:
+            cursor = connection.cursor()
+            query = "UPDATE user SET user_is_online = 1 WHERE user_is_online=? user_id = ?"
+            cursor.execute(query, (user_id, is_online))
+            connection.commit()
+        except sqlite3.Error as e:
+            st.error(f"DB 오류: {e}")
+        finally:
+            connection.close()
+
+
 
 # 사용자 정보 VO 클래스
 class UserVO:
@@ -270,7 +284,17 @@ class SignIn:
      return False
 
 # 페이지 이동 함수 등은 기존 코드대로 유지
-
+def home_page():
+    col1, col2, col3 = st.columns([1, 1, 1])  # 동일한 너비의 세 개 열 생성
+    with col1:
+        if st.button("로그인", key="home_login_button"):
+            change_page('Login')  # 로그인 페이지로 이동
+    with col2:
+        if st.button("회원가입", key="home_signup_button"):
+            change_page('Signup')  # 회원가입 페이지로 이동
+    with col3:
+        if st.button("ID/PW 찾기", key="home_forgot_button"):
+            change_page('User manager')  # ID/PW 찾기 페이지로 이동
 # 로그인 페이지 예시
 def login_page():
  st.title("로그인")
