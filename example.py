@@ -352,20 +352,20 @@ def home_page():
     with col2:
         col3, col4, col5 = st.columns(3)
         with col3:
-            if st.button((localization.get_text("login_title")), use_container_width=True):
+            if st.button(("login_title"), use_container_width=True):
                 login_page()
         with col4:
-            if st.button((localization.get_text("signup_title")), use_container_width=True):
+            if st.button(("signup_title"), use_container_width=True):
                 signup_page()
         with col5:
-            if st.button((localization.get_text("id_pw_change_title")), use_container_width=True):
+            if st.button(("id_pw_change_title"), use_container_width=True):
                 id_pw_change_page()
 
     # 중앙 포스팅 리스트
-    st.title(localization.get_text("Recommended Restaurant Posts"))
+    st.title("Recommended Restaurant Posts")
 
     # PostManager 클래스의 인스턴스 생성 후 display_posts_on_home 호출
-    post_manager = posting.PostManager()  # 인스턴스 생성
+    post_manager = PostManager()  # 인스턴스 생성
     post_manager.display_posts_on_home()  # display_posts_on_home 메서드 호출
 
 
