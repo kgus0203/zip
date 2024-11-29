@@ -375,7 +375,7 @@ def login_page():
                     st.error("login_error_empty")
                 else:
                     sign_in = SignIn(user_id, user_password)
-                    if Sign_in.sign_in_event():  # 로그인 성공 시
+                    if sign_in.sign_in_event():  # 로그인 성공 시
                         st.session_state['user_id'] = user_id  # 로그인한 사용자 ID 저장
                         change_page('after_login')  # 로그인 후 홈화면으로 이동
                     else:
