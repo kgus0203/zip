@@ -144,9 +144,9 @@ def init_db():
            current_theme TEXT
         );
     ''')
-
-conn.commit()
-conn.close()
+    
+    conn.commit()
+    conn.close()
 
 init_db()
 #--------------------------페이지-----------------------------------------------
