@@ -364,10 +364,6 @@ def home_page():
     # 중앙 포스팅 리스트
     st.title("Recommended Restaurant Posts")
 
-    # PostManager 클래스의 인스턴스 생성 후 display_posts_on_home 호출
-    post_manager = PostManager()  # 인스턴스 생성
-    post_manager.display_posts_on_home()  # display_posts_on_home 메서드 호출
-
 
 @st.dialog("login_title")
 def login_page():
