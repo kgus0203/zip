@@ -26,16 +26,40 @@ DATABASE_URL = "sqlite:///zip.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(bind=engine)
 session = SessionLocal()
-# -----------------------------------------------페이지 전환 ----------------------------------------------------------
 
+
+# -----------------------------------------------페이지 전환 ----------------------------------------------------------
+@st.cache_resource
+def get_user_from_cache(user_id):
+    try:
+        # 데이터베이스에서 사용자 정보 가져오기
+        user = session.query(User).filter(User.user_id == user_id).first()
+
+        # 사용자 정보가 없으면 None 반환
+        if not user:
+            st.error("사용자를 찾을 수 없습니다.")
+            return None
+
+        # 사용자 정보를 딕셔너리로 변환
+        user_data = {
+            "user_id": user.user_id,
+            "user_name": user.user_id,  # 예시: 실제 사용자 이름을 저장하려면 모델에 이름 컬럼 추가 필요
+            "profile_picture": user.profile_picture_path if user.profile_picture_path else "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png",
+            "user_email": user.user_email,  # 추가 정보 포함
+        }
+
+        return user_data
+    finally:
+        session.close()  # 세션 닫기
 
 class Page:
 
     def __init__(self):
         # 세션 상태 초기화
         if 'current_page' not in st.session_state:
-            st.session_state.current_page = 'Home'
-
+            st.session_state['current_page'] = 'Home'  # Default to Home if not set
+        if 'history' not in st.session_state:
+            st.session_state['history'] = []
         # TurnPages 클래스 인스턴스 생성
         self.turn_pages = TurnPages(self)
 
@@ -50,8 +74,9 @@ class Page:
             'Setting': self.turn_pages.setting_page,
             'User manager': self.turn_pages.usermanager_page,
             'ID PW 변경': self.turn_pages.id_pw_change_page,
-            'Upload Post' : self.turn_pages.upload_post,
+            'Upload Post': self.turn_pages.upload_post,
         }
+
 
         # 현재 페이지 렌더링
         if st.session_state.current_page in page_functions:
@@ -62,14 +87,10 @@ class Page:
     # 페이지 전환 함수
     def change_page(self, page_name: str):
         # 방문 기록을 세션에 저장
-        if "history" not in st.session_state:
-            st.session_state["history"] = []
-
         if st.session_state["current_page"] != page_name:
-            # 페이지를 새로 고침 할 때만 history에 추가
             st.session_state["history"].append(st.session_state["current_page"])
             st.session_state["current_page"] = page_name
-            st.rerun()  # rerun 호출을 experimental_rerun으로 변경하여 더 안정적으로 동작
+            st.rerun()
 
     # 뒤로가기 함수
     def go_back(self):
@@ -83,17 +104,23 @@ class Page:
 
     # 홈 페이지 함수 (로그인 전)
     def home_page(self):
-        col1, col2, col3 = st.columns([1, 1, 1])  # 동일한 너비의 세 개 열 생성
+        col1, col2 = st.columns(2)  # 동일한 너비의 세 개 열 생성
         with col1:
-            if st.button("로그인", key="home_login_button"):
-                self.change_page('Login')  # 로그인 페이지로 이동
-        with col2:
-            if st.button("회원가입", key="home_signup_button"):
-                self.change_page('Signup')  # 회원가입 페이지로 이동
-        with col3:
-            if st.button("ID/PW 찾기", key="home_forgot_button"):
-                self.change_page('User manager')  # ID/PW 찾기 페이지로 이동
+            st.title("맛ZIP")
 
+        with col2:
+            col3, col4, col5 = st.columns(3)
+            with col3:
+                if st.button("로그인", key="home_login_button",use_container_width=True):
+                    self.change_page('Login')  # 로그인 페이지로 이동
+            with col4:
+                if st.button("회원가입", key="home_signup_button",use_container_width=True):
+                    self.change_page('Signup')  # 회원가입 페이지로 이동
+            with col5:
+                if st.button("ID/PW 찾기", key="home_forgot_button",use_container_width=True):
+                    self.change_page('User manager')  # ID/PW 찾기 페이지로 이동
+        post_manager = PostManager()  # 인스턴스 생성
+        post_manager.display_posts_on_home()  # display_posts_on_home 메서드 호출
 
 class TurnPages:
     def __init__(self, page: Page):
@@ -140,106 +167,105 @@ class TurnPages:
                     st.session_state.user.clear()  # 세션 초기화로 로그아웃 처리
                     self.page.change_page("Home")  # 첫 페이지로 이동
 
-
+    @st.dialog('로그인 페이지')
     def login_page(self):
-        st.title("로그인")
         user_id = st.text_input("아이디", key="login_user_id_input")
         user_password = st.text_input("비밀번호", type='password', key="login_password_input")
 
-        col1, col2 = st.columns([1, 1])  # 버튼을 나란히 배치
-        with col1:
-            if st.button("로그인", key="login_submit_button"):
-                if not user_id or not user_password:
-                    st.error("아이디와 비밀번호를 입력해 주세요.")
+        if st.button("로그인", key="login_submit_button"):
+            if not user_id or not user_password:
+                st.error("아이디와 비밀번호를 입력해 주세요.")
+            else:
+                # UserVO 객체 생성 (일단 최소 정보로 생성)
+                user_vo = UserVO(user_id=user_id, user_password=user_password, user_email="")
+
+                # SignIn 객체 생성
+                sign_in = SignIn(user_vo)
+
+                if sign_in.sign_in_event():  # 로그인 성공 시
+                    # 로그인 성공 후 추가 정보 가져오기
+                    user_data = get_user_from_cache(user_id)
+
+                    # 세션에 사용자 정보 저장
+                    st.session_state['user_id'] = user_id
+                    st.session_state['user_password'] = user_password
+                    st.session_state['user_data'] = user_data
+
+                    # 이메일을 포함한 추가 정보를 UserVO에 업데이트
+                    user_vo.user_email = user_data['user_email']
+                    user_vo.profile_picture_path = user_data['profile_picture']
+
+                    # 로그인 후 홈화면으로 이동
+                    self.page.change_page('after_login')
                 else:
-                    sign_in = SignIn(user_id, user_password)
-                    if sign_in.sign_in_event():  # 로그인 성공 시
-                        st.session_state['user_id'] = user_id  # 로그인한 사용자 ID 저장
-                        st.session_state['user_password'] = user_password
-                        self.page.change_page('after_login')  # 로그인 후 홈화면으로 이동
-                    else:
-                        st.error("로그인에 실패했습니다. 아이디 또는 비밀번호를 확인해 주세요.")
-        with col2:
-            if st.button("뒤로가기", key="login_back_button"):
-                self.page.change_page("Home")  # 뒤로가기 로직 호출
+                    st.error("로그인에 실패했습니다. 아이디 또는 비밀번호를 확인해 주세요.")
 
+    @st.dialog('회원가입 페이지')
     def signup_page(self):
-        st.title("회원가입")
-
         # 사용자 입력 받기
         user_id = st.text_input("아이디")
         user_password = st.text_input("비밀번호", type='password')
         email = st.text_input("이메일")
-        # 회원가입 처리 객체 생성
-        signup = SignUp(user_id, user_password, email)
-        col1, col2 = st.columns([1, 1])  # 버튼을 나란히 배치
-        with col1:
-            if st.button("회원가입", key="signup_submit_button"):
-                if not user_id or not user_password or not email:
-                    st.error("모든 필드를 입력해 주세요.")
+
+        if st.button("회원가입", key="signup_submit_button"):
+            if not user_id or not user_password or not email:
+                st.error("모든 필드를 입력해 주세요.")
+            else:
+                # UserVO 객체 생성
+                user_vo = UserVO(user_id=user_id, user_password=user_password, user_email=email)
+
+                # SignUp 객체 생성
+                signup = SignUp(user_vo)
+
+                # 회원가입 이벤트 처리
+                if signup.sign_up_event():
+                    st.success("회원가입이 완료되었습니다!")
+                    self.page.change_page('Home')
                 else:
-                    # 비밀번호 길이 체크
-                    if not signup.check_length():
-                        return  # 비밀번호가 너무 짧으면 더 이상 진행하지 않음
-
-                    # 사용자 ID 중복 체크
-                    if not signup.check_user():
-                        return  # 중복 아이디가 있으면 더 이상 진행하지 않음
-
-                    # 모든 검증을 통과하면 회원가입 진행
-                    signup.sign_up_event()
-
-        with col2:
-            if st.button("뒤로가기", key="signup_back_button"):
-                self.page.go_back()  # 뒤로가기 로직 호출
+                    st.error("회원가입에 실패하였습니다.")
 
     def after_login(self):
         # 타이틀을 중앙에 크게 배치
         st.markdown("<h1 style='text-align: center;'>맛ZIP</h1>", unsafe_allow_html=True)
-
         # 사용자 정보
         user_id = st.session_state.get("user_id")
-
         # 로그인 정보 없을 시 처리
         if not user_id:
             st.error("로그인 정보가 없습니다. 다시 로그인해주세요.")
             self.page.change_page('Login')
-            return
 
-        # 사용자 프로필 정보 가져오기
-        user = session.query(User).filter(User.user_id == user_id).first()
-
-        session.close()
-
-        # 프로필 이미지 경로 설정 (없을 경우 기본 이미지 사용)
-        profile_image_url = user.profile_picture_path if user and user.profile_picture_path else 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png'
+        user_data = st.session_state.get('user_data')
 
         # 사용자 ID 표시 및 로그아웃 버튼
-        col1, col2, col3, col4 = st.columns([1, 4, 1, 1])
-        with col1:
-            # 프로필 이미지를 클릭하면 페이지 이동
-            st.image(profile_image_url, use_container_width=True)
-        with col2:
-            st.write(f"**{user_id}**")
-        with col3:
-            if st.button("logout_button", key="logout_button"):
-                st.warning("logout_success")
-                st.session_state.user = ''  # 세션 초기화
-                self.page.change_page('Home')
-        with col4:
-            if st.button("profile_button", key="profile_button"):
-                self.page.change_page("Setting")
-        col1, col2 = st.columns([1, 1])
-        with col1:
-            if st.button("view_post_button", key='posting_button'):
-                self.page.change_page('View Post')
-        with col2:
-            if st.button("group_button", key='group_button'):  # 번역 키 "group_button" 사용
-                self.page.change_page("Group page")
+        col1, col2, col3, col4 = st.columns([1, 4, 2, 1])
+        if user_data:
+            user_name = user_data['user_name']
+            with col1:
+                # 프로필 이미지를 클릭하면 페이지 이동
+                profile_picture = user_data['profile_picture']
+                st.image(profile_picture, use_container_width=True)
+            with col2:
+                st.write(f"**{user_name}**")
+            with col3:
+                if st.button("로그아웃", key="logout_button",use_container_width=True):
+                    st.session_state.clear()
+                    st.warning("로그아웃 성공")
+            with col4:
+                if st.button("프로필", key="profile_button",use_container_width=True):
+                    self.page.change_page("Setting")
+
+            col1, col2 = st.columns([1, 1])
+            with col1:
+                if st.button("게시물 보기", key='view_post_button',use_container_width=True):
+                    self.page.change_page('View Post')
+            with col2:
+                if st.button("그룹 페이지", key='group_button',use_container_width=True):
+                    self.page.change_page("Group page")
+        else:
+            st.error("사용자 정보가 없습니다.")
 
         # 중앙 포스팅 리스트
-        st.title("Recommended Restaurant Posts")
-
+        st.title("추천 맛집 게시물")
         # PostManager 클래스의 인스턴스 생성 후 display_posts_on_home 호출
         post_manager = PostManager()  # 인스턴스 생성
         post_manager.display_posts_on_home()  # display_posts_on_home 메서드 호출
@@ -258,86 +284,121 @@ class TurnPages:
         )
 
     # 친구 및 그룹 관리 사이드바
-    def friend_and_group_sidebar(self, user_id):
-        st.sidebar.title("그룹 관리")  # '그룹 관리'를 title 스타일로 표시
-        if st.sidebar.button("그룹 관리"):
-            st.session_state["current_page"] = "Group Management"  # 페이지를 'Group Management'로 설정
-            st.rerun()  # 페이지 새로고침
+    def sidebar(self, user_id):
+        st.sidebar.title("친구 관리",use_container_width=True)
 
-        
-        # 친구 관리 상위 요소
-        st.sidebar.title("친구 관리")  # '친구 관리'도 title 스타일로 표시
-        # 친구찾기 버튼
-        if st.sidebar.button("친구찾기"):
-            friend_user_id = st.text_input("추가할 친구 ID:")
-            if st.button("팔로우 요청 보내기"):
-                if friend_user_id:
-                    follow_friend(user_id, friend_user_id)
-                else:
-                    st.error("친구 ID를 입력하세요.")
+        # 친구 리스트
+        if st.sidebar.button("내 친구 리스트",use_container_width=True):
+            st.session_state["current_page"] = "FriendList"
+            st.rerun()
+        # 내 친구 리스트 페이지
+        if st.session_state.get("current_page") == "FriendList":
+            st.title("내 친구 리스트")
+            friend.show_friend_list(user_id)
+
+            # 친구 리스트 뒤로가기 버튼
+            if st.button("뒤로가기", key="friend_list_back_button"):
+                st.session_state["current_page"] = "after_login"
+                st.rerun()
 
         # 친구 대기 버튼
-        if st.sidebar.button("친구 대기"):
-            pending_requests = friend.get_follow_requests(user_id)
-            if pending_requests:
-                st.subheader("친구 요청 대기 목록")
-                for req in pending_requests:
-                    st.write(f"요청자: {req['user_id']}")
-                    if st.button(f"수락: {req['user_id']}"):
-                        friend.handle_follow_request(user_id, req['user_id'], "accept")
-                    if st.button(f"거절: {req['user_id']}"):
-                        friend.handle_follow_request(user_id, req['user_id'], "reject")
-            else:
-                st.write("대기 중인 요청이 없습니다.")
+        if st.sidebar.button("친구 대기",use_container_width=True):
+            st.session_state["current_page"] = "FriendRequests"
+            st.rerun()
+            # 친구 대기 페이지
+        if st.session_state.get("current_page") == "FriendRequests":
+            st.title("친구 대기")
+            friend.show_friend_requests_page(user_id)
 
-        # 차단/해제 버튼
-        if st.sidebar.button("차단/해제"):
-            blocked_user_id = st.text_input("차단/해제할 친구 ID:")
-            if st.button("차단"):
-                st.write(f"{blocked_user_id}님을 차단했습니다.")  # 여기에 차단 로직 추가 가능
-            if st.button("차단 해제"):
-                st.write(f"{blocked_user_id}님 차단을 해제했습니다.")  # 여기에 차단 해제 로직 추가 가능
+            # 친구 대기 뒤로가기 버튼
+            if st.button("뒤로가기", key="friend_requests_back_button"):
+                st.session_state["current_page"] = "after_login"
+                st.rerun()
+            st.write(f"Current Page: {st.session_state.get('current_page', 'None')}")
+
+            # 차단 목록 버튼
+        if st.sidebar.button("차단 목록",use_container_width=True):
+            st.session_state["current_page"] = "BlockedList"
+            st.rerun()
+            # 차단 목록 페이지
+        if st.session_state.get("current_page") == "BlockedList":
+            st.title("차단 목록")
+            friend.show_blocked_list_page(user_id)
+
+            # 차단 목록 뒤로가기 버튼
+            if st.button("뒤로가기", key="blocked_list_back_button"):
+                st.session_state["current_page"] = "after_login"
+                st.rerun()
+
+            # 상호작용할 ID 입력창
+        target_id = st.sidebar.text_input("ID를 입력하세요:", key="friend_action_input")
+
+        # 친구 요청 버튼
+        if st.sidebar.button("친구 요청 보내기", key="add_friend_button",use_container_width=True):
+            if target_id:
+                friend.add_friend(user_id, target_id)
+
+        # 차단 버튼
+        if st.sidebar.button("차단",use_container_width=True):
+            if target_id:
+                friend.block_friend(user_id, target_id)
+            else:
+                st.session_state["action"] = "ID를 입력하세요."
+
+        # 차단 해제 버튼
+        if st.sidebar.button("차단 해제",use_container_width=True):
+            if target_id:
+                friend.unblock_friend(user_id, target_id)
+            else:
+                st.session_state["action"] = "ID를 입력하세요."
 
         # 친구 삭제 버튼
-        if st.sidebar.button("삭제"):
-            delete_user_id = st.text_input("삭제할 친구 ID:")
-            if st.button("삭제 확인"):
-                # 삭제 로직 호출
-                st.write(f"{delete_user_id}님을 친구 목록에서 삭제했습니다.")  # 여기에 삭제 로직 추가 가능
-    
+        if st.sidebar.button("삭제",use_container_width=True):
+            if target_id:
+                friend.delete_friend(user_id, target_id)
+            else:
+                st.session_state["action"] = "ID를 입력하세요."
+
+        # 작업 결과 또는 상태 표시
+        if "action" in st.session_state:
+            st.write(st.session_state["action"])
+            del st.session_state["action"]
+
+
     def upload_post(self):
-        st.header("게시물 등록")
-        title = st.text_input("게시물 제목")
-        content = st.text_area("게시물 내용")
-        image_file = st.file_uploader("이미지 파일", type=['jpg', 'png', 'jpeg'])
-        file_file = st.file_uploader("일반 파일", type=['pdf', 'docx', 'txt', 'png', 'jpg'])
+            user_id = st.session_state.get("user_id")
+            st.header("게시물 등록")
+            title = st.text_input("게시물 제목")
+            content = st.text_area("게시물 내용")
+            image_file = st.file_uploader("이미지 파일", type=['jpg', 'png', 'jpeg'])
+            file_file = st.file_uploader("일반 파일", type=['pdf', 'docx', 'txt', 'png', 'jpg'])
 
-        # 카테고리 선택을 위한 Selectbox
-        post_manager = PostManager('uploads')  # DB 경로 설정
-        category_manager=CategoryManager()
-        category_names = category_manager.get_category_names()  # 카테고리 이름만 가져옴
+            # 카테고리 선택을 위한 Selectbox
+            post_manager = PostManager('uploads')  # DB 경로 설정
+            category_manager = CategoryManager()
+            category_names = category_manager.get_category_names()  # 카테고리 이름만 가져옴
 
-        # Selectbox에서 카테고리 선택
-        selected_category_name = st.selectbox("카테고리", category_names)
+            # Selectbox에서 카테고리 선택
+            selected_category_name = st.selectbox("카테고리", category_names)
 
-        # 선택한 카테고리 이름에 해당하는 category_id 구하기
-        categories = category_manager.get_category_options()
-        category_dict = {category.category: category.category_id for category in categories}
-        selected_category_id = category_dict[selected_category_name]
+            # 선택한 카테고리 이름에 해당하는 category_id 구하기
+            categories = category_manager.get_category_options()
+            category_dict = {category.category: category.category_id for category in categories}
+            selected_category_id = category_dict[selected_category_name]
 
-        location_search = LocationSearch()
-        location_search.display_location_on_map()
-        col1, col2 = st.columns([6, 2])
-        with col1:
-            if st.button("게시물 등록"):
-                location_search.add_post(title, content, image_file, file_file, selected_category_id)
-                st.success("게시물이 등록되었습니다.")
-        with col2:
-            if st.button("뒤로가기"):
-                self.page.go_back()  # 뒤로가기 로직 호출
+            location_search = LocationSearch()
+            location_search.display_location_on_map()
+            col1, col2 = st.columns([6, 2])
+            with col1:
+                if st.button("게시물 등록"):
+                    location_search.add_post(user_id, title, content, image_file, file_file, selected_category_id)
+                    st.success("게시물이 등록되었습니다.")
+            with col2:
+                if st.button("뒤로가기"):
+                    self.page.go_back()  # 뒤로가기 로직 호출
 
-    # 세팅 페이지
     def setting_page(self):
+        # 로그인 정보 가져오기
         user_id = st.session_state.get("user_id")
 
         if not user_id:
@@ -345,36 +406,38 @@ class TurnPages:
             self.page.change_page('Login')
             return
 
-        try:
-            # 사용자 이메일 정보 가져오기
-            user = session.query(User).filter(User.user_id == user_id).first()
+        # 세션 상태에서 캐시된 사용자 정보 확인
+        user_vo = st.session_state.get("user_vo")
 
-            if user is None:
-                st.error("사용자를 찾을 수 없습니다.")
-                self.page.change_page('Login')
+        if not user_vo or user_vo.user_id != user_id:
+            # 캐시된 사용자 정보가 없거나 로그인한 사용자와 일치하지 않으면
+            # DB에서 새로 가져오기
+            dao = UserDAO()
+            user_vo = dao.get_user_vo(user_id)
+
+            if not user_vo:
+                st.error("사용자 정보를 찾을 수 없습니다.")
                 return
 
-            user_email = user.user_email
-
-        finally:
-            session.close()
+            # 세션에 사용자 정보를 캐시
+            st.session_state["user_vo"] = user_vo
 
         # 페이지 UI 구성
         col1, col2 = st.columns([8, 2])
         with col1:
             st.title("내 페이지")
         with col2:
-            if st.button("뒤로가기"):
+            if st.button("뒤로가기", use_container_width=True):
                 self.page.go_back()
 
         # 사용자 프로필, 알림 설정 및 테마 버튼을 렌더링하는 뷰 클래스
-        view =SetView(user_id, user_email)
+        view = SetView(user_vo)  # UserVO 객체 전달
         view.render_user_profile()
         view.render_alarm_settings()
 
         # 테마 관리 버튼
-        theme_manager = ThemeManager()
-        theme_manager.render_button()
+        theme_manager = ThemeManager(user_id)
+        theme_manager.render_button(user_id)
 
         # 사용자의 게시물 렌더링
         view.render_posts()
@@ -399,35 +462,51 @@ class TurnPages:
                 st.warning("등록되지 않은 이메일입니다.")
 
         if st.button("뒤로가기", key="forgot_back_button"):
-            # 첫 페이지로 이동
-            self.page.change_page("Home")
+            self.page.go_back()
 
     # 게시글 목록
     def view_post(self):
+        user_id = st.session_state.get("user_id")
         col1, col2, col3 = st.columns([6, 2, 2])  # 비율 6 : 2 : 2
         with col1:
             st.title("게시물 목록")  # 제목을 왼쪽에 배치
         with col2:
-            if st.button("뒤로가기"):
+            if st.button("뒤로가기",use_container_width=True):
                 self.page.go_back()  # 뒤로가기 로직 호출
         with col3:
-            if st.button("글 작성"):
+            if st.button("글 작성",use_container_width=True):
                 self.page.change_page('Upload Post')
         # PostManager 인스턴스를 생성
         post_manager = PostManager()
         # display_posts 메서드를 호출
-        post_manager.display_posts()
+        post_manager.display_posts(user_id)
+
 
 # -------------------------------------디비-----------------------------------------------------------------------------
 
 class User(Base):
     __tablename__ = 'user'
-    user_id = Column(String, primary_key=True)
+    user_seq = Column(Integer, primary_key=True, autoincrement=True)  # 고유 시퀀스
+    user_id = Column(String, unique=True, nullable=False)  # 사용자 ID
     user_password = Column(String, nullable=False)
     user_email = Column(String, nullable=False, unique=True)
     user_is_online = Column(Boolean, default=False)
     user_mannerscore = Column(Integer, default=0)
     profile_picture_path = Column(String, nullable=True)
+
+    def to_dict(self):
+        """
+        User 객체를 딕셔너리 형태로 변환하는 메서드.
+        :return: 딕셔너리 형태의 데이터
+        """
+        return {
+            'user_id': self.user_id,
+            'user_password': self.user_password,
+            'user_email': self.user_email,
+            'user_seq': self.user_seq,
+            'user_is_online': self.user_is_online,
+            'profile_picture_path': self.profile_picture_path
+        }
 
 
 class Friend(Base):
@@ -435,8 +514,6 @@ class Friend(Base):
     friend_id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(String, ForeignKey('user.user_id'), nullable=False)
     friend_user_id = Column(String, ForeignKey('user.user_id'), nullable=False)
-    status = Column(String, nullable=False)
-
 
 class Group(Base):
     __tablename__ = 'group'
@@ -452,6 +529,25 @@ class Group(Base):
     update_date = Column(DateTime, default=func.now(), onupdate=func.now())
     modify_date = Column(DateTime, default=func.now(), onupdate=func.now())
 
+class Block(Base):
+    __tablename__ = 'block'
+    block_id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(String, ForeignKey('user.user_id'), nullable=False)
+    blocked_user_id = Column(String, ForeignKey('user.user_id'), nullable=False)
+
+# myFriendrequest 테이블 (내가 보낸 친구 신청 목록)
+class MyFriendRequest(Base):
+    __tablename__ = 'myFriendrequest'
+    request_id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(String, ForeignKey('user.user_id'), nullable=False)
+    requested_user_id = Column(String, ForeignKey('user.user_id'), nullable=False)
+
+# otherRequest 테이블 (다른 사람이 보낸 친구 신청 목록)
+class OtherRequest(Base):
+    __tablename__ = 'otherRequest'
+    request_id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(String, ForeignKey('user.user_id'), nullable=False)
+    requester_user_id = Column(String, ForeignKey('user.user_id'), nullable=False)
 
 class GroupMember(Base):
     __tablename__ = 'group_member'
@@ -493,6 +589,7 @@ class Message(Base):
 class Posting(Base):
     __tablename__ = 'posting'
     p_id = Column(Integer, primary_key=True, autoincrement=True)
+    p_user = Column(String, ForeignKey('user.user_id'), nullable=False)
     p_title = Column(String, nullable=False)
     p_content = Column(Text, nullable=False)
     p_image_path = Column(String, nullable=True)
@@ -500,6 +597,7 @@ class Posting(Base):
     p_location = Column(Integer, ForeignKey('locations.location_id'), nullable=True)
     p_category = Column(Integer, ForeignKey('food_categories.category_id'), nullable=True)
     like_num = Column(Integer, default=0)
+    total_like_num = Column(Integer, default=0)
     file = Column(Text, nullable=True)  # Adjust as needed
     upload_date = Column(DateTime, default=func.now())
     modify_date = Column(DateTime, default=func.now(), onupdate=func.now())
@@ -508,7 +606,9 @@ class Posting(Base):
 class Settings(Base):
     __tablename__ = 'settings'
     id = Column(Integer, primary_key=True)
+    user = Column(String, ForeignKey('user.user_id'), nullable=False)
     current_theme = Column(String, nullable=True, default='dark')
+
 
 class PasswordRecovery(Base):
     __tablename__ = 'password_recovery'
@@ -516,6 +616,7 @@ class PasswordRecovery(Base):
     user_email = Column(String, index=True, nullable=False)
     token = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
 
 
 # 데이터베이스 초기화 및 기본 데이터 삽입
@@ -550,37 +651,46 @@ def initialize_database():
         session.close()  # 세션 닫기
 
 
+# ---------------------------------------------------------------로그인 ----------------------------
+class UserVO:
+    def __init__(self, user_id: str, user_password: str, user_email: str, user_seq: int = None,
+                 user_is_online: bool = False, user_profile_picture: str = "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png"):
+        self.user_id = user_id
+        self.user_password = user_password
+        self.user_email = user_email
+        self.user_seq = user_seq
+        self.user_is_online = user_is_online
+        self.user_profile_picture = user_profile_picture
 
-# ---------------------------------------------------------------db만들기 ----------------------------
-
+    @classmethod
+    def from_dict(cls, data):
+        return cls(
+            user_id=data.get('user_id', ''),
+            user_password=data.get('user_password', ''),
+            user_email=data.get('user_email', ''),
+            user_seq=data.get('user_seq', None),
+            user_is_online=data.get('user_is_online', False),
+            user_profile_picture=data.get('user_profile_picture', "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png")
+        )
 
 class UserManager:
     def __init__(self, smtp_email, smtp_password, db_url="sqlite:///zip.db"):
         self.smtp_email = smtp_email
         self.smtp_password = smtp_password
         self.db_url = db_url
-        self.engine = create_engine(self.db_url, echo=True)
-        self.Session = sessionmaker(bind=self.engine)
         Base.metadata.create_all(self.engine)
 
-    def create_session(self):
-        """새로운 세션을 생성"""
-        return self.Session()
-
     def is_email_registered(self, email):
-        """이메일이 데이터베이스에 등록되어 있는지 확인"""
         session = self.create_session()
         user = session.query(User).filter_by(user_email=email).first()
         session.close()
         return user is not None
 
     def generate_token(self, length=16):
-        """비밀번호 복구를 위한 랜덤 토큰 생성"""
         characters = string.ascii_letters + string.digits
         return ''.join(secrets.choice(characters) for _ in range(length))
 
     def send_recovery_email(self, email, token):
-        """이메일로 비밀번호 복구 토큰을 전송"""
         subject = "Password Recovery Token"
         body = (
             f"안녕하세요,\n\n"
@@ -644,42 +754,46 @@ class UserManager:
         print("비밀번호가 성공적으로 복구되었습니다.")
 
 
-# -------------------------------------------------------------로그인---------------------------------------------------
 # DAO 클래스
 class UserDAO:
-    def __init__(self):
-        self.session = SessionLocal()
 
     def check_user_id_exists(self, user_id):
-        """아이디 존재 여부 체크"""
         try:
-            return self.session.query(User).filter_by(user_id=user_id).first()
+            user = session.query(User).filter_by(user_id=user_id).first()
+            return UserVO.from_dict(user.to_dict()) if user else None
         except Exception as e:
             st.error(f"DB 오류: {e}")
             return None
 
-    def insert_user(self, user_id, user_password, user_email):
-        """새 사용자 추가"""
-        hashed_password = bcrypt.hashpw(user_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-        new_user = User(user_id=user_id, user_password=hashed_password, user_email=user_email)
+    def insert_user(self, user_vo: UserVO):
+
+        #UserVO를 상속받아 정보를 저장함
+        hashed_password = bcrypt.hashpw(user_vo.user_password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        new_user = User(
+            user_id=user_vo.user_id,
+            user_password=hashed_password,
+            user_email=user_vo.user_email
+        )
         try:
-            self.session.add(new_user)
-            self.session.commit()
-            st.success("회원가입이 완료되었습니다!")
+            session.add(new_user)
+            session.commit()
+
         except Exception as e:
-            self.session.rollback()
+            session.rollback()
             st.error(f"DB 오류: {e}")
 
     def update_user_online(self, user_id, is_online):
-        """사용자 온라인 상태 업데이트"""
         try:
-            user = self.session.query(User).filter_by(user_id=user_id).first()
+            user = session.query(User).filter_by(user_id=user_id).first()
             if user:
                 user.user_is_online = is_online
-                self.session.commit()
+                session.commit()
+                return True
+            return False
         except Exception as e:
-            self.session.rollback()
+            session.rollback()
             st.error(f"DB 오류: {e}")
+            return False
 
     def check_password(self, hashed_password, plain_password):
         # hashed_password가 문자열이라면 bytes로 변환
@@ -687,34 +801,45 @@ class UserDAO:
             hashed_password = hashed_password.encode('utf-8')
         return bcrypt.checkpw(plain_password.encode('utf-8'), hashed_password)
 
+    def get_user_vo(self, user_id):
+        user = session.query(User).filter(User.user_id == user_id).first()
+        session.close()
+
+        if user:
+            return UserVO(
+                user_id=user.user_id,
+                user_password=user.user_password,
+                user_email=user.user_email,
+                user_seq=user.user_seq,
+                user_is_online=user.user_is_online,
+                user_profile_picture=user.profile_picture_path
+            )
+        return None
+
 
 # 회원가입 클래스
 class SignUp:
-    def __init__(self, user_id, user_password, user_email):
-        self.user_id = user_id
-        self.user_password = user_password
-        self.user_email = user_email
+    def __init__(self, user_vo: UserVO):
+        self.user_vo = user_vo
 
     def sign_up_event(self):
-        dao = UserDAO()
+        dao = UserDAO()  # UserDAO 인스턴스 생성
         if not self.check_length():
             return False
         if not self.check_user():
             return False
-        dao.insert_user(self.user_id, self.user_password, self.user_email)
+        dao.insert_user(self.user_vo)  # UserVO를 DAO에 전달
         return True
 
     def check_length(self):
-        """비밀번호 길이 체크"""
-        if len(self.user_password) < 8:
+        if len(self.user_vo.user_password) < 8:
             st.error("비밀번호는 최소 8자 이상이어야 합니다.")
             return False
         return True
 
     def check_user(self):
-        """아이디 중복 체크"""
         dao = UserDAO()
-        if dao.check_user_id_exists(self.user_id):
+        if dao.check_user_id_exists(self.user_vo.user_id):
             st.error("이미 사용 중인 아이디입니다.")
             return False
         return True
@@ -722,33 +847,24 @@ class SignUp:
 
 # 로그인 처리 클래스
 class SignIn:
-    def __init__(self, user_id, user_password):
-        self.user_id = user_id
-        self.user_password = user_password
+    def __init__( self, user_vo: UserVO):
+        self.user_vo = user_vo
+        self.page = Page()
 
     def sign_in_event(self):
         dao = UserDAO()
-        user = dao.check_user_id_exists(self.user_id)
+        user = dao.check_user_id_exists(self.user_vo.user_id)  # UserVO 반환
         if user:
-            if dao.check_password(user.user_password, self.user_password):
-                st.session_state["user_id"] = self.user_id  # 세션에 사용자 ID 저장
-                dao.update_user_online(self.user_id, True)  # 온라인 상태 업데이트
-                st.success(f"{self.user_id}님, 로그인 성공!")
+            if dao.check_password(user.user_password, self.user_vo.user_password):
+                st.session_state["user_id"] = self.user_vo.user_id  # 세션에 사용자 ID 저장
+                dao.update_user_online(self.user_vo.user_id, True)  # 온라인 상태 업데이트
+                st.success(f"{self.user_vo.user_id}님, 로그인 성공!")
                 return True
             else:
                 st.error("비밀번호가 틀렸습니다.")
         else:
             st.error("아이디가 존재하지 않습니다.")
         return False
-
-    def log_out_event(self):
-        # This can be triggered by a logout button
-        if st.button("로그아웃", key="logout_button"):
-            dao = UserDAO()
-            dao.update_user_online(st.session_state["user_id"], 0)  # Set is_online to 0 in D
-            st.session_state.user_password = ''
-            st.warning("로그아웃 완료")
-            change_page('Home')
 
 
 # ------------------------------------------포스팅---------------------------------
@@ -863,7 +979,7 @@ class LocationSearch:
     def get_selected_location_id(self):
         return self.selected_location_id
 
-    def add_post(self, title, content, image_file, file_file, category):
+    def add_post(self, user_id, title, content, image_file, file_file, category):
         location_id = self.get_selected_location_id()  # Get the selected location_id
         post_manager = PostManager()
         image_path = post_manager.save_file(image_file) if image_file else ''
@@ -872,6 +988,7 @@ class LocationSearch:
 
         # Create a new post object
         new_post = Posting(
+            p_user = user_id,
             p_title=title,
             p_content=content,
             p_image_path=image_path,
@@ -887,6 +1004,8 @@ class LocationSearch:
         session.commit()
 
 
+
+
 class PostManager:
     def __init__(self, upload_folder='uploaded_files'):
         self.upload_folder = upload_folder
@@ -895,7 +1014,6 @@ class PostManager:
         self.locations_df = None
         if "posts" not in st.session_state:
             st.session_state.posts = []
-            self.fetch_and_store_posts()
         self.category_manager = CategoryManager()
 
     def save_file(self, file):
@@ -929,49 +1047,66 @@ class PostManager:
     def get_all_posts(self):
         return session.query(Posting).all()
 
-    def fetch_and_store_posts(self):
-        posts = session.query(Posting.p_id, Posting.p_title).all()
-        st.session_state.posts = posts
+    def get_my_posts(self,user_id):
+        try:
+            # 데이터베이스에서 user_id에 해당하는 사용자의 게시물 조회
+            posts = session.query(Posting).filter(Posting.p_user == user_id).all()
 
-    def toggle_like(self, post_id):
+            # 사용자가 작성한 게시물이 없을 경우 처리
+            if not posts:
+                st.warning(f"사용자 ID '{user_id}'로 작성된 게시물이 없습니다.")
+                return []
+
+            # 게시물 데이터를 리스트로 변환하여 반환
+            post_list = []
+            for post in posts:
+                post_data = {
+                    "post_id": post.post_id,
+                    "title": post.p_title,
+                    "content": post.p_content,
+                    "image_path": post.p_image_path,
+                    "file_path": post.file_path,
+                    "category_id": post.p_category,
+                    "location_id": post.p_location,
+                    "upload_date": post.upload_date,
+                    "modify_date": post.modify_date,
+                }
+                post_list.append(post_data)
+
+            return post_list
+
+        except Exception as e:
+            st.error(f"게시물 조회 중 오류가 발생했습니다: {e}")
+            return []
+        finally:
+            session.close()  # 세션 닫기
+
+    def toggle_like(self, post_id,user_id):
         post = session.query(Posting).filter_by(p_id=post_id).first()
-        if post:
-            if post.like_num == 1:
-                post.like_num = 0
-                st.warning("좋아요를 취소했습니다.")
 
-            else:
-                post.like_num = 1
-                st.success("포스팅을 좋아요 했습니다!")
+        if post.like_num==1:
+            # 이미 좋아요를 눌렀다면 취소
+            post.like_num = 0
+            post.total_like_num -= 1  # 총 좋아요 수 감소
+            st.warning("좋아요를 취소했습니다.")
+        elif post.like_num ==0:
+            post.like_num = 1
+            post.total_like_num += 1  # 총 좋아요 수 증가
+            st.success("좋아요를 추가했습니다!")
 
-        session.commit()
+        session.commit()  # 세션 커밋
 
-    def display_like_button(self, post_id):
+
+    def display_like_button(self, post_id,user_id):
         post = session.query(Posting).filter_by(p_id=post_id).first()
+
         if post:
+            total_likes = post.total_like_num
+            st.write(f"총 좋아요 수: {total_likes}")
+
             btn_label = "좋아요 취소" if post.like_num == 1 else "좋아요"
             if st.button(btn_label, key=post_id, use_container_width=True):
-                self.toggle_like(post_id)
-
-
-
-    def fetch_location_data(self, post_id):
-        # Query the database using SQLAlchemy
-        location_data = session.query(
-            Location.location_name,
-            Location.address_name,
-            Location.latitude,
-            Location.longitude
-        ).join(Posting, Posting.p_location == Location.location_id).filter(Posting.p_id == post_id).all()
-
-        # Convert the result to a Pandas DataFrame
-        if location_data:
-            self.locations_df = pd.DataFrame(location_data,
-                                             columns=['location_name', 'address_name', 'latitude', 'longitude'])
-        else:
-            self.locations_df = pd.DataFrame(columns=['location_name', 'address_name', 'latitude', 'longitude'])
-
-        return self.locations_df
+                self.toggle_like(post_id,user_id)
 
     def create_location_name(self):
         # Check if the DataFrame is empty
@@ -1020,20 +1155,40 @@ class PostManager:
         else:
             st.error("해당 게시물이 존재하지 않습니다.")
 
-    def display_posts(self):
-        posts = self.get_all_posts()
+    def fetch_location_data(self, post_id):
+        # Query the database using SQLAlchemy
+        location_data = session.query(
+            Location.location_name,
+            Location.address_name,
+            Location.latitude,
+            Location.longitude
+        ).join(Posting, Posting.p_location == Location.location_id).filter(Posting.p_id == post_id).all()
+
+        # Convert the result to a Pandas DataFrame
+        if location_data:
+            self.locations_df = pd.DataFrame(location_data,
+                                             columns=['location_name', 'address_name', 'latitude', 'longitude'])
+        else:
+            self.locations_df = pd.DataFrame(columns=['location_name', 'address_name', 'latitude', 'longitude'])
+
+        return self.locations_df
+
+    #user_id를 검사하고 가져옴
+    def display_posts(self,user_id):
+        posts = session.query(Posting).filter_by(p_user=user_id).all()
+
         for post in posts:
             st.write(f"Post ID: {post.p_id}, Title: {post.p_title}")
             st.write(f"Content: {post.p_content}")
             if post.p_image_path and os.path.exists(post.p_image_path):
                 st.image(post.p_image_path, width=200)
-            self.display_like_button(post.p_id)
+            self.display_like_button(post.p_id,user_id )
 
             # 게시물 삭제 버튼
             if st.button(f"삭제", key=f"delete_{post.p_id}", use_container_width=True):
                 self.delete_post(post.p_id)
                 st.success(f"게시물 '{post.p_title}'가 삭제되었습니다.")
-                return self.display_posts()
+                return self.display_posts(user_id)
 
             # 게시물 수정 버튼
             with st.expander("수정"):
@@ -1056,7 +1211,7 @@ class PostManager:
 
         if post:
             # 게시물 정보 출력
-            st.write(f"**Post ID**: {post['p_id']}")
+            st.write(f"**creator ID**: {post['p_user']}")
             st.write(f"**Title**: {post['p_title']}")
             st.write(f"**Content**: {post['p_content']}")
 
@@ -1084,6 +1239,7 @@ class PostManager:
         if post:
             return {
                 "p_id": post.p_id,
+                "p_user" : post.p_user,
                 "p_title": post.p_title,
                 "p_content": post.p_content,
                 "p_image_path": post.p_image_path,
@@ -1099,8 +1255,15 @@ class PostManager:
             return None
 
     def display_posts_on_home(self):
-        # 데이터베이스에서 포스팅 데이터를 가져옵니다.
-        posts = self.get_all_posts()
+
+        # 정렬 방식 선택
+        sort_by = st.selectbox("정렬 방식", ["최신순", "인기순"])
+
+        # 정렬 기준 설정
+        if sort_by == "인기순":
+            posts = session.query(Posting).order_by(Posting.like_num.desc()).all()  # 인기순으로 정렬
+        else:
+            posts = session.query(Posting).order_by(Posting.upload_date.desc()).all()  # 최신순으로 정렬
 
         if not posts:
             st.write("현재 추천 포스팅이 없습니다.")
@@ -1140,12 +1303,14 @@ class CategoryManager:
 
 
 class ThemeManager:
-    def __init__(self):
+    def __init__(self, user_id):
         self.th = st.session_state
-        # Ensure the themes dictionary exists in the session state
+        self.user_id = user_id
+
         if "themes" not in self.th:
+            saved_theme = self.get_saved_theme(user_id)  # Load saved theme from DB or default to dark
             self.th.themes = {
-                "current_theme": self.get_saved_theme(),  # Load saved theme from DB or default to dark
+                "current_theme": saved_theme,  # Load saved theme (light/dark) for the user
                 "light": {
                     "theme.base": "dark",
                     "theme.backgroundColor": "black",
@@ -1160,26 +1325,29 @@ class ThemeManager:
                 }
             }
 
-    def get_saved_theme(self):
-        setting = session.query(Settings).filter(Settings.id == 1).first()
+    def get_saved_theme(self, user_id):
+        setting = session.query(Settings).filter(Settings.user == user_id).first()
         session.close()
 
+        # Return the theme if valid, otherwise default to 'dark'
         return setting.current_theme if setting and setting.current_theme in ["light", "dark"] else 'dark'
 
-    def save_theme(self, theme):
-        setting = session.query(Settings).filter(Settings.id == 1).first()
+    def save_theme(self, user_id, theme):
+        """Save the selected theme for a user."""
+        setting = session.query(Settings).filter(Settings.user == user_id).first()
 
         if setting:
-            setting.current_theme = theme
+            setting.current_theme = theme  # Update existing theme
         else:
-            setting = Settings(id=1, current_theme="light")
+            # Create new entry for the user if no settings exist
+            setting = Settings(user=user_id, current_theme=theme)
             session.add(setting)
 
         session.commit()
         session.close()
 
-    def change_theme(self):
-        previous_theme = self.th.themes["current_theme"]
+    def change_theme(self, user_id):
+        previous_theme = self.get_saved_theme(user_id)
         new_theme = "light" if previous_theme == "dark" else "dark"
 
         # Ensure the new theme exists in the themes dictionary
@@ -1187,28 +1355,24 @@ class ThemeManager:
             st.error(f"Theme '{new_theme}' not found in theme dictionary")
             return
 
-        theme_dict = self.th.themes[new_theme]
-
         # Apply the new theme settings
+        theme_dict = self.th.themes[new_theme]
         for key, value in theme_dict.items():
             if key.startswith("theme"):
                 st._config.set_option(key, value)
 
-        # Save the new theme in the database and update session state
-        self.save_theme(new_theme)
-        self.th.themes["current_theme"] = new_theme
+        # Save the new theme for the user
+        self.save_theme(user_id, new_theme)
 
-    def render_button(self):
-        """ Render the theme toggle button """
-        # Ensure the current theme exists in the session state
-        current_theme = self.th.themes.get("current_theme", "dark")  # Default to 'dark' if missing
+    def render_button(self, user_id):
+        current_theme = self.get_saved_theme(user_id)
         button_label = self.th.themes.get(current_theme, {}).get("button_face",
-                                                                 "Unknown theme")  # Default label if missing
+                                                                 "Unknown theme")
 
-        # Render the button and handle the click event
-        if st.button(button_label, use_container_width=True,key='change_theme'):
-            self.change_theme()
-
+        # Render the theme toggle button and handle the click event
+        if st.button(button_label, use_container_width=True, key='change_theme'):
+            self.change_theme(user_id)
+            st.rerun()
 
 # ---------------------------- 유저 프로필 ---------------------------------
 class UserProfile:
@@ -1258,11 +1422,10 @@ class UserProfile:
             st.error("사용자 정보를 찾을 수 없습니다.")
 
     def upload_new_profile_picture(self, user_id):
-        """새 프로필 사진 업로드 및 저장"""
-        st.button("프로필 사진 변경", use_container_width=True,key='change_profile')
+        st.button("프로필 사진 변경", use_container_width=True, key='change_profile')
         uploaded_file = st.file_uploader("새 프로필 사진 업로드", type=["jpg", "png", "jpeg"])
 
-        if st.button("업로드",key='upload'):
+        if st.button("업로드", key='upload'):
             if uploaded_file:
                 image_path = self.save_file(uploaded_file)
                 self.update_profile_picture(user_id, image_path)
@@ -1272,8 +1435,9 @@ class UserProfile:
 
 
 class Account:
-    def __init__(self,user_id):
-        self.user_id=user_id
+    def __init__(self, user_id):
+        self.user_id = user_id
+
     def update_email(self, new_email: str):
         """Update the user's email in the database."""
         user = session.query(User).filter_by(user_id=self.user_id).first()
@@ -1285,39 +1449,51 @@ class Account:
 
 
 class SetView:
-    def __init__(self, user_id, user_email):
-        self.dao=Account
-        self.user_id = user_id
-        self.user_email = user_email
-        self.user_profile = UserProfile()
-        self.theme_manager = ThemeManager()
+    def __init__(self, user_vo):
+        self.user_vo = user_vo
+        self.theme_manager = ThemeManager(user_vo.user_id)
         self.like_button = LikeButton()
 
     def render_alarm_settings(self):
 
-        alarm_enabled = st.button("알람 설정", use_container_width=True,key='alarm')
+        alarm_enabled = st.button("알람 설정", use_container_width=True, key='alarm')
         if alarm_enabled:
             st.write("알람이 설정되었습니다.")
         else:
             st.write("알람이 해제되었습니다.")
 
     def render_user_profile(self):
-        st.write(self.user_id)
-        st.write(self.user_email)
-        # Edit Profile Button (popup simulation)
-        with st.expander("내 정보 수정하기"):
-            # Change Email
-            new_email = st.text_input("새 이메일 주소", value=self.user_email)
-            if st.button("이메일 변경",key='change_email'):
-                self.account.update_email(new_email)
-                st.success("이메일이 변경되었습니다.")
+        st.write(f"**{self.user_vo.user_id}**")
+        st.write(f"**Email:** {self.user_vo.user_email}")
 
-            # Profile Picture Upload
+        # Check if user_profile_picture is None or an empty string
+        profile_picture = self.user_vo.user_profile_picture or "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png"
+
+        # Display the image (use fallback if None or empty)
+        st.image(profile_picture, width=100)
+
+        with st.expander("내 정보 수정하기"):
+            # 이메일 변경
+            new_email = st.text_input("새 이메일 주소", value=self.user_vo.user_email)
+            if st.button("이메일 변경", key='change_email'):
+                self.update_email(new_email)
+
+            # 프로필 사진 업로드
             uploaded_file = st.file_uploader("새 프로필 사진 업로드", type=["jpg", "png", "jpeg"])
             if uploaded_file is not None:
-                image_path = self.user_profile.save_file(uploaded_file)
-                self.user_profile.update_profile_picture(self.user_id, image_path)
-                st.success("프로필 사진이 성공적으로 업데이트되었습니다.")
+                self.update_profile_picture(uploaded_file)
+
+    def update_email(self, new_email):
+        if new_email != self.user_vo.user_email:
+            self.account.update_email(self.user_vo.user_id, new_email)
+            st.success("이메일이 변경되었습니다.")
+        else:
+            st.warning("현재 이메일과 동일합니다.")
+
+    def update_profile_picture(self, uploaded_file):
+        image_path = self.user_profile.save_file(uploaded_file)
+        self.user_profile.update_profile_picture(self.user_vo.user_id, image_path)
+        st.success("프로필 사진이 성공적으로 업데이트되었습니다.")
 
     def render_posts(self):
         with st.expander('관심목록', icon='💗'):
@@ -1346,7 +1522,6 @@ class LikeButton:
                 st.write(f"Title: {post_title}, content : {post_content}")
         else:
             st.write("좋아요를 누른 포스팅이 없습니다.")
-
 
 
 app = Page()
