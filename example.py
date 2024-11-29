@@ -1,10 +1,6 @@
 import sqlite3
 import streamlit as st
 import bcrypt
-from localization import Localization
-# 초기화
-
-import json
 import streamlit as st
 
 class Localization:
