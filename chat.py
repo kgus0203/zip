@@ -6,7 +6,7 @@ from datetime import datetime
 
 # SQLite 데이터베이스 연결
 def init_db():
-    conn = sqlite3.connect('chatroom.db')
+    conn = sqlite3.connect('zip.db')
     cursor = conn.cursor()
 
     # 채팅 메시지를 저장할 테이블 생성
@@ -22,7 +22,7 @@ def init_db():
 
 # 메시지 저장 함수
 def save_message(room_name, username, message):
-    conn = sqlite3.connect('chatroom.db')
+    conn = sqlite3.connect('zip.db')
     cursor = conn.cursor()
     timestamp = datetime.now()
     cursor.execute("INSERT INTO messages (room_name, username, message, timestamp) VALUES (?, ?, ?, ?)",
@@ -33,7 +33,7 @@ def save_message(room_name, username, message):
 
 # 채팅 메시지 불러오기 함수
 def load_messages(room_name):
-    conn = sqlite3.connect('chatroom.db')
+    conn = sqlite3.connect('zip.db')
     cursor = conn.cursor()
     cursor.execute("SELECT username, message, timestamp FROM messages WHERE room_name = ? ORDER BY timestamp",
                    (room_name,))
