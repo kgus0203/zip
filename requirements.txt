@@ -2,3 +2,4 @@ streamlit
 sqlalchemy
 bcrypt
 localiztion
+json
