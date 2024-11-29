@@ -160,7 +160,7 @@ class TurnPages:
                         st.error("로그인에 실패했습니다. 아이디 또는 비밀번호를 확인해 주세요.")
         with col2:
             if st.button("뒤로가기", key="login_back_button"):
-                self.page.go_back()  # 뒤로가기 로직 호출
+                self.page.change_page("Home")  # 뒤로가기 로직 호출
 
     def signup_page(self):
         st.title("회원가입")
