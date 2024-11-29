@@ -2,3 +2,4 @@ streamlit
 sqlalchemy
 bcrypt
 Localization
+scipy
