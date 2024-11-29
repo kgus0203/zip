@@ -263,6 +263,7 @@ class TurnPages:
             st.session_state["current_page"] = "Group Management"  # 페이지를 'Group Management'로 설정
             st.rerun()  # 페이지 새로고침
 
+        
         # 친구 관리 상위 요소
         st.sidebar.title("친구 관리")  # '친구 관리'도 title 스타일로 표시
         # 친구찾기 버튼
@@ -937,11 +938,11 @@ class PostManager:
             if post.like_num == 1:
                 post.like_num = 0
                 st.warning("좋아요를 취소했습니다.")
-                st.rerun()
+
             else:
                 post.like_num = 1
                 st.success("포스팅을 좋아요 했습니다!")
-                st.rerun()
+
         session.commit()
 
     def display_like_button(self, post_id):
