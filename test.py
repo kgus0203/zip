@@ -49,7 +49,8 @@ class Page:
             'View Post': self.turn_pages.view_post,
             'Setting': self.turn_pages.setting_page,
             'User manager': self.turn_pages.usermanager_page,
-            'ID PW 변경': self.turn_pages.id_pw_change_page,
+            'ID PW 변경': self.turn_pages.id_pw_change_page,'
+            'Upload Post' : self.turn_pages.upload_post,
         }
 
         # 현재 페이지 렌더링
