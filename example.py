@@ -2,7 +2,7 @@ import sqlite3
 import streamlit as st
 import bcrypt
 import streamlit as st
-
+from localization import Localization
 
 def create_db():
    conn = sqlite3.connect('zip.db')
