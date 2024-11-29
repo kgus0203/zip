@@ -148,18 +148,14 @@ def init_db():
   conn.commit()
   conn.close()
 
-
-
-
-
-
 create_db()
 #--------------------------페이지-----------------------------------------------
 
 # 데이터베이스 연결 함수
 def create_connection():
- conn = st.connection('zip.db', type='sql')
+ conn = sqlite3.connect.connection('zip.db')
  return conn
+    
 
 # UserDAO 클래스 (데이터베이스 연동 클래스)
 class UserDAO:
