@@ -304,37 +304,39 @@ class TurnPages:
             if st.button("삭제 확인"):
                 # 삭제 로직 호출
                 st.write(f"{delete_user_id}님을 친구 목록에서 삭제했습니다.")  # 여기에 삭제 로직 추가 가능
-
-    def upload_post(self):
+    
+     def upload_post():
         st.header("게시물 등록")
-        title = st.text_input("게시물 제목")
+        title = st.text_input("게시물 제목", key='post_title')
         content = st.text_area("게시물 내용")
         image_file = st.file_uploader("이미지 파일", type=['jpg', 'png', 'jpeg'])
         file_file = st.file_uploader("일반 파일", type=['pdf', 'docx', 'txt', 'png', 'jpg'])
-
+    
         # 카테고리 선택을 위한 Selectbox
-        post_manager = PostManager('uploads')  # DB 경로 설정
-        category_manager=CategoryManager()
+        post_manager = PostManager('uploads')
+        category_manager = CategoryManager()
         category_names = category_manager.get_category_names()  # 카테고리 이름만 가져옴
-
+    
         # Selectbox에서 카테고리 선택
         selected_category_name = st.selectbox("카테고리", category_names)
-
+    
         # 선택한 카테고리 이름에 해당하는 category_id 구하기
         categories = category_manager.get_category_options()
-        category_dict = {category[1]: category[0] for category in categories}
+        category_dict = {category.category: category.category_id for category in categories}
         selected_category_id = category_dict[selected_category_name]
-
+    
         location_search = LocationSearch()
         location_search.display_location_on_map()
+    
         col1, col2 = st.columns([6, 2])
         with col1:
             if st.button("게시물 등록"):
                 location_search.add_post(title, content, image_file, file_file, selected_category_id)
                 st.success("게시물이 등록되었습니다.")
+    
         with col2:
             if st.button("뒤로가기"):
-                self.page.go_back()  # 뒤로가기 로직 호출
+                go_back()  # 뒤로가기 로직 호출
 
     # 세팅 페이지
     def setting_page(self):
