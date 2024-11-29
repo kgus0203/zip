@@ -313,24 +313,18 @@ class SignIn:
 
  def sign_in_event(self):
      dao = UserDAO()
-
-     # 사용자 정보를 가져옵니다.
-     result = dao.check_user_id_exists(self.user_id)
-
-     if result:
-         # result는 튜플 형태 (user_id, user_password, user_email, user_is_online)
-         stored_hashed_password = result['user_password']  # result['user_password']은 user_password에 해당
-         if dao.check_password(stored_hashed_password, self.user_password):
-             st.session_state["user_id"] = self.user_id  # 로그인 성공 시 세션에 user_id 저장
-             self.user_is_online = 1
-             st.success(f"{self.user_id}님, 로그인 성공!")
-             dao.update_user_online(self.user_id, 1)  # 로그인 시 온라인 상태로 업데이트
-             return True
-         else:
-             st.error("비밀번호가 틀렸습니다.")
-     else:
-         st.error("아이디가 존재하지 않습니다.")
-     return False
+        user = dao.check_user_id_exists(self.user_id)
+        if user:
+            if dao.check_password(user.user_password, self.user_password):
+                st.session_state["user_id"] = self.user_id  # 세션에 사용자 ID 저장
+                dao.update_user_online(self.user_id, True)  # 온라인 상태 업데이트
+                st.success(f"{self.user_id}님, 로그인 성공!")
+                return True
+            else:
+                st.error("비밀번호가 틀렸습니다.")
+        else:
+            st.error("아이디가 존재하지 않습니다.")
+        return False
 
 # 페이지 이동 함수 등은 기존 코드대로 유지
 def home_page():
