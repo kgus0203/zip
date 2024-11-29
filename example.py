@@ -1,9 +1,15 @@
 import sqlite3
 import streamlit as st
 import bcrypt
+from localization import Localization
+# 초기화
+if 'localization' not in st.session_state:
+    st.session_state.localization = Localization(lang ='ko')  # 기본 언어는 한국어로 설정됨
+# 현재 언어 설정 초기화
+if 'current_language' not in st.session_state:
+    st.session_state.current_language = 'ko'  # 기본값으로 한국어 설정
 
-import sqlite3
-
+localization = st.session_state.localization
 
 def create_db():
    conn = sqlite3.connect('zip.db')
@@ -155,6 +161,91 @@ def create_db():
 
 create_db()
 #--------------------------페이지-----------------------------------------------
+if 'current_page' not in st.session_state:
+    st.session_state.current_page = 'Home'
+
+    # 프로필 이미지 경로 설정 (없을 경우 기본 이미지 사용)
+    profile_image_url = result[0] if result and result[0] else 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png'
+
+    # 사용자 ID 표시 및 로그아웃 버튼
+    col1, col2, col3, col4 = st.columns([1, 4, 1, 1])
+    with col1:
+        # 프로필 이미지를 클릭하면 페이지 이동
+        st.image(profile_image_url, use_column_width= True)
+    with col2:
+        st.write(f"**{user_id}**")
+    with col3:
+        if st.button(localization.get_text("logout_button"), key="logout_button"):
+            st.warning(localization.get_text("logout_success"))
+            st.session_state.user = ''  # 세션 초기화
+            change_page('Home')
+    with col4:
+        if st.button(localization.get_text("profile_button"), key="profile_button"):
+            change_page("Setting")
+    col1, col2 = st.columns([1,1])
+    with col1:
+        if st.button(localization.get_text("view_post_button"), key='posting_button'):
+            change_page('View Post')
+    with col2:
+        if st.button(localization.get_text("group_button"), key='group_button'):  # 번역 키 "group_button" 사용
+            change_page("Group page")
+
+    # 중앙 포스팅 리스트
+    st.title(localization.get_text("Recommended Restaurant Posts"))
+
+    # PostManager 클래스의 인스턴스 생성 후 display_posts_on_home 호출
+    post_manager = posting.PostManager()  # 인스턴스 생성
+    post_manager.display_posts_on_home()  # display_posts_on_home 메서드 호출
+
+
+    # 친구 관리 사이드바 추가(사이드바 이름 변경 참고 부탁드립니다, 관련 이름 모두 수정함)
+    sidebar(user_id)
+
+# 페이지 전환 함수
+def change_page(page_name):
+    if "history" not in st.session_state:
+        st.session_state["history"] = []
+    if st.session_state["current_page"] != page_name:
+        st.session_state["history"].append(st.session_state["current_page"])
+    st.session_state["current_page"] = page_name
+    st.rerun()
+
+# 뒤로가기 함수
+def go_back():
+    if 'history' in st.session_state and st.session_state.history:
+        st.session_state.current_page = st.session_state.history.pop()  # 이전 페이지로 이동
+        st.rerun()
+    else:
+        st.warning("이전 페이지가 없습니다.")  # 방문 기록이 없을 경우 처리
+        st.rerun()
+
+# 페이지 이름 기반 키 추가
+current_page = st.session_state["current_page"]
+
+# 홈 페이지 함수 (로그인 전)
+def home_page():
+    col1, col2 = st.columns(2)
+    with col1:
+        st.title("맛ZIP")
+    with col2:
+        col3, col4, col5 = st.columns(3)
+        with col3:
+            if st.button((localization.get_text("login_title")), use_container_width=True):
+                login_page()
+        with col4:
+            if st.button((localization.get_text("signup_title")), use_container_width=True):
+                signup_page()
+        with col5:
+            if st.button((localization.get_text("id_pw_change_title")), use_container_width=True):
+                id_pw_change_page()
+
+    # 중앙 포스팅 리스트
+    st.title(localization.get_text("Recommended Restaurant Posts"))
+
+    # PostManager 클래스의 인스턴스 생성 후 display_posts_on_home 호출
+    post_manager = posting.PostManager()  # 인스턴스 생성
+    post_manager.display_posts_on_home()  # display_posts_on_home 메서드 호출
+
 
 # 데이터베이스 연결 함수
 def create_connection():
@@ -295,29 +386,77 @@ def home_page():
     with col3:
         if st.button("ID/PW 찾기", key="home_forgot_button"):
             change_page('User manager')  # ID/PW 찾기 페이지로 이동
-# 로그인 페이지 예시
+# 홈 페이지 함수 (로그인 전)
+def home_page():
+    col1, col2 = st.columns(2)
+    with col1:
+        st.title("맛ZIP")
+    with col2:
+        col3, col4, col5 = st.columns(3)
+        with col3:
+            if st.button((localization.get_text("login_title")), use_container_width=True):
+                login_page()
+        with col4:
+            if st.button((localization.get_text("signup_title")), use_container_width=True):
+                signup_page()
+        with col5:
+            if st.button((localization.get_text("id_pw_change_title")), use_container_width=True):
+                id_pw_change_page()
+
+    # 중앙 포스팅 리스트
+    st.title(localization.get_text("Recommended Restaurant Posts"))
+
+    # PostManager 클래스의 인스턴스 생성 후 display_posts_on_home 호출
+    post_manager = posting.PostManager()  # 인스턴스 생성
+    post_manager.display_posts_on_home()  # display_posts_on_home 메서드 호출
+
+
+
+
+#로그인 페이지
+@st.dialog(localization.get_text("login_title1"))
 def login_page():
- st.title("로그인")
- user_id = st.text_input("아이디", key="login_user_id_input")
- user_password = st.text_input("비밀번호", type='password', key="login_password_input")
+    user_id = st.text_input(localization.get_text("user_id_input"), key="login_user_id_input")
+    user_password = st.text_input(localization.get_text("password_input"), type='password', key="login_password_input")
 
- col1, col2 = st.columns([1, 1])  # 버튼을 나란히 배치
- with col1:
-     if st.button("로그인", key="login_submit_button"):
-         if not user_id or not user_password:
-             st.error("아이디와 비밀번호를 입력해 주세요.")
-         else:
-             sign_in = SignIn(user_id, user_password)
-             if sign_in.sign_in_event():  # 로그인 성공 시
-                 st.session_state['user_id'] = user_id  # 로그인한 사용자 ID 저장
-                 st.session_state['user_password'] = user_password  # 비밀번호도 저장
-             else:
-                 st.error("로그인에 실패했습니다. 아이디 또는 비밀번호를 확인해 주세요.")
- with col2:
-     if st.button("뒤로가기", key="login_back_button"):
-         go_back()  # 뒤로가기 로직 호출
+    if st.button(localization.get_text("login_button"), key="login_submit_button"):
+                if not user_id or not user_password:
+                    st.error(localization.get_text("login_error_empty"))
+                else:
+                    sign_in = login.SignIn(user_id, user_password)
+                    if sign_in.sign_in_event():  # 로그인 성공 시
+                        st.session_state['user_id'] = user_id  # 로그인한 사용자 ID 저장
+                        change_page('after_login')  # 로그인 후 홈화면으로 이동
+                    else:
+                        st.error(localization.get_text("login_error_failed"))
 
+#회원가입 페이지
+@st.dialog(localization.get_text("signup_title"))
+def signup_page():
+    # 사용자 입력 받기
+    user_id = st.text_input(localization.get_text("user_id_input"))
+    user_password = st.text_input(localization.get_text("password_input"), type='password')
+    email = st.text_input(localization.get_text("email_input"))
 
+    # 회원가입 처리 객체 생성
+    signup = login.SignUp(user_id, user_password, email)
+    if st.button(localization.get_text("signup_button"), key="signup_submit_button"):
+            if not user_id or not user_password or not email:
+                st.error(localization.get_text("signup_error_empty"))
+            else:
+                if not signup.validate_email(email):
+                    st.error(localization.get_text("invalid_email_error"))
+                    return
+                # 비밀번호 길이 체크
+                if not signup.check_length():
+                    return  # 비밀번호가 너무 짧으면 더 이상 진행하지 않음
+
+                # 사용자 ID 중복 체크
+                if not signup.check_user():
+                    return  # 중복 아이디가 있으면 더 이상 진행하지 않음
+
+                # 모든 검증을 통과하면 회원가입 진행
+                signup.sign_up_event()
 # 페이지 함수 매핑
 page_functions = {
     'Home': home_page,
