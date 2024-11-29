@@ -18,7 +18,7 @@ class Message(Base):
     timestamp = Column(DateTime, default=datetime.now)
 
 # 데이터베이스 연결 설정
-DATABASE_URL = "sqlite:///zip.db"
+DATABASE_URL = "sqlite:///chat.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
