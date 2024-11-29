@@ -371,7 +371,7 @@ def home_page():
 
 @st.dialog("login_title")
 def login_page():
-    user_id = st.text_input(l"user_id_input", key="login_user_id_input")
+    user_id = st.text_input("user_id_input", key="login_user_id_input")
     user_password = st.text_input("password_input", type='password', key="login_password_input")
 
     if st.button("login_button", key="login_submit_button"):
