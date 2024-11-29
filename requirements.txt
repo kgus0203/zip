@@ -1,5 +1,5 @@
 streamlit
 sqlalchemy
 bcrypt
-localiztion
+Localiztion
 json
