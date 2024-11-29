@@ -157,42 +157,7 @@ create_db()
 if 'current_page' not in st.session_state:
     st.session_state.current_page = 'Home'
 
-    # 프로필 이미지 경로 설정 (없을 경우 기본 이미지 사용)
-    profile_image_url = result[0] if result and result[0] else 'https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png'
 
-    # 사용자 ID 표시 및 로그아웃 버튼
-    col1, col2, col3, col4 = st.columns([1, 4, 1, 1])
-    with col1:
-        # 프로필 이미지를 클릭하면 페이지 이동
-        st.image(profile_image_url, use_column_width= True)
-    with col2:
-        st.write(f"**{user_id}**")
-    with col3:
-        if st.button(localization.get_text("logout_button"), key="logout_button"):
-            st.warning(localization.get_text("logout_success"))
-            st.session_state.user = ''  # 세션 초기화
-            change_page('Home')
-    with col4:
-        if st.button(localization.get_text("profile_button"), key="profile_button"):
-            change_page("Setting")
-    col1, col2 = st.columns([1,1])
-    with col1:
-        if st.button(localization.get_text("view_post_button"), key='posting_button'):
-            change_page('View Post')
-    with col2:
-        if st.button(localization.get_text("group_button"), key='group_button'):  # 번역 키 "group_button" 사용
-            change_page("Group page")
-
-    # 중앙 포스팅 리스트
-    st.title(localization.get_text("Recommended Restaurant Posts"))
-
-    # PostManager 클래스의 인스턴스 생성 후 display_posts_on_home 호출
-    post_manager = posting.PostManager()  # 인스턴스 생성
-    post_manager.display_posts_on_home()  # display_posts_on_home 메서드 호출
-
-
-    # 친구 관리 사이드바 추가(사이드바 이름 변경 참고 부탁드립니다, 관련 이름 모두 수정함)
-    sidebar(user_id)
 
 # 페이지 전환 함수
 def change_page(page_name):
