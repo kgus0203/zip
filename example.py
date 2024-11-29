@@ -390,7 +390,7 @@ def signup_page():
     email = st.text_input("email_input")
 
     # 회원가입 처리 객체 생성
-    signup = login.SignUp(user_id, user_password, email)
+    signup = SignUp(user_id, user_password, email)
     if st.button("signup_button", key="signup_submit_button"):
             if not user_id or not user_password or not email:
                 st.error("signup_error_empty")
