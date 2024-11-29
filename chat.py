@@ -3,6 +3,7 @@ from sqlalchemy import create_engine, Column, Integer, String, DateTime
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from datetime import datetime
+import os
 
 # SQLAlchemy ORM 설정
 Base = declarative_base()
@@ -17,14 +18,19 @@ class Message(Base):
     message = Column(String, nullable=False)
     timestamp = Column(DateTime, default=datetime.now)
 
-# 데이터베이스 연결 설정
-DATABASE_URL = "sqlite:///chat.db"
+# 데이터베이스 연결 설정 (chat_db.db 파일로 연결)
+DATABASE_URL = "sqlite:///chat_db.db"
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 
-# 데이터베이스 초기화 함수
+# 데이터베이스 초기화 함수 (테이블 생성)
 def init_db():
-    Base.metadata.create_all(bind=engine)
+    if not os.path.exists('chat_db.db'):
+        # DB 파일이 존재하지 않으면 테이블 생성
+        Base.metadata.create_all(bind=engine)
+        print("Database and tables created.")
+    else:
+        print("Database already exists.")
 
 # 메시지 저장 함수
 def save_message(room_name, username, message):
