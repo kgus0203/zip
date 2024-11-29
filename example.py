@@ -369,41 +369,38 @@ def home_page():
     post_manager.display_posts_on_home()  # display_posts_on_home 메서드 호출
 
 
-
-
-#로그인 페이지
-@st.dialog(localization.get_text("login_title1"))
+@st.dialog("login_title")
 def login_page():
-    user_id = st.text_input(localization.get_text("user_id_input"), key="login_user_id_input")
-    user_password = st.text_input(localization.get_text("password_input"), type='password', key="login_password_input")
+    user_id = st.text_input(l"user_id_input", key="login_user_id_input")
+    user_password = st.text_input("password_input", type='password', key="login_password_input")
 
-    if st.button(localization.get_text("login_button"), key="login_submit_button"):
+    if st.button("login_button", key="login_submit_button"):
                 if not user_id or not user_password:
-                    st.error(localization.get_text("login_error_empty"))
+                    st.error("login_error_empty")
                 else:
-                    sign_in = login.SignIn(user_id, user_password)
-                    if sign_in.sign_in_event():  # 로그인 성공 시
+                    sign_in = SignIn(user_id, user_password)
+                    if sign_in_event():  # 로그인 성공 시
                         st.session_state['user_id'] = user_id  # 로그인한 사용자 ID 저장
                         change_page('after_login')  # 로그인 후 홈화면으로 이동
                     else:
-                        st.error(localization.get_text("login_error_failed"))
+                        st.error("login_error_failed")
 
 #회원가입 페이지
-@st.dialog(localization.get_text("signup_title"))
+@st.dialog("signup_title")
 def signup_page():
     # 사용자 입력 받기
-    user_id = st.text_input(localization.get_text("user_id_input"))
-    user_password = st.text_input(localization.get_text("password_input"), type='password')
-    email = st.text_input(localization.get_text("email_input"))
+    user_id = st.text_input("user_id_input")
+    user_password = st.text_input("password_input", type='password')
+    email = st.text_input("email_input")
 
     # 회원가입 처리 객체 생성
     signup = login.SignUp(user_id, user_password, email)
-    if st.button(localization.get_text("signup_button"), key="signup_submit_button"):
+    if st.button("signup_button", key="signup_submit_button"):
             if not user_id or not user_password or not email:
-                st.error(localization.get_text("signup_error_empty"))
+                st.error("signup_error_empty")
             else:
                 if not signup.validate_email(email):
-                    st.error(localization.get_text("invalid_email_error"))
+                    st.error("invalid_email_error")
                     return
                 # 비밀번호 길이 체크
                 if not signup.check_length():
