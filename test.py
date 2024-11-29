@@ -305,7 +305,7 @@ class TurnPages:
                 # 삭제 로직 호출
                 st.write(f"{delete_user_id}님을 친구 목록에서 삭제했습니다.")  # 여기에 삭제 로직 추가 가능
     
-     def upload_post():
+    def upload_post():
         st.header("게시물 등록")
         title = st.text_input("게시물 제목", key='post_title')
         content = st.text_area("게시물 내용")
