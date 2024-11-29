@@ -395,9 +395,7 @@ def signup_page():
             if not user_id or not user_password or not email:
                 st.error("signup_error_empty")
             else:
-                if not signup.validate_email(email):
-                    st.error("invalid_email_error")
-                    return
+
                 # 비밀번호 길이 체크
                 if not signup.check_length():
                     return  # 비밀번호가 너무 짧으면 더 이상 진행하지 않음
