@@ -313,8 +313,8 @@ class SignIn:
 
  def sign_in_event(self):
      dao = UserDAO()
-        user = dao.check_user_id_exists(self.user_id)
-        if user:
+         user = dao.check_user_id_exists(self.user_id)
+         if user:
             if dao.check_password(user.user_password, self.user_password):
                 st.session_state["user_id"] = self.user_id  # 세션에 사용자 ID 저장
                 dao.update_user_online(self.user_id, True)  # 온라인 상태 업데이트
