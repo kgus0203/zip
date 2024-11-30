@@ -29,30 +29,6 @@ session = SessionLocal()
 
 
 # -----------------------------------------------페이지 전환 ----------------------------------------------------------
-@st.cache_resource
-def get_user_from_cache(user_id):
-    try:
-        # 데이터베이스에서 사용자 정보 가져오기
-        user = session.query(User).filter(User.user_id == user_id).first()
-
-        # 사용자 정보가 없으면 None 반환
-        if not user:
-            st.error("사용자를 찾을 수 없습니다.")
-            return None
-
-        # 사용자 정보를 딕셔너리로 변환
-        user_data = {
-            "user_id": user.user_id,
-            "user_name": user.user_id,  # 예시: 실제 사용자 이름을 저장하려면 모델에 이름 컬럼이 필요
-            "profile_picture": user.profile_picture_path if user.profile_picture_path else "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png"
-        }
-
-        return user_data
-    except Exception as e:
-        st.error(f"DB 오류: {e}")
-        return None
-    finally:
-        session.close()  # 세션 닫기
 
 
 class Page:
@@ -186,14 +162,23 @@ class TurnPages:
                 sign_in = SignIn(user_vo)
 
                 if sign_in.sign_in_event():  # 로그인 성공 시
-                    # 로그인 성공 후 추가 정보 가져오기
-                    user_data = get_user_from_cache(user_id)
+                    dao = UserDAO()
+                    user_vo = dao.get_user_vo(user_id)  # UserVO 객체를 반환
 
-                    # 세션에 사용자 정보 저장
-                    st.session_state['user_id'] = user_id
-                    st.session_state['user_password'] = user_password
-                    st.session_state['user_data'] = user_data
+                    if user_vo:
+                        # user_vo가 정상적으로 반환되면 처리
+                        st.session_state['user_data'] = {
+                            "user_id": user_vo.user_id,
+                            "user_name": user_vo.user_id,  # 여기서는 user_id로 대체 (이름 컬럼 추가 시 수정 필요)
+                            "profile_picture": user_vo.user_profile_picture if user_vo.user_profile_picture else "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png",
+                            "user_email": user_vo.user_email,  # 추가 정보 포함
+                        }
+                    else:
+                        st.error("사용자 정보를 불러오는데 실패했습니다.")
+                        self.page.change_page('Login')
 
+                    # 이후 user_data 사용하여 UI 처리
+                    user_data = st.session_state.get('user_data')
                     # 이메일을 포함한 추가 정보를 UserVO에 업데이트
                     user_vo.user_email = user_data['user_email']
                     user_vo.profile_picture_path = user_data['profile_picture']
