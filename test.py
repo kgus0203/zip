@@ -16,7 +16,6 @@ import pandas as pd
 import os
 import requests
 
-
 # SQLAlchemy Base 선언
 Base = declarative_base()
 
@@ -30,28 +29,7 @@ session = SessionLocal()
 
 
 # -----------------------------------------------페이지 전환 ----------------------------------------------------------
-@st.cache_resource
-def get_user_from_cache(user_id):
-    try:
-        # 데이터베이스에서 사용자 정보 가져오기
-        user = session.query(User).filter(User.user_id == user_id).first()
 
-        # 사용자 정보가 없으면 None 반환
-        if not user:
-            st.error("사용자를 찾을 수 없습니다.")
-            return None
-
-        # 사용자 정보를 딕셔너리로 변환
-        user_data = {
-            "user_id": user.user_id,
-            "user_name": user.user_id,  # 예시: 실제 사용자 이름을 저장하려면 모델에 이름 컬럼 추가 필요
-            "profile_picture": user.profile_picture_path if user.profile_picture_path else "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png",
-            "user_email": user.user_email,  # 추가 정보 포함
-        }
-
-        return user_data
-    finally:
-        session.close()  # 세션 닫기
 
 class Page:
 
@@ -235,6 +213,22 @@ class TurnPages:
             st.error("로그인 정보가 없습니다. 다시 로그인해주세요.")
             self.page.change_page('Login')
 
+        dao = UserDAO()
+        user_vo = dao.get_user_vo(user_id)  # UserVO 객체를 반환
+
+        if user_vo:
+            # user_vo가 정상적으로 반환되면 처리
+            st.session_state['user_data'] = {
+                "user_id": user_vo.user_id,
+                "user_name": user_vo.user_id,  # 여기서는 user_id로 대체 (이름 컬럼 추가 시 수정 필요)
+                "profile_picture": user_vo.user_profile_picture if user_vo.user_profile_picture else "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png",
+                "user_email": user_vo.user_email,  # 추가 정보 포함
+            }
+        else:
+            st.error("사용자 정보를 불러오는데 실패했습니다.")
+            self.page.change_page('Login')
+
+        # 이후 user_data 사용하여 UI 처리
         user_data = st.session_state.get('user_data')
 
         # 사용자 ID 표시 및 로그아웃 버튼
@@ -242,7 +236,6 @@ class TurnPages:
         if user_data:
             user_name = user_data['user_name']
             with col1:
-                # 프로필 이미지를 클릭하면 페이지 이동
                 profile_picture = user_data['profile_picture']
                 st.image(profile_picture, use_container_width=True)
             with col2:
@@ -783,19 +776,6 @@ class UserDAO:
             session.rollback()
             st.error(f"DB 오류: {e}")
 
-    def update_user_online(self, user_id, is_online):
-        try:
-            user = session.query(User).filter_by(user_id=user_id).first()
-            if user:
-                user.user_is_online = is_online
-                session.commit()
-                return True
-            return False
-        except Exception as e:
-            session.rollback()
-            st.error(f"DB 오류: {e}")
-            return False
-
     def check_password(self, hashed_password, plain_password):
         # hashed_password가 문자열이라면 bytes로 변환
         if isinstance(hashed_password, str):
@@ -817,6 +797,13 @@ class UserDAO:
             )
         return None
 
+    def update_user_field(self, user_id, field_name, field_value):
+
+        user = session.query(User).filter_by(user_id=user_id).first()
+        if user:
+            setattr(user, field_name, field_value)
+            session.commit()
+            return True
 
 # 회원가입 클래스
 class SignUp:
@@ -857,8 +844,9 @@ class SignIn:
         user = dao.check_user_id_exists(self.user_vo.user_id)  # UserVO 반환
         if user:
             if dao.check_password(user.user_password, self.user_vo.user_password):
-                st.session_state["user_id"] = self.user_vo.user_id  # 세션에 사용자 ID 저장
-                dao.update_user_online(self.user_vo.user_id, True)  # 온라인 상태 업데이트
+                st.session_state["user_id"] = self.user_vo.user_id
+                dao.update_user_field(self.user_vo.user_id, "user_is_online", True)
+
                 st.success(f"{self.user_vo.user_id}님, 로그인 성공!")
                 return True
             else:
@@ -1379,7 +1367,7 @@ class ThemeManager:
 class UserProfile:
     def __init__(self, upload_folder="profile_pictures"):
         self.upload_folder = upload_folder
-
+        self.user_dao =  UserDAO()
         # Default profile picture URL
         self.default_profile_picture = (
             "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png"
@@ -1389,30 +1377,26 @@ class UserProfile:
         os.makedirs(self.upload_folder, exist_ok=True)
 
     def save_file(self, uploaded_file):
-        if uploaded_file:
+        # 이미지 저장 후 경로 반환
+        if uploaded_file is not None:
             file_path = os.path.join(self.upload_folder, uploaded_file.name)
             with open(file_path, "wb") as f:
                 f.write(uploaded_file.getbuffer())
             return file_path
         return None
 
-    def get_user_profile(self, user_id):
-        """사용자의 프로필 정보를 데이터베이스에서 조회"""
-        return session.query(User).filter_by(user_id=user_id).first()
-
     def update_profile_picture(self, user_id, image_path):
-        """사용자의 프로필 사진 경로를 업데이트"""
-        user = self.get_user_profile(user_id)
-        if user:
-            user.profile_picture_path = image_path
-            session.commit()
+        if image_path:
+            success = self.user_dao.update_user_field(user_id, "profile_picture_path", image_path)
+            return success, image_path
+        return False, None
 
     def display_profile(self, user_id):
-        """사용자 프로필 표시"""
-        user = self.get_user_profile(user_id)
-        if user:
-            st.write(f"User Email: {user.user_email}")
-            profile_picture = user.profile_picture_path
+
+        user_vo = self.user_dao.get_user_vo(user_id)
+        if user_vo:
+            st.write(f"User Email: {user_vo.user_email}")
+            profile_picture = user_vo.user_profile_picture
 
             # 프로필 사진 경로가 없거나 파일이 존재하지 않으면 기본 이미지 사용
             if not profile_picture or not os.path.exists(profile_picture):
@@ -1426,34 +1410,41 @@ class UserProfile:
         st.button("프로필 사진 변경", use_container_width=True, key='change_profile')
         uploaded_file = st.file_uploader("새 프로필 사진 업로드", type=["jpg", "png", "jpeg"])
 
+
         if st.button("업로드", key='upload'):
-            if uploaded_file:
-                image_path = self.save_file(uploaded_file)
+
+            image_path = self.save_file(uploaded_file)
+            if image_path:
+                # 프로필 사진 업데이트
                 self.update_profile_picture(user_id, image_path)
                 st.success("프로필 사진이 성공적으로 업데이트되었습니다.")
             else:
-                st.error("파일을 업로드해주세요.")
+                st.error("파일 저장에 실패했습니다.")
 
-
-class Account:
-    def __init__(self, user_id):
-        self.user_id = user_id
-
-    def update_email(self, new_email: str):
-        """Update the user's email in the database."""
-        user = session.query(User).filter_by(user_id=self.user_id).first()
-        if user:
-            user.user_email = new_email
-            session.commit()
-        else:
-            raise ValueError("User not found")
 
 
 class SetView:
     def __init__(self, user_vo):
         self.user_vo = user_vo
         self.theme_manager = ThemeManager(user_vo.user_id)
-        self.like_button = LikeButton()
+        self.like_button = Like()
+        self.user_profile = UserProfile()
+        self.user_dao = UserDAO()
+
+    def update_user_field(self, field_name, field_value):
+        # DB에서 업데이트한 후 user_vo 객체 동기화
+        dao = UserDAO()
+        if dao.update_user_field(self.user_vo.user_id, field_name, field_value):
+            # DB 업데이트 후 새로운 UserVO 객체를 가져와서 세션에 업데이트
+            updated_user = dao.get_user_vo(self.user_vo.user_id)
+            if updated_user:
+                self.user_vo = updated_user  # 세션에 저장된 user_vo 갱신
+                st.session_state["user_vo"] = updated_user  # 세션 상태 갱신
+                st.success(f"{field_name}이(가) 성공적으로 업데이트되었습니다.")
+            else:
+                st.error("업데이트 후 사용자 정보를 가져오는 데 실패했습니다.")
+        else:
+            st.error("사용자 정보를 업데이트하는 데 실패했습니다.")
 
     def render_alarm_settings(self):
 
@@ -1477,24 +1468,16 @@ class SetView:
             # 이메일 변경
             new_email = st.text_input("새 이메일 주소", value=self.user_vo.user_email)
             if st.button("이메일 변경", key='change_email'):
-                self.update_email(new_email)
+                self.update_user_field("user_email", new_email)
 
             # 프로필 사진 업로드
             uploaded_file = st.file_uploader("새 프로필 사진 업로드", type=["jpg", "png", "jpeg"])
             if uploaded_file is not None:
-                self.update_profile_picture(uploaded_file)
+                image_path = self.user_profile.save_file(uploaded_file)
+                self.update_user_field("profile_picture_path", image_path)
 
-    def update_email(self, new_email):
-        if new_email != self.user_vo.user_email:
-            self.account.update_email(self.user_vo.user_id, new_email)
-            st.success("이메일이 변경되었습니다.")
-        else:
-            st.warning("현재 이메일과 동일합니다.")
-
-    def update_profile_picture(self, uploaded_file):
-        image_path = self.user_profile.save_file(uploaded_file)
-        self.user_profile.update_profile_picture(self.user_vo.user_id, image_path)
-        st.success("프로필 사진이 성공적으로 업데이트되었습니다.")
+                st.success('포르필 사진이 변경되었습니다.')
+                st.rerun()
 
     def render_posts(self):
         with st.expander('관심목록', icon='💗'):
@@ -1503,24 +1486,27 @@ class SetView:
 
 # -----------------------------------------------------좋아요 목록 --------------------------------------------------------------
 
-class LikeButton:
+class Like:
     def __init__(self):
         if "posts" not in st.session_state:
             st.session_state.posts = []
-            self.fetch_and_store_posts()
 
     def fetch_liked_posts(self):
-        liked_posts = session.query(Posting.p_content, Posting.p_title).filter(Posting.like_num > 0).all()
+        liked_posts = session.query(Posting.p_user,Posting.p_content, Posting.p_title, Posting.p_image_path).filter(Posting.like_num > 0).all()
         session.close()
-        return [(post.p_title, post.p_content) for post in liked_posts]
+        return liked_posts
 
     def display_liked_posts(self):
         liked_posts = self.fetch_liked_posts()
         # Display liked posts with the like button
         if liked_posts:
             for post in liked_posts:
-                post_content, post_title = post
+                post_user,post_content, post_title,p_image = post
+                st.write(f"**Creator ID**: {post_user}")
                 st.write(f"Title: {post_title}, content : {post_content}")
+                if p_image:
+                    st.image(p_image, width=100)
+                st.write('--------')
         else:
             st.write("좋아요를 누른 포스팅이 없습니다.")
 
