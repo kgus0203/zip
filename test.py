@@ -29,6 +29,29 @@ session = SessionLocal()
 
 
 # -----------------------------------------------페이지 전환 ----------------------------------------------------------
+def get_user_from_cache(user_id):
+    try:
+        # 데이터베이스에서 사용자 정보 가져오기
+        user = session.query(User).filter(User.user_id == user_id).first()
+
+        # 사용자 정보가 없으면 None 반환
+        if not user:
+            st.error("사용자를 찾을 수 없습니다.")
+            return None
+
+        # 사용자 정보를 딕셔너리로 변환
+        user_data = {
+            "user_id": user.user_id,
+            "user_name": user.user_id,  # 예시: 실제 사용자 이름을 저장하려면 모델에 이름 컬럼이 필요
+            "profile_picture": user.profile_picture_path if user.profile_picture_path else "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png"
+        }
+
+        return user_data
+    except Exception as e:
+        st.error(f"DB 오류: {e}")
+        return None
+    finally:
+        session.close()  # 세션 닫기
 
 
 class Page:
