@@ -16,6 +16,9 @@ import pandas as pd
 import os
 import requests
 
+from PIL import Image
+
+
 # SQLAlchemy Base 선언
 Base = declarative_base()
 
@@ -1278,11 +1281,11 @@ class PostManager:
                     with col:
                         st.subheader(post.p_title)
                         self.fetch_location_data(post.p_id)
-
+                        image = Image.open(f"zip/{post.p_image_path}")
                         # 이미지 출력 (있는 경우)
                         if post.p_image_path:
                             self.create_location_name()
-                            st.image(f"zip/{post.p_image_path}", use_container_width=True)
+                            st.image(image, use_container_width=True)
 
                         with st.expander('더보기'):
                             self.display_post(post.p_id)
