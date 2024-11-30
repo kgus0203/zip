@@ -1283,7 +1283,7 @@ class PostManager:
                         # 이미지 출력 (있는 경우)
                         if post.p_image_path:
                             self.create_location_name()
-                            st.image(f"/mount/src/zip/{post.p_image_path}", use_container_width=True)
+                            st.image(post.p_image_path, use_container_width=True)
 
                         with st.expander('더보기'):
                             self.display_post(post.p_id)
