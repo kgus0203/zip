@@ -1,8 +1,6 @@
-from tkinter.constants import PAGES
-
 import streamlit as st
 from sqlalchemy import (
-    create_engine, Column, Integer, String, ForeignKey, Boolean, DateTime, Text, Float, func, CheckConstraint
+    create_engine, Column, Integer, String, ForeignKey, Boolean, DateTime, Text, Float, func, CheckConstraint, Date, Time,
 )
 from sqlalchemy.orm import sessionmaker,relationship
 import string
@@ -62,6 +60,7 @@ class Page:
             'GroupBlockList': self.group_page.group_block_list_page,
             'Group Update Page': self.group_page.group_update_page,  # 그룹 수정 페이지 등록
             'Group Request Page': self.group_page.group_request_page,  # Group Request Page 매핑 추가
+
 
         }
 
@@ -372,6 +371,9 @@ class TurnPages:
 
         # 사용자의 게시물 렌더링
         view.render_posts()
+        self.view_my_group()
+
+
 
     def usermanager_page(self):
 
@@ -412,55 +414,83 @@ class TurnPages:
         # display_posts 메서드를 호출
         post_manager.display_posts(user_id)
 
+        # 내그룹 보기
+    def view_my_group(self):
+        user_id = st.session_state.get("user_id")
+        with st.expander('내가 만든 그룹 목록', icon='🍙'):
+            group_manager=GroupManager(user_id)
+            groups =group_manager.get_my_groups(user_id)
+            if not groups:
+                st.info("생성한 그룹이 없습니다.")
+                return
+
+            for group in groups:
+                st.markdown(f"**그룹 이름:** {group['group_name']}")
+                st.markdown(f"**카테고리:** {group['category']}")
+                st.markdown(f"**상태:** {group['status']}")
+                st.markdown(f"**약속 날짜:** {group['meeting_date']}")
+                st.markdown(f"**약속 시간:** {group['meeting_time']}")
+
+                # 수정 버튼
+                if st.button(f"수정", key=f"edit_{group['group_id']}"):
+                    st.session_state["group_id"] = group['group_id']
+                    self.page.change_page('Group Update Page')
+
+                # 삭제 버튼
+                if st.button(f"삭제", key=f"delete_{group['group_id']}"):
+                    if group_manager.is_group_creator(group['group_id']):
+                        group_manager.delete_group(group['group_id'])
+                        st.success(f"'{group['group_name']}' 그룹이 삭제되었습니다.")
+                        st.rerun()
+
+                if st.button('뒤로가기'):
+                    self.page.go_back()
+
 #-----------------------------------------------------그룹 페이지--------------------------------------------
 
 class GroupPage():
-    def __init__(self, page: Page):
+    def __init__(self,page: Page):
+        self.user_id = st.session_state.get("user_id")
         self.page=page
-        self.group_manager=GroupManager
         self.request_dao=GroupRequestDAO
         self.category_manager = CategoryManager()
-        self.user_vo=UserVO
-
+        self.group_manager=GroupManager(self.user_id)
+        self.location_manager=LocationSearch
 
     #내 그룹 페이지
     def my_groups_page(self):
         # 상단 제목 설정 (좌측 정렬)
-        col1, col2 = st.columns([4, 4])  # 버튼을 위한 공간 추가
+        col1, col2 = st.columns([3, 5])  # 버튼을 위한 공간 추가
         with col1:
             st.markdown(
-                f"<h1 class='centered-title'>{'group_page_title'}</h1>",
+                f"<h1 class='centered-title'>{'그룹페이지'}</h1>",
                 unsafe_allow_html=True,
             )
         with col2:
             button_col1, button_col2, button_col3, button_col4 = st.columns(4)
-            # 그룹생성 버튼
+            #그룹생성 버튼
             with button_col1:
                 if st.button("그룹생성", use_container_width=True):
                     self.group_creation_page()
-            # 그룹차단 버튼
+            #그룹차단 버튼
             with button_col2:
-                if st.button("그룹 차단 목록"):  # 여기에 추가
+                if st.button("차단 목록"):  # 여기에 추가
                     st.session_state["current_page"] = "GroupBlockList"
                     st.rerun()
-            # 뒤로가기 버튼
+            #뒤로가기 버튼
             with button_col3:
-                if st.button("뒤로가기 ↩️"):
+                if st.button("뒤로가기↩️"):
                     self.page.go_back()
-            # 그룹검색 버튼
+            #그룹검색 버튼
             with button_col4:
                 if st.button("그룹검색", use_container_width=True):
                     self.search_groups_page()
 
-        user_id = st.session_state.get("user_id")
-        if not user_id:
-            st.error("로그인이 필요합니다")
-            return
+        #유저의 그룹을 가져온다
+        group_manager = GroupManager(self.user_id)
+        groups = group_manager.get_user_groups()
 
-        # 유저의 그룹을 가져온다
-        groups = self.group_manager.get_user_groups(self)
-
-        # 그룹이 없을 때
+        #그룹이 없을때
         if not groups:
             st.error("그룹이 없습니다")
 
@@ -506,25 +536,24 @@ class GroupPage():
         )
 
         for group in groups:
-            members = self.group_manager.get_group_member_count(self,group.group_id)
+            members = group_manager.get_group_member_count(group.group_id)
+            category_name=self.category_manager.category_id_to_name(group.category)
             st.markdown(
                 f"""
                         <div class="group-box">
                             <h2>{group.group_name}</h2>
-                            <p><strong>Group ID:</strong> {group.group_id}</p>
-                            <p><strong>Creator:</strong> {group.group_creator}</p>
-                            <p><strong>Category:</strong> {group.category if group.category else 'Not set'}</p>
-                            <p><strong>Status:</strong> {group.status}</p>
-                            <p><strong>Meeting Date:</strong> {group.meeting_date if group.meeting_date else 'Not set'}</p>
-                            <p><strong>Meeting Time:</strong> {group.meeting_time if group.meeting_time else 'Not set'}</p>
-                            <p><strong>Members:</strong> {', '.join(members) if members else 'No members'}</p>
+                            <p><strong>카테고리:</strong> {category_name if category_name else 'Not set'}</p>
+                            <p><strong>상태:</strong> {group.status}</p>
+                            <p><strong>약속 날짜:</strong> {group.meeting_date if group.meeting_date else 'Not set'}</p>
+                            <p><strong>약속 시간:</strong> {group.meeting_time if group.meeting_time else 'Not set'}</p>
+                            <p><strong>인원수:</strong> {members if members else 'No members'}</p>
                         </div>
                         """,
                 unsafe_allow_html=True
             )
 
             st.markdown("---")
-            # 그룹을 클릭하면 그룹 ID를 세션에 저장한다
+            #그룹을 클릭하면 그룹id를 세션에 저장한다
             if st.button(f"세부 정보", key=f"open_group_{group.group_id}"):
                 st.session_state["group_id"] = group.group_id  # 그룹 ID를 세션에 저장
                 self.page.change_page('Detail group')  # 세부 정보 페이지 호출
@@ -589,7 +618,6 @@ class GroupPage():
         if st.button("뒤로 가기", key="back_to_groups_button"):
             self.page.go_back()
 
-
     # 멤버 박스 출력 함수 (그룹장은 왕관 아이콘만 표시하고, 다른 멤버는 번호만 표시)
     def display_member_box(self,member_name, is_admin, member_number):
         number_emojis = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
@@ -623,20 +651,17 @@ class GroupPage():
 
 
         group_info = self.group_manager.get_group_info(group_id)
-        current_members = self.group_manager.get_group_member_count(group_id)
+        members = self.group_manager.get_group_member_count(group_id)
 
         if not group_info:
             st.error("그룹 정보를 찾을 수 없습니다.")
             return
 
-        group_name, modify_date, meeting_date, meeting_time = group_info[1], group_info[2], group_info[3], group_info[4]
-
-        # Get the current member count
-        current_members = self.group_manager.get_group_member_count(group_id)
+        group_name, modify_date, meeting_date, meeting_time = group_info[1], group_info[3], group_info[4], group_info[5]
 
         # Display group information
         st.markdown(f"### {group_name}")
-        st.markdown(f"**현재 인원수:** {current_members} / 10")
+        st.markdown(f"**현재 인원수:** {members} / 10")
         st.markdown(f"**마지막 수정일:** {modify_date}")
         st.markdown(f"**약속 날짜:** {meeting_date if meeting_date else '설정되지 않음'}")
         st.markdown(f"**약속 시간:** {meeting_time if meeting_time else '설정되지 않음'}")
@@ -675,17 +700,6 @@ class GroupPage():
         if st.button("뒤로가기"):
             self.page.go_back()
 
-        # 그룹 수정 버튼
-        if st.button("그룹 수정", key=f"edit_group_{group_id}"):
-            st.session_state["group_id_to_edit"] = group_id
-            self.page.change_page("Group Update Page")  # 그룹 수정 페이지로 이동
-
-        # 그룹 삭제 버튼
-        if st.button("그룹 삭제", key=f"delete_group_{group_id}"):
-            st.session_state["group_id_to_delete"] = group_id
-            self.page.change_page("Group Delete Page")  # 그룹 삭제 페이지로 이동
-
-        # 그룹 초대 버튼 추가
         if st.button("그룹 초대", key=f"invite_group_{group_id}"):
             # 입력 필드 상태를 세션 상태에 저장해서 유지
             if 'invitee_id' not in st.session_state:
@@ -739,10 +753,6 @@ class GroupPage():
 
         # 이제 인스턴스를 통해 group_creation_page 메서드를 호출합니다.
         st.header("그룹 생성")
-        user_id = st.session_state.get("user_id")
-        if not user_id:
-            st.error("로그인이 필요합니다.")
-            return
 
         # 그룹 이름 입력
         group_name = st.text_input("그룹 이름", placeholder="그룹 이름을 입력하세요", key="group_name_input")
@@ -752,28 +762,20 @@ class GroupPage():
         meeting_date = st.date_input("약속 날짜 선택", key="meeting_date_input")
         meeting_time = st.time_input("약속 시간 선택", key="meeting_time_input")
 
+        # 카테고리 선택
+
         categories = self.category_manager.category_selector()
+
+
         # 장소 검색 필드와 지도
         location_search = LocationSearch()
         location_search.display_location_on_map()
-        # meeting_date가 None인 경우 기본값 처리
-        if meeting_date is None:
-            st.error("약속 날짜를 선택해야 합니다.")
-            return
 
-
-        if meeting_date and meeting_time:
-            meeting_date_str = meeting_date.strftime("%Y-%m-%d")  # 'YYYY-MM-DD' 형식으로 변환
-            meeting_time_str = meeting_time.strftime("%H:%M:%S")  # 'HH:MM:SS' 형식으로 변환
-            # 그룹 생성 버튼
-            group_id = location_search.add_group(group_name, user_id, categories, meeting_date_str, meeting_time_str)
-            if group_id:
-                # 멤버 추가
-                self.group_manager.add_group_member(group_id, user_id)
-                st.success(f"그룹 '{group_name}'이 성공적으로 생성되었습니다.")
-            else:
-                st.error("그룹 생성에 실패했습니다.")
-
+        group_manager=GroupManager(self.user_id)
+        # 그룹 생성 버튼
+        if st.button("그룹 생성", key="create_group_button"):
+            group_id = location_search.add_group(group_name, self.user_id, categories, meeting_date, meeting_time)
+            group_manager.add_group_member(group_id)
 
     def join_group(self,group_name):
         user_id = st.session_state.get("user_id")
@@ -809,39 +811,6 @@ class GroupPage():
             session.close()  # 세션 종료
 
 
-    def view_my_group(self):
-        user_id = st.session_state.get("user_id")
-        if not user_id:
-            st.error("로그인 정보가 없습니다.")
-            return
-        groups = self.group_manager.get_user_groups(user_id)
-        if not groups:
-            st.info("생성한 그룹이 없습니다.")
-            return
-
-        for group in groups:
-            st.markdown(f"**그룹 이름:** {group['group_name']}")
-            st.markdown(f"**카테고리:** {group['category']}")
-            st.markdown(f"**상태:** {group['status']}")
-            st.markdown(f"**약속 날짜:** {group['meeting_date']}")
-            st.markdown(f"**약속 시간:** {group['meeting_time']}")
-
-            # 수정 버튼
-            if st.button(f"수정", key=f"edit_{group['id']}"):
-                self.page.change_page('Group Update Page')
-
-            # 삭제 버튼
-            if st.button(f"삭제", key=f"delete_{group['id']}"):
-                if self.group_manager.is_group_creator(user_id, group['id']):
-                    self.group_manager.delete_group(group['id'])
-                    st.success(f"'{group['group_name']}' 그룹이 삭제되었습니다.")
-                    st.rerun()
-                else:
-                    st.error("그룹 삭제 권한이 없습니다.")
-            if st.button('뒤로가기'):
-                self.page.go_back()
-
-
     @st.dialog("그룹 수정")
     def group_update_page(self):
         # 그룹 ID 가져오기 (세션에 저장된 그룹 ID)
@@ -850,59 +819,46 @@ class GroupPage():
             st.error("수정할 그룹 ID를 찾을 수 없습니다.")
             return
 
-        group_name = self.group_manager.get_group_name(group_id)
-
-        # 그룹 수정 폼 바로 표시
-        st.markdown(f"**'{group_name}' 그룹을 수정합니다.**")
-
-        user_id = st.session_state.get("user_id")
-        if not user_id:
-            st.error("로그인 정보가 없습니다.")
-            return
-
         group_info = self.group_manager.get_group_info(group_id)
-        if group_info:
-            group_name, category, status, meeting_date, meeting_time = group_info
-            # 그룹 정보 출력
-            st.markdown(f"**그룹 이름:** {group_name}")
-            st.markdown(f"**카테고리:** {category}")
-            st.markdown(f"**상태:** {status}")
-            st.markdown(f"**약속 날짜:** {meeting_date}")
-            st.markdown(f"**약속 시간:** {meeting_time}")
+        # 그룹 수정 폼 바로 표시
+        st.markdown(f"**'{group_info[1]}' 그룹을 수정합니다.**")
 
-        group_name = st.text_input("그룹 이름", value=group_info[0])
+        group_name = st.text_input("그룹 이름", value=group_info[1])
         # 카테고리 선택
         category_manager = CategoryManager()
         categories = category_manager.category_selector()
 
 
         # 약속 날짜와 시간 추가
-        if group_info[3] is not None:
-            meeting_date = st.date_input("약속 날짜", value=datetime.strptime(group_info[3], "%Y-%m-%d").date())
+        if group_info[4] is not None:
+            meeting_date = st.date_input("약속 날짜", value=group_info[4])
         else:
             meeting_date = st.date_input("약속 날짜", value=datetime.today().date())  # 기본값: 오늘 날짜
 
-        if group_info[4] is not None:
-            meeting_time = st.time_input("약속 시간", value=datetime.strptime(group_info[4], "%H:%M:%S").time())
+        if group_info[5] is not None:
+            meeting_time = st.time_input("약속 시간", value=group_info[5])
         else:
             meeting_time = st.time_input("약속 시간", value=datetime.now().time())  # 기본값: 현재 시간
 
         status_choices = ["진행 중", "완료", "취소"]
-        selected_status = st.selectbox("그룹 상태", options=status_choices, index=status_choices.index(group_info[2]))
+        group_status = group_info[2]
 
+        # group_status 값이 유효하지 않을 경우 기본값 설정
+        if group_status not in status_choices:
+            group_status = "진행 중"  # 기본값
+
+        # selectbox로 상태 선택
+        selected_status = st.selectbox("그룹 상태", options=status_choices, index=status_choices.index(group_status))
         # 그룹 수정 버튼
         if st.button("그룹 수정"):
-            self.group_manager.update_group(group_name, categories, selected_status, meeting_date, meeting_time)
+            self.group_manager.update_group(group_id,group_name, categories, selected_status, meeting_date, meeting_time)
 
         if st.button("뒤로가기"):
             self.page.go_back()
 
-
-
     @st.dialog('그룹 검색')
     def search_groups_page(self):
        st.header("그룹 검색 및 참여")
-       # GroupSearch 객체 생성 (db_url을 적절히 설정)
        search_group = GroupSearch()
        # 검색 기준 선택
        search_criteria = st.selectbox(
@@ -920,14 +876,13 @@ class GroupPage():
        elif search_criteria == "날짜":
            user_input = st.date_input("약속 날짜를 선택하세요")
        elif search_criteria == "카테고리":
-           # CategoryManager에서 카테고리 목록을 가져오기
-           self.category_manager.category_selector()
+           user_input=self.category_manager.category_selector()
 
        # 검색 버튼
        if st.button("검색"):
            # 검색 실행
            if user_input:
-               groups = search_group.search_groups(user_input, search_criteria)
+               groups = search_group.search_groups(user_input,search_criteria)
 
            # 결과 표시
            if not groups:
@@ -943,9 +898,6 @@ class GroupPage():
                    st.markdown(f"**장소:** {location_name}")
 
 class FriendPage:
-    def __init__(self):
-        self.page=Page
-
     @st.dialog("친구 추가 창")
     def add_friend(self):
         # user_id를 세션에서 가져오기
@@ -1017,7 +969,7 @@ class FriendPage:
 
         # 친구 리스트
         if st.sidebar.button("내 친구 리스트"):
-            self.page.change_page("Friend List Page")
+            change_page("Friend List Page")
 
     @st.dialog("친구 대기 창")
     def Request_friend(self):
@@ -1031,7 +983,7 @@ class FriendPage:
         col1, col2, col3, col4, col5, col6 = st.columns([2, 2, 2, 2, 2, 2])  # 비율 4 : 2 : 2
         with col1:
             if st.button("뒤로 가기"):
-                self.page.go_back()
+                go_back()
         with col2:
             if st.button("친구 요청 보내기", key="add_friend_button"):
                 self.add_friend()
@@ -1152,6 +1104,10 @@ class User(Base):
     profile_picture_path = Column(String, nullable=True)
 
     def to_dict(self):
+        """
+        User 객체를 딕셔너리 형태로 변환하는 메서드.
+        :return: 딕셔너리 형태의 데이터
+        """
         return {
             'user_id': self.user_id,
             'user_password': self.user_password,
@@ -1161,6 +1117,7 @@ class User(Base):
             'profile_picture_path': self.profile_picture_path
         }
 
+
 class Friend(Base):
     __tablename__ = 'friend'
     friend_id = Column(Integer, primary_key=True, autoincrement=True)
@@ -1169,18 +1126,17 @@ class Friend(Base):
 
 class Group(Base):
     __tablename__ = 'group'
-
     group_id = Column(Integer, primary_key=True, autoincrement=True)
     group_name = Column(String, unique=True, nullable=False)
     group_creator = Column(String, ForeignKey('user.user_id'), nullable=False)
-    category = Column(Integer, ForeignKey('food_categories.category_id'), nullable=True)
-    location = Column(Integer, ForeignKey('locations.location_id'), nullable=True)
-    date = Column(DateTime, default=func.now(), nullable=False)
-    meeting_date = Column(String, nullable=True)
-    meeting_time = Column(String, nullable=True)
+    category = Column(Integer, nullable=True)
+    date = Column(DateTime, default=func.now())
+    location = Column(Integer, nullable=True)
+    meeting_date = Column(Date, server_default=func.current_date())  # Default: CURRENT_DATE
+    meeting_time = Column(Time, server_default=func.current_time())  # Default: CURRENT_TIME
     status = Column(String, default='진행 중')
-    update_date = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
-    modify_date = Column(DateTime, default=func.now(), onupdate=func.now(), nullable=False)
+    update_date = Column(DateTime, default=func.now(), onupdate=func.now())
+    modify_date = Column(DateTime, default=func.now(), onupdate=func.now())
 
 class Block(Base):
     __tablename__ = 'block'
@@ -1247,12 +1203,14 @@ class GroupMember(Base):
         CheckConstraint("role IN ('admin', 'member')"),  # 위치 인수 대신 키워드로 전달
         default='member'
     )
-    joined_at = Column(Text, nullable=False, default="CURRENT_TIMESTAMP")
+    joined_at = Column(DateTime, default=func.now())
+
 
 class FoodCategory(Base):
     __tablename__ = 'food_categories'
     category_id = Column(Integer, primary_key=True, autoincrement=True)
     category = Column(String, unique=True, nullable=False)
+
 
 class Location(Base):
     __tablename__ = 'locations'
@@ -1262,6 +1220,7 @@ class Location(Base):
     latitude = Column(Float, nullable=False)
     longitude = Column(Float, nullable=False)
 
+
 class Message(Base):
     __tablename__ = 'messages'
     message_id = Column(Integer, primary_key=True, autoincrement=True)
@@ -1269,6 +1228,7 @@ class Message(Base):
     sender_id = Column(String, ForeignKey('user.user_id'), nullable=False)
     message_text = Column(Text, nullable=False)
     sent_at = Column(DateTime, default=func.now())
+
 
 class Posting(Base):
     __tablename__ = 'posting'
@@ -1286,11 +1246,13 @@ class Posting(Base):
     upload_date = Column(DateTime, default=func.now())
     modify_date = Column(DateTime, default=func.now(), onupdate=func.now())
 
+
 class Settings(Base):
     __tablename__ = 'settings'
     id = Column(Integer, primary_key=True)
     user = Column(String, ForeignKey('user.user_id'), nullable=False)
     current_theme = Column(String, nullable=True, default='dark')
+
 
 class PasswordRecovery(Base):
     __tablename__ = 'password_recovery'
@@ -1298,6 +1260,8 @@ class PasswordRecovery(Base):
     user_email = Column(String, index=True, nullable=False)
     token = Column(String, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+
 
 # 데이터베이스 초기화 및 기본 데이터 삽입
 def initialize_database():
@@ -1329,8 +1293,6 @@ def initialize_database():
 
     finally:
         session.close()  # 세션 닫기
-
-initialize_database()
 
 
 # ---------------------------------------------------------------로그인 ----------------------------
@@ -1563,11 +1525,11 @@ class LocationGet:
         locations = session.query(Location).all()
         return locations
 
-
     def get_location_names(self):
         locations = session.query(Location).all()
         location_dict = {location.location_name: location.location_id for location in locations}
         return location_dict
+
 
 class LocationSearch:
     def __init__(self):
@@ -1685,37 +1647,37 @@ class LocationSearch:
         session.add(new_post)
         session.commit()
 
-
     def add_group(self, group_name, user_id, category, meeting_date, meeting_time):
-       location_id = self.get_selected_location_id()
-       # 그룹 생성 버튼
-       current_date = modify_date = datetime.now()
-       if not group_name or not location_id:
-           st.error("모든 필수 입력 항목을 입력해주세요.")
-       else:
+        location_id = self.get_selected_location_id()
+        # 그룹 생성 버튼
+        current_date = modify_date = datetime.now()
+        if not group_name or not location_id or not meeting_date or not meeting_time:
+            st.error("모든 필수 입력 항목을 입력해주세요.")
+        else:
 
-           # 그룹 모델 인스턴스 생성
-           new_group = Group(
-               group_name=group_name,
-               group_creator=user_id,
-               category=category,  # category[0]은 ID 값
-               location=location_id,
-               meeting_date=meeting_date ,
-               meeting_time=meeting_time ,
-               update_date=current_date,
-               modify_date=current_date,
-               status="진행 중"
-           )
-           # 세션에 그룹 추가
-           session.add(new_group)
-           session.commit()
-           session.refresh(new_group)  # 새로운 그룹 객체에 자동 생성된 group_id가 반영됨
+            # 그룹 모델 인스턴스 생성
+            new_group = Group(
+                group_name=group_name,
+                group_creator=user_id,
+                category=category,  # category[0]은 ID 값
+                location=location_id,
+                meeting_date=meeting_date,
+                meeting_time=meeting_time,
+                update_date=current_date,
+                modify_date=current_date,
+                status="진행 중"
+            )
+            # 세션에 그룹 추가
+            session.add(new_group)
+            session.commit()
+            session.refresh(new_group)  # 새로운 그룹 객체에 자동 생성된 group_id가 반영됨
 
-           # 성공 메시지
-           st.success(f"'{group_name}' 그룹이 성공적으로 생성되었습니다!")
+            # 성공 메시지
+            st.success(f"'{group_name}' 그룹이 성공적으로 생성되었습니다!")
 
-           # 생성된 그룹 ID 반환
-           return new_group.group_id  # 생성된 그룹의 ID를 반환
+            # 생성된 그룹 ID 반환
+            return new_group.group_id  # 생성된 그룹의 ID를 반환
+
 
 
 class PostManager:
@@ -1793,7 +1755,7 @@ class PostManager:
         finally:
             session.close()  # 세션 닫기
 
-    def toggle_like(self, post_id):
+    def toggle_like(self, post_id,user_id):
         post = session.query(Posting).filter_by(p_id=post_id).first()
 
         if post.like_num==1:
@@ -1818,7 +1780,7 @@ class PostManager:
 
             btn_label = "좋아요 취소" if post.like_num == 1 else "좋아요"
             if st.button(btn_label, key=post_id, use_container_width=True):
-                self.toggle_like(post_id)
+                self.toggle_like(post_id,user_id)
 
     def create_location_name(self):
         # Check if the DataFrame is empty
@@ -2028,7 +1990,12 @@ class CategoryManager:
         else:
             st.error("등록된 카테고리가 없습니다. 관리자에게 문의하세요.")
 
-
+    def category_id_to_name(self, category_id):
+        categories = self.get_category_options()
+        for category in categories:
+            if category.category_id == category_id:
+                return category.category
+        return None
 
 # -------------------------------------------------테마----------------------------------------------
 
@@ -2225,10 +2192,6 @@ class SetView:
         with st.expander('관심목록', icon='💗'):
             self.like_button.display_liked_posts()
 
-    def render_my_groups(self):
-        with st.expander('내가 만든 그룹 목록', icon='🍙'):
-            group_page=GroupPage
-            group_page.view_my_group()
 
 # -----------------------------------------------------좋아요 목록 --------------------------------------------------
 
@@ -2259,6 +2222,8 @@ class Like:
 #----------------------------------------------채팅----------------------------------------------
 
 class Chatting:
+    def __init__(self, session):
+        self.session = session
 
     def save_message(self, group_id, sender_id, message_text):
         new_message = Message(
@@ -2267,17 +2232,18 @@ class Chatting:
             message_text=message_text,
             sent_at=datetime.now()
         )
-        session.add(new_message)
-        session.commit()
+        self.session.add(new_message)
+        self.session.commit()
         return f"{sender_id}님의 메세지가 저장되었습니다. "
 
     def load_messages(self, group_id):
-        messages = session.query(Message).filter_by(group_id=group_id).all()
+        messages = self.session.query(Message).filter_by(group_id=group_id).all()
         return messages
 
 
     def get_group_name(self, group_id):
-        group =session.query(Group).filter_by(group_id=group_id).first()
+        """Retrieve the group name by group_id."""
+        group = self.session.query(Group).filter_by(group_id=group_id).first()
         if group:
             return group.group_name
         else:
@@ -2385,24 +2351,25 @@ class GroupRequestDAO:
 
 #-----------------------------------------------그룹관리 ----------------------------------------------------
 class GroupManager:
-      #유저가 속해있는 그룹을 리턴한다
+    def __init__(self,user_id):
+        self.user_id=user_id
+
     def get_user_groups(self):
         groups = (session.query(Group).all())
         return groups
 
     #그룹에 속해있는 멤버들의 아이디를 반환한다
     def get_group_members(self, group_id):
-        # Query to get member IDs for the given group_id
-        member_ids = (
-            session.query(GroupMember.user_id)  # Select only the user_id column
+        # Query to get user_id, name, and role for the given group_id
+        members = (
+            session.query(User.user_id, GroupMember.role)  # Select user_name and role
+            .join(GroupMember, User.user_id == GroupMember.user_id)  # Join User and GroupMember tables
             .filter(GroupMember.group_id == group_id)  # Filter by group_id
             .all()  # Fetch all results as a list of tuples
         )
 
-        # Flatten the list of tuples to extract user_ids
-        member_ids = [member_id[0] for member_id in member_ids]
+        return members
 
-        return member_ids
 
     #그룹 정보 반환
     def get_group_info(self, group_id):
@@ -2411,6 +2378,7 @@ class GroupManager:
             session.query(
                 Group.group_id,
                 Group.group_name,
+                Group.status,
                 Group.modify_date,
                 Group.meeting_date,
                 Group.meeting_time
@@ -2429,26 +2397,22 @@ class GroupManager:
         return len(members)
 
     #그룹멤버 추가 함수
-    def add_group_member(self, group_id, user_id, role="admin"):
-        if not group_id or not user_id:
-            st.error("그룹 ID나 사용자 ID가 유효하지 않습니다.")
-            return
-
+    def add_group_member(self, group_id, role="admin"):
         current_date = datetime.now()
 
         try:
-            # 그룹에 멤버 추가
+            # 멤버 추가
             new_member = GroupMember(
                 group_id=group_id,
-                user_id=user_id,
+                user_id=self.user_id,
                 role=role,
                 joined_at=current_date
             )
             session.add(new_member)
-            session.commit()  # 커밋하여 데이터베이스에 저장
+            session.commit()
             st.success("그룹 멤버가 성공적으로 추가되었습니다!")
         except Exception as e:
-            session.rollback()  # 오류가 발생하면 롤백
+            session.rollback()
             st.error(f"멤버 추가 중 오류 발생: {e}")
 
     #그룹의 상세정보를 반환함
@@ -2459,15 +2423,15 @@ class GroupManager:
         with st.container():
             self.display_chat_interface(group_name, group_id)
 
-    def get_group_name(group_id):
-        group = session.query(Group).filter_by(id=group_id).first()
+    def get_group_name(self,group_id):
+        group = session.query(Group).filter_by(group_id=group_id).first()
         return group.group_name if group else None
 
     #그룹의 creator인지 확인하는 함수
-    def is_group_creator(self,user_id, group_id):
+    def is_group_creator(self, group_id):
 
-        group = session.query(Group).filter_by(id=group_id).first()
-        return group and group.group_creator == user_id
+        group = session.query(Group).filter_by(group_id=group_id).first()
+        return group and group.group_creator == self.user_id
 
     #그룹 삭제
     def delete_group(self,group_id):
@@ -2485,22 +2449,20 @@ class GroupManager:
         finally:
             session.close()  # 세션 종료
 
-    def update_group(self,group_id, group_name, selected_category, selected_status, meeting_date, meeting_time):
-       """그룹 정보 업데이트"""
+    def update_group(self, group_id,group_name, category, status, meeting_date, meeting_time):
        try:
            # 그룹 레코드를 조회
-           group = session.query(Group).filter(Group.id == group_id).first()
+           group = session.query(Group).filter(Group.group_id == group_id).first()
 
 
            if not group:
                st.error("그룹을 찾을 수 없습니다.")
                return
 
-
            # 수정할 데이터 설정
            group.group_name = group_name
-           group.category = selected_category[0]  # selected_category는 튜플 형태로 가정
-           group.status = selected_status
+           group.category = category  # selected_category는 튜플 형태로 가정
+           group.status = status
            group.meeting_date = meeting_date
            group.meeting_time = meeting_time
            group.modify_date = datetime.now()
@@ -2521,7 +2483,7 @@ class GroupManager:
        finally:
            session.close()  # 세션 종료
 
-    def get_user_creator_groups(self,user_id):
+    def get_my_groups(self,user_id):
 
         groups = session.query(Group).filter_by(group_creator=user_id).all()
         return [
@@ -2531,10 +2493,11 @@ class GroupManager:
                 "category": group.category,
                 "location": group.location,
                 "status": group.status,
+                "meeting_date" : group.meeting_date,
+                "meeting_time" : group.meeting_time,
             }
             for group in groups
         ]
-
 
 #--------------------------------------------------그룹 차단 데이터관리 -----------------------------------
 
@@ -2636,23 +2599,7 @@ class GroupSearch:
        elif search_criteria == "날짜":
            query = query.filter(Group.meeting_date == user_input)
        elif search_criteria == "카테고리":
-           category_manager=CategoryManager
-           category_names = category_manager.get_category_names()
-           category_id = category_names.get(user_input)  # 카테고리 이름을 ID로 변환
-           if category_id:
-               query = query.filter(Group.category == category_id)
-           else:
-               session.close()  # 카테고리가 없는 경우 세션 종료
-               return []  # 카테고리가 없으면 빈 리스트 반환
-       elif search_criteria == "위치":
-           location_manager=LocationGet
-           location_names = location_manager.get_location_names()
-           location_id = location_names.get(user_input)  # 위치 이름을 ID로 변환
-           if location_id:
-               query = query.filter(Group.location == location_id)
-           else:
-               session.close()  # 위치가 없는 경우 세션 종료
-               return []  # 위치가 없으면 빈 리스트 반환
+           query = query.filter(Group.category == user_input)
 
 
        # 그룹 데이터 조회 실행
