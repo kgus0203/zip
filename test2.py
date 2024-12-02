@@ -1740,7 +1740,7 @@ class PostManager:
         if "posts" not in st.session_state:
             st.session_state.posts = []
         self.category_manager = CategoryManager()
-        self.user=st.session_state.user_id
+
 
     def save_file(self, file):
         if file:
