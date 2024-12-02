@@ -57,7 +57,7 @@ class Page:
             'User manager': self.turn_pages.usermanager_page,
             'ID PW 변경': self.turn_pages.id_pw_change_page,
             'Upload Post': self.turn_pages.upload_post,
-            'Group page': self.group_page.my_groups_page,
+            'Group page': self.group_page.groups_page,
             'Detail group': self.group_page.detail_group,
             'GroupBlockList': self.group_page.group_block_list_page,
             'Group Update Page': self.group_page.group_update_page,  # 그룹 수정 페이지 등록
@@ -381,6 +381,7 @@ class TurnPages:
         # 사용자의 게시물 렌더링
         view.render_posts()
         self.view_my_group()
+        self.view_my_groups()
         # 친구 및 그룹 관리 사이드바
 
     def sidebar(self):
@@ -456,7 +457,7 @@ class TurnPages:
                 st.info("생성한 그룹이 없습니다.")
                 return
 
-            for group in groups:
+            for group in groups :
                 st.markdown(f"**그룹 이름:** {group['group_name']}")
                 st.markdown(f"**카테고리:** {group['category']}")
                 st.markdown(f"**상태:** {group['status']}")
@@ -473,6 +474,52 @@ class TurnPages:
                     if group_manager.is_group_creator(group['group_id']):
                         group_manager.delete_group(group['group_id'])
                         st.success(f"'{group['group_name']} 그룹이 삭제되었습니다.")
+
+    def view_my_groups(self):
+        # 내가 속한 그룹 목록 조회
+        user_id = st.session_state.get("user_id")
+        group_manager = GroupManager(user_id)
+
+        #유저가 속한 그룹인지 확인한다.
+        groups = group_manager.get_user_groups()
+
+        if not groups:
+            st.info("가입한 그룹이 없습니다.")
+            return
+
+        with st.expander('내가 속한 그룹 목록', icon='🍙'):
+            for group in groups:
+                st.markdown(f"**그룹 이름:** {group.group_name}")
+                st.markdown(f"**카테고리:** {group.category}")
+                st.markdown(f"**상태:** {group.status}")
+                st.markdown(f"**약속 날짜:** {group.meeting_date}")
+                st.markdown(f"**약속 시간:** {group.meeting_time}")
+
+
+            # 그룹원 표시
+
+            if 'invitee_id' not in st.session_state:
+                st.session_state['invitee_id'] = ''  # 초기 값 설정
+
+            invitee_id = st.text_input("초대할 사용자 ID를 입력하세요", key=f"invite_input_{group.group_id}",
+                                       value=st.session_state['invitee_id'])
+
+            if st.button("초대 요청 보내기", key=f"send_invite_{group.group_id}", use_container_width=True):
+                if invitee_id:
+                    request_dao = GroupRequestDAO()
+                    success = request_dao.send_request(invitee_id, group.group_id)  # 초대 요청 저장
+                    if success:
+                        st.success(f"{invitee_id}님에게 초대 요청을 보냈습니다.")
+                        st.info("그룹 초대가 되었습니다.")  # 그룹 초대 확인 메시지
+                        st.session_state['invitee_id'] = ''  # 성공적으로 보냈으면 필드 초기화
+                    else:
+                        st.error("초대 요청을 보내는 데 실패했습니다.")
+                else:
+                    st.error("초대할 사용자 ID를 입력하세요.")  # ID 입력 안 했을 때 에러 메시지
+            if st.button('채팅 입장하기', key='enter_chat', use_container_width=True):
+
+                chatting = Chatting(group.group_id)  # session 객체 필요
+                chatting.display_chat_interface()
 
 
     # 대기 중인 친구 요청을 표시하는 함수
@@ -526,7 +573,7 @@ class GroupPage():
         self.location_manager = LocationSearch
 
     # 내 그룹 페이지
-    def my_groups_page(self):
+    def groups_page(self):
         # 상단 제목 설정 (좌측 정렬)
         col1, col2 = st.columns([3, 5])  # 버튼을 위한 공간 추가
         with col1:
@@ -556,7 +603,7 @@ class GroupPage():
 
         # 유저의 그룹을 가져온다
         group_manager = GroupManager(self.user_id)
-        groups = group_manager.get_user_groups()
+        groups = group_manager.get_all_groups()
 
         # 그룹이 없을때
         if not groups:
@@ -759,10 +806,12 @@ class GroupPage():
                 st.success("차단이 해제되었습니다.")
             else:
                 st.error("해제 중 오류가 발생했습니다.")
+        if st.button(f"그룹 참여 ({group_name})", key=f"join_{group_name}", use_container_width=True):
+            self.group_manager.join_group(group_name)
 
 
 
-        if st.button("그룹 초대", key=f"invite_group_{group_id}", use_container_width=True):
+        with st.expander("그룹 초대"):
             # 입력 필드 상태를 세션 상태에 저장해서 유지
             if 'invitee_id' not in st.session_state:
                 st.session_state['invitee_id'] = ''  # 초기 값 설정
@@ -783,8 +832,11 @@ class GroupPage():
                 else:
                     st.error("초대할 사용자 ID를 입력하세요.")  # ID 입력 안 했을 때 에러 메시지
         if st.button('채팅 입장하기', key='enter_chat', use_container_width=True):
-            chatting = Chatting(group_id)  # session 객체 필요
-            chatting.display_chat_interface()
+            if self.group_manager.is_group_member(group_id):
+                chatting = Chatting(group_id)  # session 객체 필요
+                chatting.display_chat_interface()
+            else:
+                st.warning('그룹 멤버가 아닙니다')
 
     def group_block_list_page(self):
 
@@ -1146,9 +1198,6 @@ class GroupBlock(Base):
     user_id = Column(String, ForeignKey('user.user_id'), nullable=False)
     blocked_group_id = Column(Integer, ForeignKey('group.group_id'), nullable=False)
 
-    # Optional: Define relationships if you want to access related data easily
-    user = relationship("User", backref="blocked_groups")
-    blocked_group = relationship("Group", backref="blocked_by")
 
 
 # MyGroupRequest Table (Requests Sent by User to Join a Group)
@@ -1158,10 +1207,6 @@ class MyGroupRequest(Base):
     request_id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(String, ForeignKey('user.user_id'), nullable=False)
     requested_group_id = Column(Integer, ForeignKey('group.group_id'), nullable=False)
-
-    # Optional: Define relationships if you want to access related data easily
-    user = relationship("User", backref="sent_group_requests")
-    requested_group = relationship("Group", backref="group_requests")
 
 
 # OtherGroupRequest Table (Requests Sent by Other Users to Join a Group)
@@ -1695,6 +1740,7 @@ class PostManager:
         if "posts" not in st.session_state:
             st.session_state.posts = []
         self.category_manager = CategoryManager()
+        self.user=st.session_state.user_id
 
     def save_file(self, file):
         if file:
@@ -1764,12 +1810,17 @@ class PostManager:
     def toggle_like(self, post_id, user_id):
         post = session.query(Posting).filter_by(p_id=post_id).first()
 
+        if post.p_user == user_id:
+            st.warning("자기 게시물에는 좋아요를 누를 수 없습니다.")
+            return
+
         if post.like_num == 1:
             # 이미 좋아요를 눌렀다면 취소
             post.like_num = 0
             post.total_like_num -= 1  # 총 좋아요 수 감소
             st.warning("좋아요를 취소했습니다.")
-        elif post.like_num == 0:
+        else:
+            # 좋아요를 눌렀다면 추가
             post.like_num = 1
             post.total_like_num += 1  # 총 좋아요 수 증가
             st.success("좋아요를 추가했습니다!")
@@ -2256,6 +2307,7 @@ class Chatting:
             return group.group_name
         else:
             return "그룹이 존재하지 않습니다."
+
     @st.dialog('채팅')
     def display_chat_interface(self):
         group_name = self.get_group_name(self.group_id)
@@ -2301,7 +2353,6 @@ class Chatting:
 # --------------------------------------그룹 요청 데이터 관리 ----------------------------------------------
 
 class GroupRequestDAO:
-
     # 그룹 요청들을 반환한다.
     def get_request(self, group_id):
         requests = (
@@ -2356,9 +2407,22 @@ class GroupManager:
     def __init__(self, user_id):
         self.user_id = user_id
 
-    def get_user_groups(self):
+    def get_all_groups(self):
         groups = (session.query(Group).all())
         return groups
+
+    def get_user_groups(self):
+        try:
+            # 사용자가 속한 그룹을 조회 (GroupMember를 통해 User와 Group을 연결)
+            user_groups = session.query(Group).join(GroupMember, Group.group_id == GroupMember.group_id) \
+                .filter(GroupMember.user_id == self.user_id).all()
+            return user_groups
+        except Exception as e:
+            session.rollback()  # 예외 발생 시 롤백
+            print(f"오류 발생: {e}")
+            return []
+        finally:
+            session.close()
 
     # 그룹에 속해있는 멤버들의 아이디를 반환한다
     def get_group_members(self, group_id):
@@ -2434,6 +2498,18 @@ class GroupManager:
         group = session.query(Group).filter_by(group_id=group_id).first()
         return group and group.group_creator == self.user_id
 
+    def is_group_member(self, group_id):
+        try:
+            # GroupMember 테이블에서 주어진 group_id와 user_id가 존재하는지 확인
+            group_member = session.query(GroupMember).filter_by(group_id=group_id, user_id=self.user_id).first()
+
+            # 만약 존재하면 그룹의 멤버로 확인
+            return group_member is not None
+        except Exception as e:
+            session.rollback()  # 예외 발생 시 롤백
+            return False
+        finally:
+            session.close()  # 세션 종료
     # 그룹 삭제
     def delete_group(self, group_id):
 
