@@ -782,6 +782,9 @@ class GroupPage():
                         st.error("초대 요청을 보내는 데 실패했습니다.")
                 else:
                     st.error("초대할 사용자 ID를 입력하세요.")  # ID 입력 안 했을 때 에러 메시지
+        if st.button('채팅 입장하기', key='enter_chat', use_container_width=True):
+            chatting = Chatting(group_id)  # session 객체 필요
+            chatting.display_chat_interface()
 
     def group_block_list_page(self):
 
@@ -840,7 +843,7 @@ class GroupPage():
     @st.dialog("그룹 수정")
     def group_update_page(self):
         # 그룹 ID 가져오기 (세션에 저장된 그룹 ID)
-        group_id = st.session_state.get("group_id_to_edit")
+        group_id = st.session_state.get("group_id")
         if not group_id:
             st.error("수정할 그룹 ID를 찾을 수 없습니다.")
             return
@@ -2229,34 +2232,33 @@ class Like:
 # ----------------------------------------------채팅----------------------------------------------
 
 class Chatting:
-    def __init__(self, session):
-        self.session = session
+    def __init__(self,group_id):
+        self.group_id=group_id
 
-    def save_message(self, group_id, sender_id, message_text):
+    def save_message(self, sender_id, message_text):
         new_message = Message(
-            group_id=group_id,
+            group_id=self.group_id,
             sender_id=sender_id,
             message_text=message_text,
             sent_at=datetime.now()
         )
-        self.session.add(new_message)
-        self.session.commit()
-        return f"{sender_id}님의 메세지가 저장되었습니다. "
+        session.add(new_message)
+        session.commit()
+        return f"{sender_id}님의 메시지가 저장되었습니다."
 
     def load_messages(self, group_id):
-        messages = self.session.query(Message).filter_by(group_id=group_id).all()
+        messages = session.query(Message).filter_by(group_id=group_id).all()
         return messages
 
     def get_group_name(self, group_id):
-        """Retrieve the group name by group_id."""
-        group = self.session.query(Group).filter_by(group_id=group_id).first()
+        group = session.query(Group).filter_by(group_id=group_id).first()
         if group:
             return group.group_name
         else:
             return "그룹이 존재하지 않습니다."
-
-    def display_chat_interface(self, group_id):
-        group_name = self.get_group_name(group_id)
+    @st.dialog('채팅')
+    def display_chat_interface(self):
+        group_name = self.get_group_name(self.group_id)
         st.subheader(f"채팅: {group_name}")
 
         sender_id = st.session_state.get("user_id")
@@ -2264,42 +2266,36 @@ class Chatting:
             st.error("로그인이 필요합니다.")
             return
 
-        # Initialize the message history for the group if it doesn't exist
-        if f"messages_{group_id}" not in st.session_state:
-            st.session_state[f"messages_{group_id}"] = self.load_messages(group_id)
+        # 그룹에 대한 메시지 히스토리를 초기화하거나 불러오기
+        if f"messages_{self.group_id}" not in st.session_state:
+            st.session_state[f"messages_{self.group_id}"] = self.load_messages(self.group_id)
 
-        # Display the chat messages
+        # 채팅 메시지 표시
         st.markdown("### 채팅 기록")
-        for msg in st.session_state[f"messages_{group_id}"]:
+        for msg in st.session_state[f"messages_{self.group_id}"]:
             st.write(f"**{msg.sender_id}** ({msg.sent_at}): {msg.message_text}")
 
-        # Initialize or retrieve the new message input field state
-        if f"new_message_{group_id}" not in st.session_state:
-            st.session_state[f"new_message_{group_id}"] = ""
+        # 메시지 입력 필드 상태 초기화 또는 가져오기
+        if f"new_message_{self.group_id}" not in st.session_state:
+            st.session_state[f"new_message_{self.group_id}"] = ""
 
-        # Input field for new messages
+        # 새로운 메시지 입력 필드
         new_message = st.text_input(
             "메시지 입력",
-            value=st.session_state[f"new_message_{group_id}"],
-            key=f"chat_input_{group_id}"
+            value=st.session_state[f"new_message_{self.group_id}"],
+            key=f"chat_input_{self.group_id}"
         )
-        st.session_state[f"new_message_{group_id}"] = new_message  # Maintain state
+        st.session_state[f"new_message_{self.group_id}"] = new_message  # 상태 유지
 
-        # Send button logic
-        if st.button("보내기", key=f"send_button_{group_id}", use_container_width=True):
+        # 메시지 보내기 버튼
+        if st.button("보내기", key=f"send_button_{self.group_id}", use_container_width=True):
             if new_message.strip():
-                self.save_message(group_id, sender_id, new_message)
-                st.session_state[f"new_message_{group_id}"] = ""  # Clear the input field
-                st.session_state[f"messages_{group_id}"] = self.load_messages(group_id)  # Refresh messages
+                self.save_message(sender_id, new_message)
+                st.session_state[f"new_message_{self.group_id}"] = ""  # 입력 필드 비우기
+                st.session_state[f"messages_{self.group_id}"] = self.load_messages(self.group_id)  # 메시지 새로고침
             else:
                 st.warning("메시지를 입력해주세요.")
 
-        # Optionally, return chat history as a string
-        chat_interface = ""
-        for msg in st.session_state[f"messages_{group_id}"]:
-            chat_interface += f"{msg.sent_at} - {msg.sender_id}: {msg.message_text}\n"
-
-        return chat_interface
 
 
 # --------------------------------------그룹 요청 데이터 관리 ----------------------------------------------
@@ -2527,7 +2523,11 @@ class GroupManager:
                 st.error(f"'{group_name}' 이름의 그룹을 찾을 수 없습니다.")
                 return None
         finally:
-            session.close()  # 세션 종료
+            session.close()  # 세션 종료\
+
+
+
+
 
 
 # --------------------------------------------------그룹 차단 데이터관리 -----------------------------------
@@ -2663,7 +2663,7 @@ class FriendManager():
             blocked_users = session.query(Block.blocked_user_id).filter(Block.user_id == self.user_id).all()
 
             if blocked_users:
-                st.title("차단 목록")
+
                 for blocked in blocked_users:
                     st.write(f"- {blocked.blocked_user_id}")
             else:
@@ -2799,22 +2799,21 @@ class FriendRequest:
                 return
 
             # 이미 친구인지 확인
-            already_friends = session.query(FriendRequest).filter(FriendRequest.user_id == self.user_id,
-                                                                  FriendRequest.friend_user_id == friend_id).first()
+            already_friends = session.query(Friend).filter(Friend.user_id == self.user_id, Friend.friend_user_id == friend_id).first()
             if already_friends:
                 st.error("이미 친구입니다.")
                 return
 
             # 이미 요청을 보냈는지 확인
-            already_requested = session.query(FriendRequest).filter(FriendRequest.user_id == self.user_id,
-                                                                    FriendRequest.requested_user_id == friend_id).first()
+            already_requested = session.query(MyFriendRequest).filter(MyFriendRequest.user_id == self.user_id,
+                                                                    MyFriendRequest.requested_user_id == friend_id).first()
             if already_requested:
                 st.error("이미 친구 요청을 보냈습니다.")
                 return
 
             # 친구 요청 등록
-            new_friend_request = FriendRequest(user_id=self.user_id, requested_user_id=friend_id)
-            new_other_request = FriendRequest(user_id=friend_id, requested_user_id=self.user_id)
+            new_friend_request = MyFriendRequest(user_id=self.user_id, requested_user_id=friend_id)
+            new_other_request = MyFriendRequest(user_id=friend_id, requested_user_id=self.user_id)
 
             session.add(new_friend_request)
             session.add(new_other_request)
@@ -2824,9 +2823,8 @@ class FriendRequest:
             # 디버깅 로그 (데이터 저장 확인)
             DEBUG_MODE = True
             if DEBUG_MODE:
-                friend_requests = session.query(FriendRequest).filter(FriendRequest.user_id == self.user_id,
-                                                                      FriendRequest.requested_user_id == friend_id).all()
-                st.write("My Friend Requests:", friend_requests)
+                friend_requests = session.query(MyFriendRequest).filter(MyFriendRequest.user_id == self.user_id,
+                                                                      MyFriendRequest.requested_user_id == friend_id).all()
 
             st.success(f"{friend_id}님에게 친구 요청을 보냈습니다. 상대방이 수락할 때까지 기다려주세요.")
 
