@@ -472,8 +472,8 @@ class TurnPages:
                 if st.button(f"삭제", key=f"delete_{group['group_id']}", use_container_width=True):
                     if group_manager.is_group_creator(group['group_id']):
                         group_manager.delete_group(group['group_id'])
-                        st.success(f"'{group['group_name']}' 그룹이 삭제되었습니다.")
-                        st.rerun()
+                        st.success(f"'{group['group_name']} 그룹이 삭제되었습니다.")
+
 
     # 대기 중인 친구 요청을 표시하는 함수
     def show_friend_requests_page(self):
@@ -2439,7 +2439,7 @@ class GroupManager:
 
         try:
             # 그룹 삭제
-            group = session.query(Group).filter_by(id=group_id).first()
+            group = session.query(Group).filter_by(group_id=group_id).first()
             if group:
                 session.delete(group)
                 session.commit()
