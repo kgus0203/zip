@@ -61,7 +61,6 @@ class Page:
             'Detail group': self.group_page.detail_group,
             'GroupBlockList': self.group_page.group_block_list_page,
             'Group Update Page': self.group_page.group_update_page,  # 그룹 수정 페이지 등록
-            'Group Request Page': self.group_page.group_request_page,  # Group Request Page 매핑 추가
             'Friend List Page': self.friend_page.FriendList_page,
             "FriendRequests" : self.turn_pages.show_friend_requests_page,
 
@@ -109,15 +108,16 @@ class Page:
             with col5:
                 if st.button("ID/PW 찾기", key="home_forgot_button", use_container_width=True):
                     self.change_page('User manager')  # ID/PW 찾기 페이지로 이동
+
         post_manager = PostManager()  # 인스턴스 생성
         post_manager.display_posts_on_home(None)  # display_posts_on_home 메서드 호출
-
-
 class TurnPages:
     def __init__(self, page: Page):
 
         self.page = page
         self.friend_page = FriendPage
+
+
 
     def id_pw_change_page(self):
         st.title("<ID/PW 변경>")
@@ -422,9 +422,27 @@ class TurnPages:
             if user_info:
                 st.success(f"비밀번호 복구 메일을 전송했습니다")
                 # 복구 이메일 전송
-                user_manager.send_recovery_email(email)
+                token = user_manager.generate_token()
+                user_manager.save_recovery_token(email, token)
+                user_manager.send_recovery_email(email, token)
+                st.success("복구 토큰이 이메일로 발송되었습니다!")
+
             else:
                 st.warning("등록되지 않은 이메일입니다.")
+                return
+        token = st.text_input("복구 토큰", placeholder="이메일로 받은 토큰을 입력하세요")
+        # 새 비밀번호 입력
+        new_password = st.text_input("새 비밀번호", placeholder="새 비밀번호를 입력하세요", type="password")
+
+        if st.button("비밀번호 복구", use_container_width=True):
+            if not email or not token or not new_password:
+                st.error("모든 필드를 입력하세요.")
+                return
+            if user_manager.verify_token(email, token):
+                user_manager.reset_password(email, new_password)
+                st.success("비밀번호가 성공적으로 변경되었습니다!")
+            else:
+                st.error("유효하지 않은 토큰이거나 토큰이 만료되었습니다.")
 
         if st.button("뒤로가기↩️", use_container_width=True):
             self.page.go_back()
@@ -454,13 +472,13 @@ class TurnPages:
         with st.expander('내가 만든 그룹 목록', icon='🍙'):
             group_manager = GroupManager(user_id)
             groups = group_manager.get_my_groups(user_id)
+
             if not groups:
                 st.info("생성한 그룹이 없습니다.")
                 return
 
             for group in groups :
                 st.markdown(f"**그룹 이름:** {group['group_name']}")
-                st.markdown(f"**카테고리:** {group['category']}")
                 st.markdown(f"**상태:** {group['status']}")
                 st.markdown(f"**약속 날짜:** {group['meeting_date']}")
                 st.markdown(f"**약속 시간:** {group['meeting_time']}")
@@ -609,7 +627,6 @@ class GroupPage():
     def __init__(self, page: Page):
         self.user_id = st.session_state.get("user_id")
         self.page = page
-        self.request_dao = GroupRequestDAO
         self.category_manager = CategoryManager()
         self.group_manager = GroupManager(self.user_id)
         self.location_manager = LocationSearch
@@ -731,34 +748,6 @@ class GroupPage():
                         st.error("차단 해제 중 오류가 발생했습니다.")
         if st.button("뒤로가기", use_container_width=True):
             self.page.go_back()
-
-    def group_request_page(self, group_id):
-        st.title("그룹 대기 목록")
-
-        user_id = st.session_state.get("user_id")
-        if not user_id:
-            st.error("로그인이 필요합니다.")
-            return
-
-        requests = self.request_dao.get_requests(group_id)
-
-        if not requests:
-            st.warning("대기 중인 요청이 없습니다.")
-        else:
-            for requester_id in requests:
-                st.markdown(f"**요청자 ID:** {requester_id}")
-                col1, col2 = st.columns(2)
-
-                with col1:
-                    if st.button(f"승인 (ID: {requester_id})", key=f"approve_request_{requester_id}", use_container_width=True):
-                        if self.request_dao.approve_request(group_id, requester_id):  # 요청 승인
-                            st.success(f"{requester_id}님을 그룹에 추가했습니다.")
-
-                with col2:
-                    if st.button(f"거절 (ID: {requester_id})", key=f"reject_request_{requester_id}", use_container_width=True):
-                        if self.request_dao.reject_request(group_id, requester_id):  # 요청 거절
-                            st.success(f"{requester_id}님의 요청을 거절했습니다.")
-
 
     # 멤버 박스 출력 함수 (그룹장은 왕관 아이콘만 표시하고, 다른 멤버는 번호만 표시)
     def display_member_box(self, member_name, is_admin, member_number):
@@ -1231,25 +1220,6 @@ class GroupBlock(Base):
     blocked_group_id = Column(Integer, ForeignKey('group.group_id'), nullable=False)
 
 
-
-# MyGroupRequest Table (Requests Sent by User to Join a Group)
-class MyGroupRequest(Base):
-    __tablename__ = 'myGroupRequest'
-
-    request_id = Column(Integer, primary_key=True, autoincrement=True)
-    user_id = Column(String, ForeignKey('user.user_id'), nullable=False)
-    requested_group_id = Column(Integer, ForeignKey('group.group_id'), nullable=False)
-
-
-# OtherGroupRequest Table (Requests Sent by Other Users to Join a Group)
-class OtherGroupRequest(Base):
-    __tablename__ = 'otherGroupRequest'
-
-    request_id = Column(Integer, primary_key=True, autoincrement=True)
-    group_id = Column(Integer, ForeignKey('group.group_id'), nullable=False)
-    requester_user_id = Column(String, ForeignKey('user.user_id'), nullable=False)
-
-
 class GroupMember(Base):
     __tablename__ = 'group_member'
     group_member_id = Column(Integer, primary_key=True, autoincrement=True)
@@ -1377,14 +1347,11 @@ class UserVO:
 
 
 class UserManager:
-    def __init__(self, smtp_email, smtp_password, db_url="sqlite:///zip.db"):
+    def __init__(self, smtp_email, smtp_password):
         self.smtp_email = smtp_email
         self.smtp_password = smtp_password
-        self.db_url = db_url
-        Base.metadata.create_all(self.engine)
 
     def is_email_registered(self, email):
-        session = self.create_session()
         user = session.query(User).filter_by(user_email=email).first()
         session.close()
         return user is not None
@@ -1421,16 +1388,13 @@ class UserManager:
             print(f"Unexpected error: {e}")
 
     def save_recovery_token(self, email, token):
-        """토큰을 데이터베이스에 저장"""
-        session = self.create_session()
         recovery = PasswordRecovery(user_email=email, token=token)
         session.add(recovery)
         session.commit()
         session.close()
 
     def verify_token(self, email, token):
-        """사용자가 입력한 토큰 검증"""
-        session = self.create_session()
+
         recovery = session.query(PasswordRecovery).filter_by(user_email=email, token=token).first()
         session.close()
         # 토큰이 1시간 이내에 생성된 경우에만 유효
@@ -1439,8 +1403,7 @@ class UserManager:
         return False
 
     def reset_password(self, email, new_password):
-        """비밀번호를 새로 설정"""
-        session = self.create_session()
+
         hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt())
         user = session.query(User).filter_by(user_email=email).first()
         if user:
@@ -1449,7 +1412,7 @@ class UserManager:
         session.close()
 
     def recover_password(self, email, new_password, token):
-        """토큰을 통해 비밀번호 복구"""
+
         if not self.verify_token(email, token):
             print("유효하지 않은 토큰입니다.")
             return
@@ -2433,57 +2396,6 @@ class Chatting:
 
 
 
-# --------------------------------------그룹 요청 데이터 관리 ----------------------------------------------
-
-class GroupRequestDAO:
-    # 그룹 요청들을 반환한다.
-    def get_request(self, group_id):
-        requests = (
-            session.query(OtherGroupRequest.requester_user_id)
-            .filter(OtherGroupRequest.group_id == group_id)
-            .all()
-        )
-        return [request.requester_user_id for request in requests]
-
-    # 그룹 요청을 승인한다
-    def approve_request(self, group_id, requester_user_id):
-        try:
-            new_member = GroupMember(group_id=group_id, user_id=requester_user_id, role='member')
-            session.add(new_member)
-            session.commit()
-            return True
-        except Exception as e:
-            session.rollback()
-            return False
-
-    # 그룹 요청을 거절한다.
-    def reject_request(self, group_id, requester_user_id):
-        try:
-            # Remove the request from the OtherGroupRequest table
-            request_to_delete = (
-                session.query(OtherGroupRequest)
-                .filter(OtherGroupRequest.group_id == group_id,
-                        OtherGroupRequest.requester_user_id == requester_user_id)
-                .first()
-            )
-            session.delete(request_to_delete)
-            session.commit()
-            return True
-        except Exception as e:
-            session.rollback()
-            return False
-
-    # 유저가 보낸 요청
-    def get_sent_request(self, user_id):
-        sent_requests = (
-            session.query(OtherGroupRequest.group_id, OtherGroupRequest.requester_user_id, Group.group_name)
-            .join(Group, Group.group_id == OtherGroupRequest.group_id)
-            .filter(OtherGroupRequest.requester_user_id == user_id)
-            .all()
-        )
-
-        return [(group_id, group_name) for group_id, requester_user_id, group_name in sent_requests]
-
 
 # -----------------------------------------------그룹관리 ----------------------------------------------------
 class GroupManager:
@@ -2683,9 +2595,6 @@ class GroupManager:
                 return None
         finally:
             session.close()  # 세션 종료\
-
-
-
 
 
 
