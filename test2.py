@@ -42,6 +42,8 @@ class Page:
         # TurnPages 클래스 인스턴스 생성
         self.turn_pages = TurnPages(self)
         self.group_page=GroupPage(self)
+        self.friend_page=FriendPage(self)
+
 
     def render_page(self):
         # 페이지 렌더링
@@ -60,6 +62,7 @@ class Page:
             'GroupBlockList': self.group_page.group_block_list_page,
             'Group Update Page': self.group_page.group_update_page,  # 그룹 수정 페이지 등록
             'Group Request Page': self.group_page.group_request_page,  # Group Request Page 매핑 추가
+            'Friend List Page': self.friend_page.FriendList_page,
 
 
         }
@@ -111,7 +114,10 @@ class Page:
 
 class TurnPages:
     def __init__(self, page: Page):
+
         self.page = page
+        self.friend_page=FriendPage
+
 
     def id_pw_change_page(self):
         st.title("<ID/PW 변경>")
@@ -195,6 +201,8 @@ class TurnPages:
                     self.page.change_page('after_login')
                 else:
                     st.error("로그인에 실패했습니다. 아이디 또는 비밀번호를 확인해 주세요.")
+        if st.button("뒤로가기↩️", use_container_width=True):
+            self.page.go_back()
 
     @st.dialog('회원가입 페이지')
     def signup_page(self):
@@ -219,6 +227,8 @@ class TurnPages:
                     self.page.change_page('Home')
                 else:
                     st.error("회원가입에 실패하였습니다.")
+        if st.button("뒤로가기↩️", use_container_width=True):
+            self.page.go_back()
 
     def after_login(self):
         # 타이틀을 중앙에 크게 배치
@@ -280,6 +290,7 @@ class TurnPages:
         # PostManager 클래스의 인스턴스 생성 후 display_posts_on_home 호출
         post_manager = PostManager()  # 인스턴스 생성
         post_manager.display_posts_on_home(user_id)  # display_posts_on_home 메서드 호출
+        self.sidebar()
 
     # 친구 표시 함수
     def display_friend(self, name, online):
@@ -324,7 +335,7 @@ class TurnPages:
                     location_search.add_post(user_id, title, content, image_file, file_file, selected_category_id)
                     st.success("게시물이 등록되었습니다.")
             with col2:
-                if st.button("뒤로가기"):
+                if st.button("뒤로가기↩️", use_container_width=True):
                     self.page.go_back()  # 뒤로가기 로직 호출
 
     def setting_page(self):
@@ -357,10 +368,10 @@ class TurnPages:
         with col1:
             st.title("내 페이지")
         with col2:
-            if st.button("뒤로가기", use_container_width=True):
+            if st.button("뒤로가기↩️", use_container_width=True):
                 self.page.go_back()
 
-        # 사용자 프로필, 알림 설정 및 테마 버튼을 렌더링하는 뷰 클래스
+                # 사용자 프로필, 알림 설정 및 테마 버튼을 렌더링하는 뷰 클래스
         view = SetView(user_vo)  # UserVO 객체 전달
         view.render_user_profile()
         view.render_alarm_settings()
@@ -372,7 +383,29 @@ class TurnPages:
         # 사용자의 게시물 렌더링
         view.render_posts()
         self.view_my_group()
+        # 친구 및 그룹 관리 사이드바
 
+    def sidebar(self):
+
+        # 사이드바에는 친구만 존재
+        st.sidebar.title("친구 관리")
+
+        # 친구 리스트
+        if st.sidebar.button("내 친구 리스트"):
+            self.page.change_page("Friend List Page")
+
+        # 친구 대기 버튼
+        if st.sidebar.button("친구 대기"):
+            st.session_state["current_page"] = "FriendRequests"
+            st.rerun()
+        # 친구 대기 페이지
+        if st.session_state.get("current_page") == "FriendRequests":
+            st.title("친구 대기")
+            self.show_friend_requests_page()
+            # 작업 결과 또는 상태 표시
+        if "action" in st.session_state:
+            st.write(st.session_state["action"])
+            del st.session_state["action"]
 
 
     def usermanager_page(self):
@@ -394,17 +427,17 @@ class TurnPages:
             else:
                 st.warning("등록되지 않은 이메일입니다.")
 
-        if st.button("뒤로가기", key="forgot_back_button"):
+        if st.button("뒤로가기↩️", use_container_width=True):
             self.page.go_back()
 
-    # 게시글 목록
+            # 게시글 목록
     def view_post(self):
         user_id = st.session_state.get("user_id")
         col1, col2, col3 = st.columns([6, 2, 2])  # 비율 6 : 2 : 2
         with col1:
             st.title("게시물 목록")  # 제목을 왼쪽에 배치
         with col2:
-            if st.button("뒤로가기",use_container_width=True):
+            if st.button("뒤로가기↩️",use_container_width=True):
                 self.page.go_back()  # 뒤로가기 로직 호출
         with col3:
             if st.button("글 작성",use_container_width=True):
@@ -443,8 +476,46 @@ class TurnPages:
                         st.success(f"'{group['group_name']}' 그룹이 삭제되었습니다.")
                         st.rerun()
 
-                if st.button('뒤로가기'):
+                if st.button("뒤로가기↩️", use_container_width=True):
                     self.page.go_back()
+
+    # 대기 중인 친구 요청을 표시하는 함수
+    def show_friend_requests_page(self):
+        user_id = st.session_state.get("user_id")
+        friend_request = FriendRequest(user_id)
+        received_requests = friend_request.get_received_requests()
+        st.title("친구 요청 관리")
+
+        # 내가 보낸 요청 목록
+        st.subheader("내가 보낸 친구 요청")
+        sent_requests = friend_request.get_my_sent_requests()
+        if sent_requests:
+            for req in sent_requests:
+                st.write(f"- {req['requested_user_id']}")
+        else:
+            st.write("보낸 친구 요청이 없습니다.")
+
+        # 내가 받은 요청 목록
+        st.subheader("다른 사람이 보낸 친구 요청")
+    
+        if received_requests:
+            for req in received_requests:
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.write(f"- {req['requester_user_id']}")
+                with col2:
+                    if st.button(f"수락 ({req['requester_user_id']})", key=f"accept_{req['requester_user_id']}"):
+                        friend_request.accept_friend_request(req['requester_user_id'])
+                    if st.button(f"거절 ({req['requester_user_id']})", key=f"reject_{req['requester_user_id']}"):
+                        friend_request.reject_friend_request(req['requester_user_id'])
+        else:
+            st.write("받은 친구 요청이 없습니다.")
+
+        # 뒤로 가기 버튼 추가
+        if st.button("뒤로 가기"):
+            st.session_state["current_page"] = "after_login"  # 이전 페이지로 설정
+            st.session_state["refresh"] = True  # 새로고침 플래그 설정
+            st.rerun()
 
 #-----------------------------------------------------그룹 페이지--------------------------------------------
 
@@ -898,10 +969,14 @@ class GroupPage():
                    st.markdown(f"**장소:** {location_name}")
 
 class FriendPage:
+    def __init__(self,page:Page):
+        self.user_id = st.session_state.get("user_id")
+        self.page = page
+        self.friend_manager=FriendManager(self.user_id )
+        self.friend_request=FriendRequest
+
     @st.dialog("친구 추가 창")
-    def add_friend(self):
-        # user_id를 세션에서 가져오기
-        user_id = st.session_state.get('user_id')
+    def add_friend_page(self):
 
         # 상호작용할 ID 입력창
         target_id = st.text_input("친구 요청을 보낼 ID를 입력하세요:", key="friend_action_input")
@@ -909,29 +984,12 @@ class FriendPage:
         if st.button("친구 요청"):
             if target_id:
                 # 친구 추가 함수 호출 (user_id와 target_id)
-                self.add_friend(user_id, target_id)
+                self.friend_request.add_friend(self.user_id, target_id)
             else:
                 st.warning("친구 요청할 ID를 입력해주세요.")
 
-    @st.dialog("친구 차단 창")
-    def block_friend(self):
-        # user_id를 세션에서 가져오기
-        user_id = st.session_state.get('user_id')
-
-        # 상호작용할 ID 입력창
-        target_id = st.text_input("차단할 친구의 ID를 입력하세요:", key="friend_action_input")
-
-        if st.button("친구 차단"):
-            if target_id:
-                # 친구 차단 함수 호출 (user_id와 target_id)
-                self.block_friend(user_id, target_id)
-            else:
-                st.warning("친구 차단할 ID를 입력해주세요.")
-
     @st.dialog("친구 차단 해제 창")
-    def unblock_friend(self):
-        # user_id를 세션에서 가져오기
-        user_id = st.session_state.get('user_id')
+    def unblock_friend_page(self):
 
         # 상호작용할 ID 입력창
         target_id = st.text_input("차단 해제할 친구의 ID를 입력하세요:", key="friend_action_input")
@@ -939,156 +997,117 @@ class FriendPage:
         if st.button("친구 차단 해제"):
             if target_id:
                 # 친구 차단 해제 함수 호출 (user_id와 target_id)
-                self.unblock_friend(user_id, target_id)
+                self.friend_manager.unblock_friend( target_id)
             else:
                 st.warning("친구 차단 해제할 ID를 입력해주세요.")
 
         st.title("차단 목록")
-        self.show_blocked_list_page(user_id)
+        self.show_blocked_list_page()
+
+    def show_blocked_list_page(self):
+
+        blocked_users = self.friend_manager.show_blocked_list()  # 차단된 유저 목록 가져오기
+        if blocked_users:
+            st.subheader("현재 차단된 사용자:")
+            for user in blocked_users:
+                st.write(f"- {user['blocked_user_id']}")
+        else:
+            st.write("차단된 사용자가 없습니다.")
+
+    def friend_posts_page(self):
+        # 현재 선택된 친구 ID
+        friend_id = st.session_state.get('current_friend_id')
+        if not friend_id:
+            st.error("친구 ID가 없습니다.")
+            return
+
+        # 세션 시작
+        session = SessionLocal()
+        try:
+            # 친구의 포스팅 가져오기
+            posts = session.query(Posting).filter(Posting.p_user == friend_id).all()
+
+            if posts:
+                st.title(f"{friend_id}님의 작성한 포스팅")
+                for post in posts:
+                    st.subheader(post.p_title)
+                    st.write(post.p_content)
+
+                    # 이미지 경로가 존재하고 실제로 파일이 있으면 이미지를 표시
+                    if post.p_image_path and os.path.exists(post.p_image_path):
+                        st.image(post.p_image_path, width=200)
+                    else:
+                        st.write("이미지가 없습니다.")
+            else:
+                st.warning("작성한 포스팅이 없습니다.")
+        except Exception as e:
+            st.error(f"DB 오류: {e}")
+        finally:
+            session.close()  # 세션 종료
 
     @st.dialog("친구 삭제 창")
     def delete_friend(self):
-        # user_id를 세션에서 가져오기
-        user_id = st.session_state.get('user_id')
-
         # 상호작용할 ID 입력창
         target_id = st.text_input("삭제할 친구의 ID를 입력하세요:", key="friend_action_input")
 
         if st.button("친구 삭제"):
             if target_id:
                 # 친구 차단 해제 함수 호출 (user_id와 target_id)
-                self.delete_friend(user_id, target_id)
+                self.friend_manager.delete_friend(target_id)
             else:
                 st.warning("삭제할 친구의 ID를 입력해주세요.")
 
-    def sidebar(self,user_id):
-        # 사이드바에는 친구만 존재
-        st.sidebar.title("친구 관리")
-        # user_id가 세션 상태에 저장되어 있으면 이를 사용
-        user_id = st.session_state.get('user_id')
+    # 친구 상태 표시 함수
+    def display_friend(self,name, online):
+        status_color = "status-on" if online else "status-off"
+        st.sidebar.markdown(
+            f"""
+            <div class="friend-row">
+                <span>{name}</span>
+                <div class="status-circle {status_color}"></div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
 
-        # 친구 리스트
-        if st.sidebar.button("내 친구 리스트"):
-            change_page("Friend List Page")
+
+
+    @st.dialog("친구 차단 창")
+    def block_friend_page(self):
+        # 상호작용할 ID 입력창
+        target_id = st.text_input("차단할 친구의 ID를 입력하세요:", key="friend_action_input")
+
+        if st.button("친구 차단"):
+            if target_id:
+                # 친구 차단 함수 호출 (user_id와 target_id)
+                self.friend_manager.block_friend(target_id)
+            else:
+                st.warning("친구 차단할 ID를 입력해주세요.")
 
     @st.dialog("친구 대기 창")
-    def Request_friend(self):
-        # user_id를 세션에서 가져오기
-        user_id = st.session_state.get('user_id')
-        self.show_friend_requests_page(user_id)
+    def Request_friend_page(self):
+        turn_pages=TurnPages
+        turn_pages.show_friend_requests_page()
 
-    # 친구 리스트 페이지
     def FriendList_page(self):
         st.title("내 친구 리스트")  # 제목을 왼쪽에 배치
-        col1, col2, col3, col4, col5, col6 = st.columns([2, 2, 2, 2, 2, 2])  # 비율 4 : 2 : 2
+        col1, col2, col3, col4, col5 = st.columns([2, 3, 2, 3, 2])  # 비율 4 : 2 : 2
         with col1:
-            if st.button("뒤로 가기"):
-                go_back()
+            if st.button("뒤로가기↩️", use_container_width=True,key='friendlist key'):
+                self.page.go_back()
         with col2:
             if st.button("친구 요청 보내기", key="add_friend_button"):
-                self.add_friend()
+                self.add_friend_page()
         with col3:
             if st.button("친구 차단", key="block_friend_button"):
-                self.block_friend()
+                self.block_friend_page()
         with col4:
             if st.button("친구 차단 해제", key="unblock_friend_button"):
-                self.unblock_friend()
+                self.unblock_friend_page()
         with col5:
             if st.button("친구 삭제", key="delete_friend_button"):
                 self.delete_friend()
-        with col6:
-            if st.button("친구 대기", key="requests_friend_button"):
-                self.Request_friend()
 
-        # 로그인된 user_id 가져오기
-        user_id = st.session_state.get('user_id')
-
-        if user_id:
-            # 친구 목록 표시 함수 (실제 데이터와 연결)
-            self.show_friend_list(user_id)
-        else:
-            st.error("로그인 정보가 없습니다.")
-
-    # 친구 및 그룹 관리 사이드바
-    def sidebar(self, user_id):
-        st.sidebar.title("친구 관리", use_container_width=True)
-        friend_manager = FriendManager
-        # 친구 리스트
-        if st.sidebar.button("내 친구 리스트", use_container_width=True):
-            st.session_state["current_page"] = "FriendList"
-            st.rerun()
-        # 내 친구 리스트 페이지
-        if st.session_state.get("current_page") == "FriendList":
-            st.title("내 친구 리스트")
-            friend_manager.show_friend_list(user_id)
-
-            # 친구 리스트 뒤로가기 버튼
-            if st.button("뒤로가기", key="friend_list_back_button"):
-                st.session_state["current_page"] = "after_login"
-                st.rerun()
-
-        # 친구 대기 버튼
-        if st.sidebar.button("친구 대기", use_container_width=True):
-            st.session_state["current_page"] = "FriendRequests"
-            st.rerun()
-            # 친구 대기 페이지
-        if st.session_state.get("current_page") == "FriendRequests":
-            st.title("친구 대기")
-            self.show_friend_requests_page(user_id)
-
-            # 친구 대기 뒤로가기 버튼
-            if st.button("뒤로가기", key="friend_requests_back_button"):
-                st.session_state["current_page"] = "after_login"
-                st.rerun()
-            st.write(f"Current Page: {st.session_state.get('current_page', 'None')}")
-
-            # 차단 목록 버튼
-        if st.sidebar.button("차단 목록", use_container_width=True):
-            st.session_state["current_page"] = "BlockedList"
-            st.rerun()
-            # 차단 목록 페이지
-        if st.session_state.get("current_page") == "BlockedList":
-            st.title("차단 목록")
-            self.show_blocked_list_page(user_id)
-
-            # 차단 목록 뒤로가기 버튼
-            if st.button("뒤로가기", key="blocked_list_back_button"):
-                st.session_state["current_page"] = "after_login"
-                st.rerun()
-
-            # 상호작용할 ID 입력창
-        target_id = st.sidebar.text_input("ID를 입력하세요:", key="friend_action_input")
-
-        # 친구 요청 버튼
-        if st.sidebar.button("친구 요청 보내기", key="add_friend_button", use_container_width=True):
-            if target_id:
-                self.add_friend(user_id, target_id)
-
-        # 차단 버튼
-        if st.sidebar.button("차단", use_container_width=True):
-            if target_id:
-                self.block_friend(user_id, target_id)
-            else:
-                st.session_state["action"] = "ID를 입력하세요."
-
-        # 차단 해제 버튼
-        if st.sidebar.button("차단 해제", use_container_width=True):
-            if target_id:
-                self.unblock_friend(user_id, target_id)
-            else:
-                st.session_state["action"] = "ID를 입력하세요."
-
-        # 친구 삭제 버튼
-        if st.sidebar.button("삭제", use_container_width=True):
-            if target_id:
-                self.delete_friend(user_id, target_id)
-            else:
-                st.session_state["action"] = "ID를 입력하세요."
-
-        # 작업 결과 또는 상태 표시
-        if "action" in st.session_state:
-            st.write(st.session_state["action"])
-            del st.session_state["action"]
 
 
 # -------------------------------------디비-----------------------------------------------------------------------------
@@ -2310,7 +2329,6 @@ class GroupRequestDAO:
     #그룹 요청을 승인한다
     def approve_request(self, group_id, requester_user_id):
         try:
-            # Adding the user to the group (assuming a GroupMember table exists)
             new_member = GroupMember(group_id=group_id, user_id=requester_user_id, role='member')
             session.add(new_member)
             session.commit()
@@ -2321,7 +2339,6 @@ class GroupRequestDAO:
 
     #그룹 요청을 거절한다.
     def reject_request(self, group_id, requester_user_id):
-        """ Reject a request by deleting the request """
         try:
             # Remove the request from the OtherGroupRequest table
             request_to_delete = (
@@ -2614,12 +2631,15 @@ class GroupSearch:
 
 #--------------------------------------------------친구 관리 --------------------------------------------------
 
-class FriendManager:
-    def show_friend_list(self, user_id):
-        """내 친구 리스트 표시"""
+class FriendManager():
+    def __init__(self,user_id):
+        self.user_id=user_id
+
+    #친구 리스트
+    def show_friend_list(self):
         try:
             # 친구 목록 가져오기
-            friends = session.query(Friend.friend_user_id).filter(Friend.user_id == user_id).all()
+            friends = session.query(Friend.friend_user_id).filter(Friend.user_id == self.user_id).all()
 
             if friends:
                 st.title("내 친구 리스트")
@@ -2632,11 +2652,11 @@ class FriendManager:
             session.close()  # 세션 종료
 
     # 차단 리스트 출력
-    def show_blocked_list(self, user_id):
+    def show_blocked_list(self):
 
         try:
             # 차단된 사용자 목록 가져오기
-            blocked_users = session.query(Block.blocked_user_id).filter(Block.user_id == user_id).all()
+            blocked_users = session.query(Block.blocked_user_id).filter(Block.user_id == self.user_id).all()
 
             if blocked_users:
                 st.title("차단 목록")
@@ -2650,9 +2670,9 @@ class FriendManager:
             session.close()  # 세션 종료
 
     # 차단
-    def block_friend(self, user_id, friend_id):
-        """친구 차단"""
-        if user_id == friend_id:
+    def block_friend(self, friend_id):
+
+        if self.user_id == friend_id:
             st.error("자신을 차단할 수 없습니다.")
             return
 
@@ -2665,7 +2685,7 @@ class FriendManager:
 
             # 이미 차단되었는지 확인
             already_blocked = session.query(Block).filter(
-                Block.user_id == user_id,
+                Block.user_id == self.user_id,
                 Block.blocked_user_id == friend_id
             ).first()
             if already_blocked:
@@ -2674,17 +2694,17 @@ class FriendManager:
 
             # 친구 목록에서 삭제 (차단된 경우 친구에서 제거)
             session.query(Friend).filter(
-                Friend.user_id == user_id,
+                Friend.user_id == self.user_id,
                 Friend.friend_user_id == friend_id
             ).delete()
 
             session.query(Friend).filter(
                 Friend.user_id == friend_id,
-                Friend.friend_user_id == user_id
+                Friend.friend_user_id == self.user_id
             ).delete()
 
             # 차단 테이블에 추가
-            new_block = Block(user_id=user_id, blocked_user_id=friend_id)
+            new_block = Block(user_id=self.user_id, blocked_user_id=friend_id)
             session.add(new_block)
 
             # 커밋하여 변경사항 저장
@@ -2696,12 +2716,12 @@ class FriendManager:
             session.close()  # 세션 종료
 
     # 차단 해제
-    def unblock_friend(self, user_id, friend_id):
-        """친구 차단 해제"""
+    def unblock_friend(self, friend_id):
+
         try:
             # 차단된 사용자인지 확인
             blocked = session.query(Block).filter(
-                Block.user_id == user_id,
+                Block.user_id == self.user_id,
                 Block.blocked_user_id == friend_id
             ).first()
 
@@ -2719,16 +2739,16 @@ class FriendManager:
             session.close()  # 세션 종료
 
     # 친구 삭제
-    def delete_friend(self, user_id, friend_id):
-        """친구 삭제"""
-        if user_id == friend_id:
+    def delete_friend(self, friend_id):
+
+        if self.user_id  == friend_id:
             st.error("자신을 삭제할 수 없습니다.")
             return
 
         try:
             # 친구 관계 확인
             is_friend = session.query(Friend).filter(
-                Friend.user_id == user_id,
+                Friend.user_id == self.user_id,
                 Friend.friend_user_id == friend_id
             ).first()
 
@@ -2745,50 +2765,24 @@ class FriendManager:
 
         finally:
             session.close()  # 세션 종료
+
+
 #------------------------------------------------------친구 요청 관리 --------------------------------------------------
 
 class FriendRequest:
-
-    # 대기 중인 친구 요청을 표시하는 함수
-    def show_friend_requests_page(self, user_id):
-        st.title("친구 요청 관리")
-
-        # 내가 보낸 요청 목록
-        st.subheader("내가 보낸 친구 요청")
-        sent_requests = self.get_my_sent_requests(user_id)
-        if sent_requests:
-            for req in sent_requests:
-                st.write(f"- {req['requested_user_id']}")
-        else:
-            st.write("보낸 친구 요청이 없습니다.")
-
-        # 내가 받은 요청 목록
-        st.subheader("다른 사람이 보낸 친구 요청")
-        received_requests = self.get_received_requests(user_id)
-        if received_requests:
-            for req in received_requests:
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.write(f"- {req['requester_user_id']}")
-                with col2:
-                    if st.button(f"수락 ({req['requester_user_id']})", key=f"accept_{req['requester_user_id']}"):
-                        self.accept_friend_request(user_id, req['requester_user_id'])
-                    if st.button(f"거절 ({req['requester_user_id']})", key=f"reject_{req['requester_user_id']}"):
-                        self.reject_friend_request(user_id, req['requester_user_id'])
-        else:
-            st.write("받은 친구 요청이 없습니다.")
+    def __init__(self, user_id):
+        self.user_id = user_id
 
     # 친구 신청 함수
-    def add_friend(self, user_id, friend_id):
-        """친구 추가"""
+    def add_friend(self, friend_id):
 
-        if user_id == friend_id:
+        if self.user_id== friend_id:
             st.error("자신을 친구로 추가할 수 없습니다.")
             return
 
         try:
             # 차단 여부 확인
-            blocked_user = session.query(Block).filter(Block.user_id == user_id,
+            blocked_user = session.query(Block).filter(Block.user_id == self.user_id,
                                                        Block.blocked_user_id == friend_id).first()
             if blocked_user:
                 st.error("먼저 차단을 해제해주세요.")
@@ -2801,22 +2795,22 @@ class FriendRequest:
                 return
 
             # 이미 친구인지 확인
-            already_friends = session.query(FriendRequest).filter(FriendRequest.user_id == user_id,
+            already_friends = session.query(FriendRequest).filter(FriendRequest.user_id == self.user_id,
                                                                   FriendRequest.friend_user_id == friend_id).first()
             if already_friends:
                 st.error("이미 친구입니다.")
                 return
 
             # 이미 요청을 보냈는지 확인
-            already_requested = session.query(FriendRequest).filter(FriendRequest.user_id == user_id,
+            already_requested = session.query(FriendRequest).filter(FriendRequest.user_id == self.user_id,
                                                                     FriendRequest.requested_user_id == friend_id).first()
             if already_requested:
                 st.error("이미 친구 요청을 보냈습니다.")
                 return
 
             # 친구 요청 등록
-            new_friend_request = FriendRequest(user_id=user_id, requested_user_id=friend_id)
-            new_other_request = FriendRequest(user_id=friend_id, requested_user_id=user_id)
+            new_friend_request = FriendRequest(user_id=self.user_id, requested_user_id=friend_id)
+            new_other_request = FriendRequest(user_id=friend_id, requested_user_id=self.user_id)
 
             session.add(new_friend_request)
             session.add(new_other_request)
@@ -2826,7 +2820,7 @@ class FriendRequest:
             # 디버깅 로그 (데이터 저장 확인)
             DEBUG_MODE = True
             if DEBUG_MODE:
-                friend_requests = session.query(FriendRequest).filter(FriendRequest.user_id == user_id,
+                friend_requests = session.query(FriendRequest).filter(FriendRequest.user_id == self.user_id,
                                                                       FriendRequest.requested_user_id == friend_id).all()
                 st.write("My Friend Requests:", friend_requests)
 
@@ -2837,12 +2831,12 @@ class FriendRequest:
             session.close()  # 세션 종료
 
     # 내가 보낸 요청 목록
-    def get_my_sent_requests(self, user_id):
-        """내가 보낸 친구 요청 조회"""
+    def get_my_sent_requests(self):
+
         try:
             # 내가 보낸 친구 요청 목록을 가져오기
             sent_requests = session.query(MyFriendRequest.requested_user_id).filter(
-                MyFriendRequest.user_id == user_id).all()
+                MyFriendRequest.user_id == self.user_id).all()
 
             # 결과가 없으면 빈 리스트 반환
             if not sent_requests:
@@ -2855,12 +2849,12 @@ class FriendRequest:
             session.close()  # 세션 종료
 
     # 내가 받은 친구 요청
-    def get_received_requests(user_id):
-        """내가 받은 친구 요청 조회"""
+    def get_received_requests(self):
+
         try:
             # 내가 받은 친구 요청 목록을 가져오기
             received_requests = session.query(OtherRequest.requester_user_id).filter(
-                OtherRequest.user_id == user_id).all()
+                OtherRequest.user_id == self.user_id).all()
 
             # 결과가 없으면 빈 리스트 반환
             if not received_requests:
@@ -2873,19 +2867,19 @@ class FriendRequest:
             session.close()  # 세션 종료
 
     # 친구 신청 받기
-    def accept_friend_request(user_id, requester_id):
-        """친구 요청 수락"""
+    def accept_friend_request(self, requester_id):
+
         try:
             # 친구 관계 추가
-            new_friend_1 = Friend(user_id=user_id, friend_user_id=requester_id)
-            new_friend_2 = Friend(user_id=requester_id, friend_user_id=user_id)
+            new_friend_1 = Friend(user_id=self.user_id, friend_user_id=requester_id)
+            new_friend_2 = Friend(user_id=requester_id, friend_user_id=self.user_id)
             session.add(new_friend_1)
             session.add(new_friend_2)
 
             # 요청 삭제 (수락된 경우)
             # 내가 받은 친구 요청 삭제
             request_to_delete = session.query(MyFriendRequest).filter(
-                MyFriendRequest.requested_user_id == user_id,
+                MyFriendRequest.requested_user_id == self.user_id,
                 MyFriendRequest.user_id == requester_id
             ).first()
             if request_to_delete:
@@ -2893,7 +2887,7 @@ class FriendRequest:
 
             # 상대방이 보낸 요청 삭제
             request_to_delete = session.query(OtherRequest).filter(
-                OtherRequest.user_id == user_id,
+                OtherRequest.user_id == self.user_id,
                 OtherRequest.requester_user_id == requester_id
             ).first()
             if request_to_delete:
@@ -2902,14 +2896,14 @@ class FriendRequest:
             # 상대방의 요청 리스트에서도 삭제 (반대 방향)
             request_to_delete = session.query(MyFriendRequest).filter(
                 MyFriendRequest.requested_user_id == requester_id,
-                MyFriendRequest.user_id == user_id
+                MyFriendRequest.user_id == self.user_id
             ).first()
             if request_to_delete:
                 session.delete(request_to_delete)
 
             request_to_delete = session.query(OtherRequest).filter(
                 OtherRequest.user_id == requester_id,
-                OtherRequest.requester_user_id == user_id
+                OtherRequest.requester_user_id == self.user_id
             ).first()
             if request_to_delete:
                 session.delete(request_to_delete)
@@ -2923,12 +2917,12 @@ class FriendRequest:
             session.close()  # 세션 종료
 
     # 친구 신청 거절
-    def reject_friend_request(user_id, requester_id):
-        """친구 요청 거절"""
+    def reject_friend_request(self, requester_id):
+
         try:
             # 내가 받은 친구 요청 삭제
             request_to_delete = session.query(MyFriendRequest).filter(
-                MyFriendRequest.requested_user_id == user_id,
+                MyFriendRequest.requested_user_id == self.user_id,
                 MyFriendRequest.user_id == requester_id
             ).first()
             if request_to_delete:
@@ -2936,7 +2930,7 @@ class FriendRequest:
 
             # 내가 받은 요청 리스트에서 삭제
             request_to_delete = session.query(OtherRequest).filter(
-                OtherRequest.user_id == user_id,
+                OtherRequest.user_id == self.user_id,
                 OtherRequest.requester_user_id == requester_id
             ).first()
             if request_to_delete:
@@ -2945,14 +2939,14 @@ class FriendRequest:
             # 상대방의 요청 리스트에서도 삭제
             request_to_delete = session.query(MyFriendRequest).filter(
                 MyFriendRequest.requested_user_id == requester_id,
-                MyFriendRequest.user_id == user_id
+                MyFriendRequest.user_id == self.user_id
             ).first()
             if request_to_delete:
                 session.delete(request_to_delete)
 
             request_to_delete = session.query(OtherRequest).filter(
                 OtherRequest.user_id == requester_id,
-                OtherRequest.requester_user_id == user_id
+                OtherRequest.requester_user_id == self.user_id
             ).first()
             if request_to_delete:
                 session.delete(request_to_delete)
