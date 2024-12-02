@@ -476,8 +476,6 @@ class TurnPages:
                         st.success(f"'{group['group_name']}' 그룹이 삭제되었습니다.")
                         st.rerun()
 
-                if st.button("뒤로가기↩️", use_container_width=True):
-                    self.page.go_back()
 
     # 대기 중인 친구 요청을 표시하는 함수
     def show_friend_requests_page(self):
