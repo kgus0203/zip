@@ -63,7 +63,8 @@ class Page:
             'Group Update Page': self.group_page.group_update_page,  # 그룹 수정 페이지 등록
             'Group Request Page': self.group_page.group_request_page,  # Group Request Page 매핑 추가
             'Friend List Page': self.friend_page.FriendList_page,
-            "FriendRequests" : self.turn_pages.show_friend_requests_page
+            "FriendRequests" : self.turn_pages.show_friend_requests_page,
+
 
         }
 
@@ -469,11 +470,50 @@ class TurnPages:
                     st.session_state["group_id"] = group['group_id']
                     self.page.change_page('Group Update Page')
 
-                # 삭제 버튼
+
                 if st.button(f"삭제", key=f"delete_{group['group_id']}", use_container_width=True):
+                    st.session_state["delete_group_id"] = group["group_id"]
+                    st.session_state["delete_group_name"] = group["group_name"]
                     if group_manager.is_group_creator(group['group_id']):
-                        group_manager.delete_group(group['group_id'])
-                        st.success(f"'{group['group_name']} 그룹이 삭제되었습니다.")
+                        self.show_delete_confirmation_dialog()
+
+    @st.dialog("게시물 삭제")
+    def show_delete_confirmation_dialog(self):
+        user_id = st.session_state.get("user_id")
+        group_manager = GroupManager(user_id)
+
+        if "delete_group_id" in st.session_state:
+            with st.container():
+                st.markdown(f"정말로 '{st.session_state['delete_group_name']}' 그룹을 삭제하시겠습니까?")
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    # '예' 버튼
+                    if st.button("예", key=f"confirm_delete_{st.session_state['delete_group_id']}",use_container_width=True, type="primary"):
+                        group_id = st.session_state["delete_group_id"]
+
+                        # 그룹 생성자인지 확인
+                        if group_manager.is_group_creator(group_id):
+                            group_manager.delete_group(group_id)
+                            st.success(f"'{st.session_state['delete_group_name']}' 그룹이 삭제되었습니다.")
+
+                        else:
+                            st.error("그룹 생성자만 삭제할 수 있습니다.")
+
+                        # 세션 상태 초기화
+                        del st.session_state["delete_group_id"]
+                        del st.session_state["delete_group_name"]
+                        st.rerun()
+
+                with col2:
+                    # '아니오' 버튼
+                    if st.button("아니오", key=f"cancel_delete_{st.session_state['delete_group_id']}",use_container_width=True,  type="primary"):
+                        st.info("그룹 삭제가 취소되었습니다.")
+
+                        # 세션 상태 초기화
+                        del st.session_state["delete_group_id"]
+                        del st.session_state["delete_group_name"]
+                        st.rerun()
 
     def view_my_groups(self):
         # 내가 속한 그룹 목록 조회
@@ -481,13 +521,14 @@ class TurnPages:
         group_manager = GroupManager(user_id)
 
         #유저가 속한 그룹인지 확인한다.
-        groups = group_manager.get_user_groups()
-
-        if not groups:
-            st.info("가입한 그룹이 없습니다.")
-            return
 
         with st.expander('내가 속한 그룹 목록', icon='🍙'):
+            groups = group_manager.get_user_groups()
+
+            if not groups:
+                st.info("가입한 그룹이 없습니다.")
+                return
+
             for group in groups:
                 st.markdown(f"**그룹 이름:** {group.group_name}")
                 st.markdown(f"**카테고리:** {group.category}")
@@ -534,28 +575,29 @@ class TurnPages:
         sent_requests = friend_request.get_my_sent_requests()
         if sent_requests:
             for req in sent_requests:
-                st.write(f"- {req['requested_user_id']}")
+                st.write(f"- {req}")  # 수정: req는 단순 user_id 리스트
         else:
             st.write("보낸 친구 요청이 없습니다.")
 
         # 내가 받은 요청 목록
         st.subheader("다른 사람이 보낸 친구 요청")
-
         if received_requests:
             for req in received_requests:
                 col1, col2 = st.columns(2)
                 with col1:
-                    st.write(f"- {req['requester_user_id']}")
+                    st.write(f"- {req.requester_user_id}")  # 수정: req는 객체 속성으로 접근
                 with col2:
-                    if st.button(f"수락 ({req['requester_user_id']})", key=f"accept_{req['requester_user_id']}", use_container_width=True):
-                        friend_request.accept_friend_request(req['requester_user_id'])
-                    if st.button(f"거절 ({req['requester_user_id']})", key=f"reject_{req['requester_user_id']}", use_container_width=True):
-                        friend_request.reject_friend_request(req['requester_user_id'])
+                    if st.button(f"수락 ({req.requester_user_id})", key=f"accept_{req.requester_user_id}",
+                                 use_container_width=True):
+                        friend_request.accept_friend_request(req.requester_user_id)
+                    if st.button(f"거절 ({req.requester_user_id})", key=f"reject_{req.requester_user_id}",
+                                 use_container_width=True):
+                        friend_request.reject_friend_request(req.requester_user_id)
         else:
             st.write("받은 친구 요청이 없습니다.")
 
         # 뒤로 가기 버튼 추가
-        if st.button("뒤로 가기"):
+        if st.button("뒤로가기↩️", use_container_width=True):
             st.session_state["current_page"] = "after_login"  # 이전 페이지로 설정
             st.session_state["refresh"] = True  # 새로고침 플래그 설정
             st.rerun()
@@ -625,21 +667,10 @@ class GroupPage():
             }
             .group-box h2 {
                 margin-bottom: 10px;
+                color: white;  /* 그룹명 색상을 하얀색으로 설정 */
             }
             .group-box p {
                 margin: 5px 0;
-            }
-
-            /* "열기" 버튼 스타일 */
-            .open-button {
-                background-color: #4CAF50;
-                color: white;
-                padding: 15px 30px;
-                border: none;
-                border-radius: 5px;
-                font-size: 18px;
-                cursor: pointer;
-                width: 100%; /* 버튼을 가로로 길게 만들기 */
             }
 
             .open-button:hover {
@@ -685,8 +716,8 @@ class GroupPage():
             st.error("로그인이 필요합니다.")
             return
 
-        block_dao = GroupBlockDAO()  # GroupBlockDAO 인스턴스 생성
-        blocked_groups = block_dao.get_blocked_groups(user_id)  # 차단된 그룹 ID 목록 가져오기
+        block_dao = GroupBlockDAO(user_id)  # GroupBlockDAO 인스턴스 생성
+        blocked_groups = block_dao.get_blocked_groups()  # 차단된 그룹 ID 목록 가져오기
         # 차단된 그룹이 있으면 정보를 반환함
         if not blocked_groups:
             st.warning("차단된 그룹이 없습니다.")
@@ -694,7 +725,7 @@ class GroupPage():
             for group_id in blocked_groups:
                 st.markdown(f"**차단된 그룹 ID:** {group_id}")
                 if st.button(f"차단 해제 (그룹 ID: {group_id})", key=f"unblock_group_{group_id}", use_container_width=True):
-                    if block_dao.unblock_group(user_id, group_id):
+                    if block_dao.unblock_group( group_id):
                         st.success(f"그룹 {group_id} 차단을 해제했습니다.")
                     else:
                         st.error("차단 해제 중 오류가 발생했습니다.")
@@ -789,19 +820,19 @@ class GroupPage():
 
         # GroupBlockDAO 초기화
         if "block_dao" not in st.session_state:
-            st.session_state["block_dao"] = GroupBlockDAO()  # zip.db를 기본값으로 사용
+            st.session_state["block_dao"] = GroupBlockDAO(st.session_state.get("user_id"))  # zip.db를 기본값으로 사용
         block_dao = st.session_state["block_dao"]
 
         # 그룹 차단/해제 기능
         if st.button("그룹 차단", key=f"block_group_{group_id}", use_container_width=True):
-            success = block_dao.block_group(st.session_state.get("user_id"), group_id)
+            success = block_dao.block_group( group_id)
             if success:
                 st.success("그룹이 차단되었습니다.")
             else:
                 st.error("차단 중 오류가 발생했습니다.")
 
         if st.button("차단 해제", key=f"unblock_group_{group_id}", use_container_width=True):
-            success = block_dao.unblock_group(st.session_state.get("user_id"), group_id)
+            success = block_dao.unblock_group( group_id)
             if success:
                 st.success("차단이 해제되었습니다.")
             else:
@@ -848,8 +879,8 @@ class GroupPage():
             st.error("로그인이 필요합니다.")
             return
 
-        block_dao = GroupBlockDAO()  # GroupBlockDAO 인스턴스 생성
-        blocked_groups = block_dao.get_blocked_groups(user_id)  # 차단된 그룹 ID 목록 가져오기
+        block_dao = GroupBlockDAO(user_id)  # GroupBlockDAO 인스턴스 생성
+        blocked_groups = block_dao.get_blocked_groups()  # 차단된 그룹 ID 목록 가져오기
 
         if not blocked_groups:
             st.warning("차단된 그룹이 없습니다.")
@@ -857,7 +888,7 @@ class GroupPage():
             for group_id in blocked_groups:
                 st.markdown(f"**차단된 그룹 ID:** {group_id}")
                 if st.button(f"차단 해제 (그룹 ID: {group_id})", key=f"unblock_group_{group_id}", use_container_width=True):
-                    if block_dao.unblock_group(user_id, group_id):
+                    if block_dao.unblock_group(group_id):
                         st.success(f"그룹 {group_id} 차단을 해제했습니다.")
                     else:
                         st.error("차단 해제 중 오류가 발생했습니다.")
@@ -890,7 +921,8 @@ class GroupPage():
         # 그룹 생성 버튼
         if st.button("그룹 생성", key="create_group_button"):
             group_id = location_search.add_group(group_name, self.user_id, categories, meeting_date, meeting_time)
-            group_manager.add_group_member(group_id)
+            if group_id:
+                group_manager.add_group_member(group_id)
 
     @st.dialog("그룹 수정")
     def group_update_page(self):
@@ -1216,10 +1248,6 @@ class OtherGroupRequest(Base):
     request_id = Column(Integer, primary_key=True, autoincrement=True)
     group_id = Column(Integer, ForeignKey('group.group_id'), nullable=False)
     requester_user_id = Column(String, ForeignKey('user.user_id'), nullable=False)
-
-    # Optional: Define relationships if you want to access related data easily
-    group = relationship("Group", backref="received_group_requests")
-    requester_user = relationship("User", backref="received_requests_from_others")
 
 
 class GroupMember(Base):
@@ -1701,12 +1729,19 @@ class LocationSearch:
 
     def add_group(self, group_name, user_id, category, meeting_date, meeting_time):
         location_id = self.get_selected_location_id()
-        # 그룹 생성 버튼
         current_date = modify_date = datetime.now()
+
+        # 필수 입력 항목 확인
         if not group_name or not location_id or not meeting_date or not meeting_time:
             st.error("모든 필수 입력 항목을 입력해주세요.")
-        else:
+            return None
 
+        # 중복된 그룹 이름 확인
+        existing_group = session.query(Group).filter(Group.group_name == group_name).first()
+        if existing_group:
+            st.error(f"'{group_name}' 이름의 그룹이 이미 존재합니다. 다른 이름을 입력해주세요.")
+            return None
+        else:
             # 그룹 모델 인스턴스 생성
             new_group = Group(
                 group_name=group_name,
@@ -1719,16 +1754,24 @@ class LocationSearch:
                 modify_date=current_date,
                 status="진행 중"
             )
-            # 세션에 그룹 추가
-            session.add(new_group)
-            session.commit()
-            session.refresh(new_group)  # 새로운 그룹 객체에 자동 생성된 group_id가 반영됨
 
-            # 성공 메시지
-            st.success(f"'{group_name}' 그룹이 성공적으로 생성되었습니다!")
+            try:
+                # 세션에 그룹 추가 및 커밋
+                session.add(new_group)
+                session.commit()
+                session.refresh(new_group)  # 새로운 그룹 객체에 자동 생성된 group_id가 반영됨
 
-            # 생성된 그룹 ID 반환
-            return new_group.group_id  # 생성된 그룹의 ID를 반환
+                # 성공 메시지
+                st.success(f"'{group_name}' 그룹이 성공적으로 생성되었습니다!")
+
+                # 생성된 그룹 ID 반환
+                return new_group.group_id  # 생성된 그룹의 ID를 반환
+
+            except Exception as e:
+                # 오류 처리
+                session.rollback()
+                st.error(f"그룹 생성 중 오류가 발생했습니다: {e}")
+                return None
 
 
 class PostManager:
@@ -1913,11 +1956,14 @@ class PostManager:
             if post.p_image_path and os.path.exists(post.p_image_path):
                 st.image(post.p_image_path, width=200)
 
-            # 게시물 삭제 버튼
+            # 삭제 버튼
             if st.button(f"삭제", key=f"delete_{post.p_id}", use_container_width=True):
-                self.delete_post(post.p_id)
-                st.success(f"게시물 '{post.p_title}'가 삭제되었습니다.")
-                return self.display_posts(user_id)
+                # 세션 상태에 게시물 정보 저장
+                st.session_state["delete_post_id"] = post.p_id
+                st.session_state["delete_post_title"] = post.p_title
+
+                # 삭제 확인 대화 상자 표시
+                self.show_delete_confirmation_dialog()
 
             # 게시물 수정 버튼
             with st.expander("수정"):
@@ -1933,6 +1979,42 @@ class PostManager:
 
             st.write(f"**등록 날짜**: {post.upload_date}, **수정 날짜**: {post.modify_date}")
             st.write("---")
+        # 삭제 페이지
+
+    @st.dialog("게시물 삭제")
+    def show_delete_confirmation_dialog(self):
+        if "delete_post_id" in st.session_state:
+            with st.container():
+                st.markdown(f"정말로 게시물 '{st.session_state['delete_post_title']}'을 삭제하시겠습니까?")
+
+                col1, col2 = st.columns(2)
+                with col1:
+                    # '예' 버튼
+                    if st.button("예", key=f"confirm_delete_post_{st.session_state['delete_post_id']}",
+                                 use_container_width=True, type="primary"):
+                        post_id = st.session_state["delete_post_id"]
+
+                        # 게시물 삭제 로직 실행
+                        self.delete_post(post_id)
+                        st.success(f"게시물 '{st.session_state['delete_post_title']}'가 삭제되었습니다.")
+
+                        # 세션 상태 초기화
+                        del st.session_state["delete_post_id"]
+                        del st.session_state["delete_post_title"]
+
+                        # 게시물 목록 새로고침
+                        st.rerun()
+
+                with col2:
+                    # '아니오' 버튼
+                    if st.button("아니오", key=f"cancel_delete_post_{st.session_state['delete_post_id']}",
+                                 use_container_width=True,type="primary"):
+                        st.info("게시물 삭제가 취소되었습니다.")
+
+                        # 세션 상태 초기화
+                        del st.session_state["delete_post_id"]
+                        del st.session_state["delete_post_title"]
+
 
     def display_post(self, post_id):
         # 특정 게시물 가져오기
@@ -2232,9 +2314,10 @@ class SetView:
             if st.button("이메일 변경", key='change_email', use_container_width=True):
                 self.update_user_field("user_email", new_email)
 
-            new_password = st.text_input('새 비밀번호')
+            new_password = st.text_input('새 비밀번호', type='password')
             if st.button('비밀번호 변경', key='change_password '):
                 self.user_dao.update_user_password(self.user_vo.user_id, new_password)
+                st.success('비밀번호가 변경되었습니다')
 
             # 프로필 사진 업로드
             uploaded_file = st.file_uploader("새 프로필 사진 업로드", type=["jpg", "png", "jpeg"])
@@ -2609,11 +2692,13 @@ class GroupManager:
 # --------------------------------------------------그룹 차단 데이터관리 -----------------------------------
 
 class GroupBlockDAO:
+    def __init__(self,user_id):
+        self.user_id=user_id
     # 사용자가 그룹을 차단함
-    def block_group(self, user_id, group_id):
+    def block_group(self, group_id):
         try:
             # 그룹 차단 추가
-            block = GroupBlock(user_id=user_id, blocked_group_id=group_id)
+            block = GroupBlock(user_id=self.user_id, blocked_group_id=group_id)
 
             # 세션에 추가하고 커밋
             session.add(block)
@@ -2625,10 +2710,10 @@ class GroupBlockDAO:
             session.rollback()  # 예외가 발생한 경우 롤백
         return False
 
-    def unblock_group(self, user_id, group_id):
+    def unblock_group(self, group_id):
         try:
             # 그룹 차단 레코드 삭제
-            block = session.query(GroupBlock).filter_by(user_id=user_id, blocked_group_id=group_id).first()
+            block = session.query(GroupBlock).filter_by(user_id=self.user_id, blocked_group_id=group_id).first()
 
             if block:
                 session.delete(block)  # 해당 레코드를 삭제
@@ -2645,10 +2730,10 @@ class GroupBlockDAO:
         return False
 
     # 차단된 그룹을 조회하여 리스트로 반환함
-    def get_blocked_groups(self, user_id):
+    def get_blocked_groups(self):
         try:
             # 차단된 그룹 조회
-            blocked_groups = session.query(GroupBlock.blocked_group_id).filter_by(user_id=user_id).all()
+            blocked_groups = session.query(GroupBlock.blocked_group_id).filter_by(user_id=self.user_id).all()
 
             session.close()  # 세션 종료
 
@@ -2662,10 +2747,10 @@ class GroupBlockDAO:
         return []
 
     # 사용자가 그룹을 차단했는지 확인함
-    def is_group_blocked(self, user_id, group_id):
+    def is_group_blocked(self, group_id):
         try:
             # 조건에 맞는 차단된 그룹 레코드 존재 여부 확인
-            result = session.query(GroupBlock).filter_by(user_id=user_id, blocked_group_id=group_id).first()
+            result = session.query(GroupBlock).filter_by(user_id=self.user_id, blocked_group_id=group_id).first()
 
             session.close()  # 세션 종료
 
@@ -2910,7 +2995,6 @@ class FriendRequest:
 
     # 내가 보낸 요청 목록
     def get_my_sent_requests(self):
-
         try:
             # 내가 보낸 친구 요청 목록을 가져오기
             sent_requests = session.query(MyFriendRequest.requested_user_id).filter(
@@ -2920,11 +3004,15 @@ class FriendRequest:
             if not sent_requests:
                 return []
 
-            return [request[0] for request in sent_requests]  # 튜플에서 요청한 user_id만 반환
+            # 튜플에서 요청한 user_id만 추출하여 리스트로 반환
+            return [request.requested_user_id for request in sent_requests]
 
+        except Exception as e:
+            st.error(f"친구 요청 데이터를 가져오는 중 오류가 발생했습니다: {e}")
+            return []
 
         finally:
-            session.close()  # 세션 종료
+            session.close()
 
     # 내가 받은 친구 요청
     def get_received_requests(self):
