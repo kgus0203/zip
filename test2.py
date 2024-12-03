@@ -35,6 +35,7 @@ class Localization:
         self.lang = lang
         self.translations = self.load_translations()
 
+    @st.cache_data
     def load_translations(self):
 
         return {
@@ -1814,7 +1815,7 @@ class GroupPage():
             if st.button(localization.get_text("detail_button"), key=f"open_group_{group.group_id}",
                          use_container_width=True):
                 st.session_state["group_id"] = group.group_id  # 그룹 ID를 세션에 저장
-                self.page.change_page(localization.get_text("detail_group_page"))  # 세부 정보 페이지 호출
+                self.page.change_page('Detail group')  # 세부 정보 페이지 호출
 
             # 그룹들 사이에 구분선
             st.markdown("---")
