@@ -1086,7 +1086,7 @@ class Page:
         self.turn_pages = TurnPages(self)
         self.group_page = GroupPage(self)
         self.friend_page = FriendPage(self)
-
+    @st.cache_data
     def render_page(self):
         # 페이지 렌더링
         page_functions = {
@@ -1113,7 +1113,7 @@ class Page:
             page_functions[st.session_state.current_page]()  # 매핑된 함수 호출
         else:
             st.warning(localization.get_text("page_not_found"))  # 잘못된 페이지 처리
-
+    @st.cache_data
     # 페이지 전환 함수
     def change_page(self, page_name: str):
         # 방문 기록을 세션에 저장
