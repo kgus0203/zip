@@ -1098,7 +1098,7 @@ class Page:
             'User manager': self.turn_pages.usermanager_page,
             'ID PW 변경': self.turn_pages.id_pw_change_page,
             'Upload Post': self.turn_pages.upload_post,
-            'Group page': self.group_page.my_groups_page,
+            'Group page': self.group_page.groups_page,
             'Detail group': self.group_page.detail_group,
             'GroupBlockList': self.group_page.group_block_list_page,
             'Group Update Page': self.group_page.group_update_page,  # 그룹 수정 페이지 등록
@@ -1728,7 +1728,7 @@ class GroupPage():
 
 
     # 내 그룹 페이지
-    def my_groups_page(self):
+    def groups_page(self):
         # 상단 제목 설정 (좌측 정렬)
         col1, col2 = st.columns([3, 5])  # 버튼을 위한 공간 추가
         with col1:
@@ -1758,7 +1758,7 @@ class GroupPage():
 
         # 유저의 그룹을 가져온다
         group_manager = GroupManager(self.user_id)
-        groups = group_manager.get_user_groups()
+        groups = group_manager.get_all_groups()
 
         # 그룹이 없을때
         if not groups:
@@ -1959,30 +1959,6 @@ class GroupPage():
                             st.error(result["message"])
                     else:
                         st.warning("사용자 ID를 입력하세요.")
-            with st.expander("그룹 초대"):
-                # 입력 필드 상태를 세션 상태에 저장해서 유지
-                if 'invitee_id' not in st.session_state:
-                    st.session_state['invitee_id'] = ''  # 초기 값 설정
-
-                invitee_id = st.text_input("초대할 사용자 ID를 입력하세요", key=f"invite_input_{group_id}",
-                                           value=st.session_state['invitee_id'])
-
-                if f"invitee_id_group{group_id}" not in st.session_state:
-                    st.session_state['invitee_id'] = ""  # 초기화
-
-                with st.form(key=f"invite_form_group{group_id}"):
-                    invitee_id = st.text_input("초대할 사용자 ID를 입력하세요",
-                                               key=f"invitee_id_group{group_id}")  # value는 자동으로 session_state 사용
-                    submit_button = st.form_submit_button("초대 보내기")
-                    if submit_button:
-                        if invitee_id:  # st.session_state를 직접 수정하지 않음, 위젯 자체에 저장된 값 사용
-                            result = self.group_manager.invite_user_to_group(group_id, invitee_id)
-                            if result["success"]:
-                                st.success(result["message"])
-                            else:
-                                st.error(result["message"])
-                        else:
-                            st.warning("사용자 ID를 입력하세요.")
 
 
     def group_block_list_page(self):
@@ -3549,7 +3525,9 @@ class Chatting:
 class GroupManager:
     def __init__(self, user_id):
         self.user_id = user_id
-
+    def get_all_groups(self):
+        groups = (session.query(Group).all())
+        return groups
     def get_user_groups(self):
         groups = (session.query(Group).all())
         return groups
