@@ -27,7 +27,6 @@ DATABASE_URL = "sqlite:///zip.db"
 # 데이터베이스 엔진 및 세션 생성
 engine = create_engine(DATABASE_URL, connect_args={"check_same_thread": False})
 SessionLocal = sessionmaker(bind=engine)
-session = SessionLocal()
 
 
 class Localization:
@@ -365,7 +364,9 @@ class Localization:
                 "debug_my_friend_requests": "내가 보낸 친구 요청:",
                 "friend_request_sent_success": "{friend_id}님에게 친구 요청을 보냈습니다. 상대방이 수락할 때까지 기다려주세요.",
                 "friend_request_accepted_success": "{requester_id}님과 친구가 되었습니다.",
-                "friend_request_rejected_success": "{requester_id}님의 친구 요청을 거절했습니다."
+                "friend_request_rejected_success": "{requester_id}님의 친구 요청을 거절했습니다.",
+                "choose_language": "언어를 선택해주세요",
+                "select_language": "언어 선택"
 
             },
             "en": {
@@ -694,7 +695,9 @@ class Localization:
                 "debug_my_friend_requests": "My Friend Requests:",
                 "friend_request_sent_success": "You have sent a friend request to {friend_id}. Please wait for their acceptance.",
                 "friend_request_accepted_success": "You are now friends with {requester_id}.",
-                "friend_request_rejected_success": "You have rejected the friend request from {requester_id}."
+                "friend_request_rejected_success": "You have rejected the friend request from {requester_id}.",
+                "select_language": "select language",
+                "choose_language": "please choose language"
 
             },
             "jp": {
@@ -745,6 +748,7 @@ class Localization:
                 "friend_management": "友達管理",
                 "my_friend_list_button": "マイフレンドリスト",
                 "friend_requests_button": "友達リクエスト",
+
                 "user_manager_page_title": "ユーザー管理ページ",
                 "email_input_prompt": "メールアドレスを入力してください: ",
                 "confirm_button": "確認",
@@ -1022,7 +1026,9 @@ class Localization:
                 "debug_my_friend_requests": "送信した友達リクエスト：",
                 "friend_request_sent_success": "{friend_id}に友達リクエストを送りました。承認をお待ちください。",
                 "friend_request_accepted_success": "{requester_id}と友達になりました。",
-                "friend_request_rejected_success": "{requester_id}からの友達リクエストを拒否しました。"
+                "friend_request_rejected_success": "{requester_id}からの友達リクエストを拒否しました。",
+                "select_language": "言語選択",
+                "choose_language": "言語選択してください。"
 
             }
 
@@ -1050,33 +1056,19 @@ class Localization:
         st.json(self.translations.get(self.lang, {}))
 
 
+session = SessionLocal()
+
 # Streamlit 상태 초기화
 if 'localization' not in st.session_state:
     st.session_state.localization = Localization(lang='ko')  # 기본값으로 한국어 설정
 if 'current_language' not in st.session_state:
-    st.session_state.current_language = '한국어'  # 현재 언어 상태 관리
-languages = ['English', '한국어', '日本語']
+    st.session_state.current_language = 'ko'  # 현재 언어 상태 관리
+
 # Localization 객체 가져오기
 localization = st.session_state.localization
-selected_language = st.selectbox(
-    'Choose a language:',
-    languages,
-    index=languages.index(st.session_state.current_language)  # Set the current language as the default selection
-)
 
-# Switch language based on the selection
-if selected_language == 'English':
-    localization.switch_language('en')
-    st.session_state.current_language = 'English'
-elif selected_language == '한국어':
-    localization.switch_language('ko')
-    st.session_state.current_language = '한국어'
-elif selected_language == '日本語':
-    localization.switch_language('jp')
-    st.session_state.current_language = '日本語'
 # 현재 언어 표시
 st.write(f"Current Language: {st.session_state.current_language}")
-
 
 # -----------------------------------------------페이지 전환 ----------------------------------------------------------
 
@@ -1139,7 +1131,8 @@ class Page:
             st.warning(localization.get_text("no_previous_page"))  # 방문 기록이 없을 경우 처리
             st.rerun()  # 재귀 문제를 피할 수 있는 안정적인 rerun 방식
 
-    # 홈 페이지 함수 (로그인 전)
+        # 홈 페이지 함수 (로그인 전)
+
     def home_page(self):
         col1, col2 = st.columns(2)  # 동일한 너비의 세 개 열 생성
         with col1:
@@ -1149,15 +1142,16 @@ class Page:
             col3, col4, col5 = st.columns(3)
             with col3:
                 if st.button(localization.get_text("login_button"), key="home_login_button", use_container_width=True):
-                    self.change_page('Login')  # 로그인 페이지로 이동
+                    self.turn_pages.login_page()
             with col4:
                 if st.button(localization.get_text("signup_button"), key="home_signup_button",
                              use_container_width=True):
-                    self.change_page('Signup')  # 회원가입 페이지로 이동
+                    self.turn_pages.signup_page()  # 수정된 부분: self.turn_pages.signup_page()
             with col5:
                 if st.button(localization.get_text("find_id_pw_button"), key="home_forgot_button",
                              use_container_width=True):
-                    self.change_page('User manager')  # ID/PW 찾기 페이지로 이동
+                    self.turn_pages.usermanager_page()
+
         post_manager = PostManager()  # 인스턴스 생성
         post_manager.display_posts_on_home(None)  # display_posts_on_home 메서드 호출
 
@@ -1436,6 +1430,8 @@ class TurnPages:
         # 사용자의 게시물 렌더링
         view.render_posts()
         self.view_my_group()
+        self.view_my_groups()
+
         # 친구 및 그룹 관리 사이드바
 
     def sidebar(self):
@@ -1447,15 +1443,6 @@ class TurnPages:
         if st.sidebar.button(localization.get_text("my_friend_list_button"), use_container_width=True):
             self.page.change_page("Friend List Page")
 
-        # 친구 대기 버튼
-        if st.sidebar.button(localization.get_text("friend_requests_button"), use_container_width=True):
-            st.session_state["current_page"] = "FriendRequests"
-            st.rerun()
-        # 친구 대기 페이지
-        if st.session_state.get("current_page") == "FriendRequests":
-            st.title(localization.get_text("friend_requests_title"))
-            self.show_friend_requests_page()
-            # 작업 결과 또는 상태 표시
         if "action" in st.session_state:
             st.write(st.session_state["action"])
             del st.session_state["action"]
@@ -2254,33 +2241,39 @@ class FriendPage:
             else:
                 st.warning(localization.get_text("block_friend_warning"))
 
-    @st.dialog(localization.get_text("friend_requests_dialog_title"))
-    def Request_friend_page(self):
-        turn_pages = TurnPages
-        turn_pages.show_friend_requests_page()
-
     def FriendList_page(self):
-        st.title(localization.get_text("friend_list_title"))  # 제목을 왼쪽에 배치
-        col1, col2, col3, col4, col5 = st.columns([2, 3, 2, 3, 2])  # 비율 4 : 2 : 2
+        col1, col2 = st.columns([4, 2])
         with col1:
+            st.title(localization.get_text("friend_list_title"))  # 제목을 왼쪽에 배치
+        with col2:
             if st.button(localization.get_text("back_button"), use_container_width=True, key='friendlist_key'):
                 self.page.go_back()
-        with col2:
+        col1, col2, col3, col4, col5 = st.columns([2, 2, 2, 3, 2])
+        with col1:
             if st.button(localization.get_text("send_friend_request_button"), key="add_friend_button",
                          use_container_width=True):
                 self.add_friend_page()
-        with col3:
+        with col2:
             if st.button(localization.get_text("block_friend_button"), key="block_friend_button",
                          use_container_width=True):
                 self.block_friend_page()
-        with col4:
+        with col3:
             if st.button(localization.get_text("unblock_friend_button"), key="unblock_friend_button",
                          use_container_width=True):
                 self.unblock_friend_page()
-        with col5:
+        with col4:
             if st.button(localization.get_text("delete_friend_button"), key="delete_friend_button",
                          use_container_width=True):
                 self.delete_friend()
+        with col5:
+            if st.button(localization.get_text("friend_requests_button"), key="friend_requests_button",
+                         use_container_width=True):
+                self.request_friends_page()
+
+    @st.dialog("친구 대기창")
+    def request_friends_page(self):
+        st.title(localization.get_text("friend_requests_title"))
+        self.show_friend_requests_page()
 
 
 # -------------------------------------디비-----------------------------------------------------------------------------
@@ -3312,6 +3305,8 @@ class ThemeManager:
             st.session_state.current_language = selected_lang  # 선택한 언어로 변경
             st.session_state.localization.lang = selected_lang  # Localization 객체의 언어도 변경
             st.rerun()  # 페이지를 다시 로드
+
+
 
 
 # ----------------------------------------------------- 유저 프로필 ---------------------------------
