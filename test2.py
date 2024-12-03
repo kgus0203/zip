@@ -1471,8 +1471,7 @@ class TurnPages:
                 st.success(localization.get_text("password_recovery_email_sent"))
                 user_manager.save_recovery_token(email)
                 user_manager.send_recovery_email(email)
-                # 복구 이메일 전송
-                user_manager.send_recovery_email(email)
+  
             else:
                 st.warning(localization.get_text("email_not_registered_warning"))
                 return
