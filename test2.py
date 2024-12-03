@@ -1448,9 +1448,10 @@ class TurnPages:
             st.write(st.session_state["action"])
             del st.session_state["action"]
 
+    @st.dialog(localization.get_text("user_manager_page_title"))
     def usermanager_page(self):
 
-        st.title(localization.get_text("user_manager_page_title"))
+
         email = st.text_input(localization.get_text("email_input_prompt"))
         # SMTP 이메일과 비밀번호를 초기화
         smtp_email = "kgus0203001@gmail.com"  # 발신 이메일 주소
