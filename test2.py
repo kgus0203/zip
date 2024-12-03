@@ -413,7 +413,10 @@ class Localization:
                 "meeting_date": "약속 날짜",
                 "meeting_time": "약속 시간",
                 "enter_chat_button": "채팅 입장하기",
-                "leave_group_button": "그룹 탈퇴"                              
+                "leave_group_button": "그룹 탈퇴"         ,
+                "choose_language": "언어를 선택해주세요",
+                "select_language": "언어 선택"            
+                         
         
             },
             "en": {
@@ -791,7 +794,9 @@ class Localization:
                 "meeting_date": "Meeting Date",
                 "meeting_time": "Meeting Time",
                 "enter_chat_button": "Enter Chat",
-                "leave_group_button": "Leave Group"
+                "leave_group_button": "Leave Group",
+                "choose_language": "please choose language",
+                "select_language": "selcet language"   
                     
         
             },
@@ -1170,7 +1175,9 @@ class Localization:
                 "delete_group_confirmation": "本当にグループ「{group_name}」を削除しますか？",
                 "group_deleted": "グループ「{group_name}」を正常に削除しました。",
                 "not_group_creator": "グループ作成者のみがこのグループを削除できます。",
-                "delete_group_cancelled": "グループ削除がキャンセルされました。"
+                "delete_group_cancelled": "グループ削除がキャンセルされました。",
+                "choose_language": "言語を選んでください。",
+                "select_language": "言語選択"   
 
             }
                 
@@ -1671,7 +1678,7 @@ class TurnPages:
         user_id = st.session_state.get("user_id")
         with st.expander(localization.get_text("my_groups_expander"), icon='🍙'):
             group_manager = GroupManager(user_id)
-            groups = group_manager.get_my_groups(user_id)
+            groups = group_manager.get_my_groups()
             if not groups:
                 st.info(localization.get_text("no_joined_groups"))
                 return
@@ -3827,25 +3834,25 @@ class GroupManager:
             st.error(localization.get_text("group_delete_error").format(error=e))
         finally:
             session.close()  # 세션 종료
-def leave_group(self, group_id):
-    try:
-        #그룹 탈퇴 확인
-        group_member = session.query(GroupMember).filter_by(group_id=group_id, user_id=self.user_id).first()
+    def leave_group(self, group_id):
+        try:
+            #그룹 탈퇴 확인
+            group_member = session.query(GroupMember).filter_by(group_id=group_id, user_id=self.user_id).first()
 
-        if not group_member:
-            st.error(localization.get_text("not_in_group"))
-            return
+            if not group_member:
+                st.error(localization.get_text("not_in_group"))
+                return
 
-        # 그룹에서 사용자 제거
-        session.delete(group_member)
-        session.commit()
+            # 그룹에서 사용자 제거
+            session.delete(group_member)
+            session.commit()
 
-        st.success(localization.get_text("leave_group_success").format(group_id=group_id))
-    except Exception as e:
-        session.rollback()
-        st.error(localization.get_text("leave_group_error").format(error=e))
-    finally:
-        session.close()  # 세션 종료
+            st.success(localization.get_text("leave_group_success").format(group_id=group_id))
+        except Exception as e:
+            session.rollback()
+            st.error(localization.get_text("leave_group_error").format(error=e))
+        finally:
+            session.close()  # 세션 종료
 
 
 
@@ -3875,8 +3882,8 @@ def leave_group(self, group_id):
         finally:
             session.close()  # 세션 종료
 
-    def get_my_groups(self, user_id):
-        groups = session.query(Group).filter_by(group_creator=user_id).all()
+    def get_my_groups(self):
+        groups = session.query(Group).filter_by(group_creator=self.user_id).all()
         return [
             {
                 "group_id": group.group_id,
