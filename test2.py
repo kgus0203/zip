@@ -102,7 +102,7 @@ class Localization:
                 "email_not_registered_warning": "등록되지 않은 이메일입니다.",
                 "view_post_header": "게시물 목록",
                 "upload_post_button": "글 작성",
-                "my_groups_expander": "내가 만든 그룹 목록",
+                "my_made_groups_expander": "내가 만든 그룹 목록",
                 "no_joined_groups": "생성한 그룹이 없습니다.",
                 "group_name": "그룹 이름",
                 "category": "카테고리",
@@ -483,7 +483,7 @@ class Localization:
                 "email_not_registered_warning": "The email is not registered.",
                 "view_post_header": "Post List",
                 "upload_post_button": "Create Post",
-                "my_groups_expander": "Groups I Created",
+                "my_made_groups_expander": "Groups I Created",
                 "no_joined_groups": "No groups created.",
                 "group_name": "Group Name",
                 "category": "Category",
@@ -866,7 +866,7 @@ class Localization:
                 "email_not_registered_warning": "登録されていないメールアドレスです。",
                 "view_post_header": "投稿リスト",
                 "upload_post_button": "投稿作成",
-                "my_groups_expander": "作成したグループ",
+                "my_made_groups_expander": "作成したグループ",
                 "no_joined_groups": "作成したグループがありません。",
                 "group_name": "グループ名",
                 "category": "カテゴリー",
@@ -1676,7 +1676,7 @@ class TurnPages:
 
     def view_my_group(self):
         user_id = st.session_state.get("user_id")
-        with st.expander(localization.get_text("my_groups_expander"), icon='🍙'):
+        with st.expander(localization.get_text("my_made_groups_expander"), icon='🍙'):
             group_manager = GroupManager(user_id)
             groups = group_manager.get_my_groups()
             if not groups:
