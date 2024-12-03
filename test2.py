@@ -35,7 +35,6 @@ class Localization:
         self.lang = lang
         self.translations = self.load_translations()
 
-
     def load_translations(self):
 
         return {
@@ -356,7 +355,7 @@ class Localization:
                 "unblock_success": "{friend_id}님을 차단 해제하였습니다.",
                 "delete_self_error": "자신을 삭제할 수 없습니다.",
                 "not_in_friend_list": "해당 유저는 내 친구 리스트에 없는 유저입니다.",
-                "delete_friend_success": "{friend_id}님을 친구 목록에서 삭제하였습니다.",
+                "delete_friend_success": "{friend_id}님을 친구 목록에서 삭제하였습니다." ,               
                 "add_self_as_friend_error": "자신을 친구로 추가할 수 없습니다.",
                 "unblock_before_request_error": "먼저 차단을 해제해주세요.",
                 "user_id_not_found_error": "없는 ID입니다.",
@@ -366,9 +365,56 @@ class Localization:
                 "friend_request_sent_success": "{friend_id}님에게 친구 요청을 보냈습니다. 상대방이 수락할 때까지 기다려주세요.",
                 "friend_request_accepted_success": "{requester_id}님과 친구가 되었습니다.",
                 "friend_request_rejected_success": "{requester_id}님의 친구 요청을 거절했습니다.",
-                "choose_language": "언어를 선택해주세요",
-                "select_language": "언어 선택"
-
+                "not_in_group": "이 그룹에 소속되어 있지 않습니다.",
+                "leave_group_success": "'{group_id}' 그룹에서 성공적으로 탈퇴했습니다.",
+                "leave_group_error": "그룹 탈퇴 중 오류 발생: {error}",                 
+                "enter_recovery_token": "복구 토큰",
+                "token_placeholder": "이메일로 받은 토큰을 입력하세요",
+                "new_password_label": "새 비밀번호",
+                "new_password_placeholder": "새 비밀번호를 입력하세요",
+                "recover_password_button": "비밀번호 복구",
+                "all_fields_required": "모든 필드를 입력하세요.",
+                "password_reset_success": "비밀번호가 성공적으로 변경되었습니다!",
+                "invalid_or_expired_token": "유효하지 않은 토큰이거나 토큰이 만료되었습니다.",   
+                "my_groups_expander": "내가 속한 그룹 목록",
+                "no_joined_groups": "가입한 그룹이 없습니다.",
+                "group_name": "그룹 이름",
+                "category": "카테고리",
+                "status": "상태",
+                "meeting_date": "약속 날짜",
+                "meeting_time": "약속 시간",
+                "edit_button": "수정",
+                "delete_button": "삭제",
+                "kick_member_button": "그룹원 내쫓기",
+                "kick_member_dialog": "그룹원 내쫓기",
+                "group_members_in": "그룹 멤버",
+                "no_members": "이 그룹에 멤버가 없습니다.",
+                "admin_role": "관리자",
+                "member_role": "멤버",
+                "kick_button": "내쫓기",
+                "kick_success": "{member_id}님을 그룹에서 내쫓았습니다.",
+                "kick_error": "{member_id}님을 내쫓는 중 오류가 발생했습니다.",
+                "exit_group_dialog": "그룹 나가기",
+                "exit_group_confirmation": "정말로 '{group_name}' 그룹을 나가시겠습니까?",
+                "yes_button": "예",
+                "no_button": "아니요",
+                "exit_group_success": "그룹 '{group_name}'을 성공적으로 나갔습니다.",
+                "exit_group_cancelled": "그룹 나가기가 취소되었습니다.",
+                "delete_group_dialog": "그룹 삭제",
+                "delete_group_confirmation": "정말로 '{group_name}' 그룹을 삭제하시겠습니까?",
+                "group_deleted": "'{group_name}' 그룹이 삭제되었습니다.",
+                "not_group_creator": "그룹 생성자만 삭제할 수 있습니다.",
+                "delete_group_cancelled": "그룹 삭제가 취소되었습니다.",
+                "my_groups_expander": "내가 속한 그룹 목록",
+                "no_joined_groups": "가입한 그룹이 없습니다.",
+                "group_name": "그룹 이름",
+                "category": "카테고리",
+                "status": "상태",
+                "meeting_date": "약속 날짜",
+                "meeting_time": "약속 시간",
+                "enter_chat_button": "채팅 입장하기",
+                "leave_group_button": "그룹 탈퇴"                              
+        
             },
             "en": {
                 "id_pw_change_title": "ID/PW Change",
@@ -697,9 +743,57 @@ class Localization:
                 "friend_request_sent_success": "You have sent a friend request to {friend_id}. Please wait for their acceptance.",
                 "friend_request_accepted_success": "You are now friends with {requester_id}.",
                 "friend_request_rejected_success": "You have rejected the friend request from {requester_id}.",
-                "select_language": "select language",
-                "choose_language": "please choose language"
-
+                "not_in_group": "You are not a member of this group.",
+                "leave_group_success": "Successfully left the group '{group_id}'.",
+                "leave_group_error": "Error occurred while leaving the group: {error}",
+                "enter_recovery_token": "Recovery Token",
+                "token_placeholder": "Enter the token received via email",
+                "new_password_label": "New Password",
+                "new_password_placeholder": "Enter your new password",
+                "recover_password_button": "Recover Password",
+                "all_fields_required": "Please fill in all fields.",
+                "password_reset_success": "Your password has been successfully changed!",
+                "invalid_or_expired_token": "Invalid or expired token.",
+                "my_groups_expander": "My Groups",
+                "no_joined_groups": "You have not joined any groups.",
+                "group_name": "Group Name",
+                "category": "Category",
+                "status": "Status",
+                "meeting_date": "Meeting Date",
+                "meeting_time": "Meeting Time",
+                "edit_button": "Edit",
+                "delete_button": "Delete",
+                "kick_member_button": "Kick Member",
+                "kick_member_dialog": "Kick Member",
+                "group_members_in": "Group Members in",
+                "no_members": "No members in this group.",
+                "admin_role": "Admin",
+                "member_role": "Member",
+                "kick_button": "Kick",
+                "kick_success": "Successfully kicked {member_id} from the group.",
+                "kick_error": "Error kicking {member_id} from the group.",
+                "exit_group_dialog": "Exit Group",
+                "exit_group_confirmation": "Do you really want to leave the group '{group_name}'?",
+                "yes_button": "Yes",
+                "no_button": "No",
+                "exit_group_success": "Successfully left the group '{group_name}'.",
+                "exit_group_cancelled": "Group exit cancelled.",
+                "delete_group_dialog": "Delete Group",
+                "delete_group_confirmation": "Do you really want to delete the group '{group_name}'?",
+                "group_deleted": "Successfully deleted the group '{group_name}'.",
+                "not_group_creator": "Only the group creator can delete this group.",
+                "delete_group_cancelled": "Group deletion cancelled.",
+                "my_groups_expander": "My Groups",
+                "no_joined_groups": "You have not joined any groups.",
+                "group_name": "Group Name",
+                "category": "Category",
+                "status": "Status",
+                "meeting_date": "Meeting Date",
+                "meeting_time": "Meeting Time",
+                "enter_chat_button": "Enter Chat",
+                "leave_group_button": "Leave Group"
+                    
+        
             },
             "jp": {
                 "id_pw_change_title": "ID/PW変更",
@@ -754,7 +848,7 @@ class Localization:
                 "email_input_prompt": "メールアドレスを入力してください: ",
                 "confirm_button": "確認",
                 "select_category_label": "カテゴリー選択",
-                "no_registered_categories_error": "登録されたカテゴリーがありません。管理者にお問い合わせください。",
+                "no_registered_categories_error": "登録されたカテゴリーがありません。管理者にお問い合わせください。",   
                 "password_recovery_email_sent": "パスワード復旧メールが送信されました",
                 "friend_management": "友達管理",
                 "my_friend_list_button": "友達リスト",
@@ -1028,13 +1122,61 @@ class Localization:
                 "friend_request_sent_success": "{friend_id}に友達リクエストを送りました。承認をお待ちください。",
                 "friend_request_accepted_success": "{requester_id}と友達になりました。",
                 "friend_request_rejected_success": "{requester_id}からの友達リクエストを拒否しました。",
-                "select_language": "言語選択",
-                "choose_language": "言語選択してください。"
+                "enter_recovery_token": "復旧トークン",
+                "token_placeholder": "メールで受け取ったトークンを入力してください",
+                "new_password_label": "新しいパスワード",
+                "new_password_placeholder": "新しいパスワードを入力してください",
+                "recover_password_button": "パスワードを復旧する",
+                "all_fields_required": "すべてのフィールドを入力してください。",
+                "password_reset_success": "パスワードが正常に変更されました！",
+                "invalid_or_expired_token": "無効または期限切れのトークンです。",
+                "not_in_group": "このグループに所属していません。",
+                "leave_group_success": "'{group_id}' グループを正常に脱退しました。",
+                "leave_group_error": "グループ脱退中にエラーが発生しました: {error}",
+                "my_groups_expander": "参加中のグループリスト",
+                "no_joined_groups": "参加中のグループはありません。",
+                "group_name": "グループ名",
+                "category": "カテゴリー",
+                "status": "状態",
+                "meeting_date": "約束日",
+                "meeting_time": "約束時間",
+                "enter_chat_button": "チャットに参加",
+                "leave_group_button": "グループを脱退",
+                "my_groups_expander": "参加中のグループリスト",
+                "no_joined_groups": "参加中のグループはありません。",
+                "group_name": "グループ名",
+                "category": "カテゴリー",
+                "status": "状態",
+                "meeting_date": "約束日",
+                "meeting_time": "約束時間",
+                "edit_button": "編集",
+                "delete_button": "削除",
+                "kick_member_button": "メンバーを追放",
+                "kick_member_dialog": "メンバーを追放",
+                "group_members_in": "グループのメンバー",
+                "no_members": "このグループにはメンバーがいません。",
+                "admin_role": "管理者",
+                "member_role": "メンバー",
+                "kick_button": "追放",
+                "kick_success": "{member_id}さんをグループから追放しました。",
+                "kick_error": "{member_id}さんを追放中にエラーが発生しました。",
+                "exit_group_dialog": "グループを退出",
+                "exit_group_confirmation": "本当にグループ「{group_name}」を退出しますか？",
+                "yes_button": "はい",
+                "no_button": "いいえ",
+                "exit_group_success": "グループ「{group_name}」を正常に退出しました。",
+                "exit_group_cancelled": "グループ退出がキャンセルされました。",
+                "delete_group_dialog": "グループを削除",
+                "delete_group_confirmation": "本当にグループ「{group_name}」を削除しますか？",
+                "group_deleted": "グループ「{group_name}」を正常に削除しました。",
+                "not_group_creator": "グループ作成者のみがこのグループを削除できます。",
+                "delete_group_cancelled": "グループ削除がキャンセルされました。"
 
             }
-
+                
+            
         }
-
+    
     def get_text(self, key):
 
         try:
@@ -1066,8 +1208,6 @@ if 'current_language' not in st.session_state:
 # Localization 객체 가져오기
 localization = st.session_state.localization
 
-# 현재 언어 표시
-st.write(f"Current Language: {st.session_state.current_language}")
 
 # -----------------------------------------------페이지 전환 ----------------------------------------------------------
 
@@ -1471,33 +1611,41 @@ class TurnPages:
                 st.success(localization.get_text("password_recovery_email_sent"))
                 user_manager.save_recovery_token(email)
                 user_manager.send_recovery_email(email)
-  
+                # 복구 이메일 전송
+                user_manager.send_recovery_email(email)
             else:
                 st.warning(localization.get_text("email_not_registered_warning"))
                 return
-                # 복구 토큰 입력 받기
-        token = st.text_input("복구 토큰", placeholder="이메일로 받은 토큰을 입력하세요")
-        # 새 비밀번호 입력
-        new_password = st.text_input("새 비밀번호", placeholder="새 비밀번호를 입력하세요", type="password")
-        # 비밀번호 복구 버튼 클릭
-        if st.button("비밀번호 복구", use_container_width=True):
-            if not email or not token or not new_password:
-                st.error("모든 필드를 입력하세요.")
-                return
+ # 복구 토큰 입력 받기
+            token = st.text_input(localization.get_text("enter_recovery_token"), placeholder=localization.get_text("token_placeholder"))
 
-            # 비밀번호 복구를 위한 UserManager 인스턴스 생성
-            user_manager = UserManager(smtp_email, smtp_password)
+            # 새 비밀번호 입력
+            new_password = st.text_input(localization.get_text("new_password_label"), placeholder=localization.get_text("new_password_placeholder"), type="password")
 
-            # 토큰 검증 후 비밀번호 재설정
-            if user_manager.verify_token(email, token):
-                user_manager.reset_password(email, new_password)
-                st.success("비밀번호가 성공적으로 변경되었습니다!")
-            else:
-                st.error("유효하지 않은 토큰이거나 토큰이 만료되었습니다.")
-        if st.button(localization.get_text("back_button"), use_container_width=True):
-            self.page.go_back()
+            # 비밀번호 복구 버튼 클릭
+            if st.button(localization.get_text("recover_password_button"), use_container_width=True):
+                if not email or not token or not new_password:
+                    st.error(localization.get_text("all_fields_required"))
+                    return
 
-            # 게시글 목록
+                # 비밀번호 복구를 위한 UserManager 인스턴스 생성
+                user_manager = UserManager(smtp_email, smtp_password)
+
+                # 토큰 검증 후 비밀번호 재설정
+                if user_manager.verify_token(email, token):
+                    user_manager.reset_password(email, new_password)
+                    st.success(localization.get_text("password_reset_success"))
+                else:
+                    st.error(localization.get_text("invalid_or_expired_token"))
+
+            # 뒤로가기 버튼
+            if st.button(localization.get_text("back_button"), use_container_width=True):
+                self.page.go_back()
+
+
+            
+            
+    # 게시글 목록
 
 
     def view_post(self):
@@ -1551,12 +1699,13 @@ class TurnPages:
                         if group_manager.is_group_creator(group['group_id']):
                             self.show_delete_confirmation_dialog()
                 # 그룹원 내쫓기 버튼
-                if st.button(f"그룹원 내쫓기", key=f"kick_{group['group_id']}", use_container_width=True):
+                if st.button(localization.get_text("kick_member_button"), key=f"kick_{group['group_id']}",
+                            use_container_width=True):
                     self.kick_member(group['group_id'], group['group_name'])
 
-    @st.dialog("그룹원 내쫓기")
+    @st.dialog(localization.get_text("kick_member_dialog"))
     def kick_member(self, group_id, group_name):
-        st.markdown(f"### 그룹 '{group_name}'의 그룹원 목록")
+        st.markdown(f"### {localization.get_text('group_members_in')} '{group_name}'")
 
         user_id = st.session_state.get("user_id")
         group_manager = GroupManager(user_id)
@@ -1564,80 +1713,70 @@ class TurnPages:
         group_members = group_manager.get_group_members(group_id)
 
         if not group_members:
-            st.warning("이 그룹에 멤버가 없습니다.")
+            st.warning(localization.get_text("no_members"))            
             return
 
         for member in group_members:
             member_id, role = member[0], member[1]
             col1, col2 = st.columns([4, 1])
             with col1:
-                st.write(f"- {member_id} ({'관리자' if role == 'admin' else '멤버'})")
+                st.write(f"- {member_id} ({localization.get_text('admin_role') if role == 'admin' else localization.get_text('member_role')})")
             with col2:
                 if member_id != user_id:  # 본인은 내쫓을 수 없음
-                    if st.button(f"내쫓기", key=f"kick_member_{group_id}_{member_id}"):
+                    if st.button(localization.get_text("kick_button"), key=f"kick_member_{group_id}_{member_id}"):
                         if group_manager.kick_member(group_id, member_id):
-                            st.success(f"{member_id}님을 그룹에서 내쫓았습니다.")
-                            # 상태를 변경하여 새로고침
+                            st.success(localization.get_text("kick_success").format(member_id=member_id))
                             st.session_state["page_refresh"] = True
                             st.rerun()
                         else:
-                            st.error(f"{member_id}님을 내쫓는 중 오류가 발생했습니다.")
+                            st.error(localization.get_text("kick_error").format(member_id=member_id))
 
-    @st.dialog("그룹 나가기")
     def exit_group(self, group_id, group_name):
-        st.write(f"정말로 '{group_name}' 그룹을 나가시겠습니까?")
-        col_yes, col_no = st.columns(2)  # 예/아니요 버튼 나란히 배치
+        st.write(localization.get_text("exit_group_confirmation").format(group_name=group_name))
+        col_yes, col_no = st.columns(2)
         user_id = st.session_state.get("user_id")
         group_manager = GroupManager(user_id)
 
         with col_yes:
-            if st.button("예", key="confirm_yes_button", use_container_width=True, type='primary'):
-                # 그룹 나가기 처리
+            if st.button(localization.get_text("yes_button"), key="confirm_yes_button", use_container_width=True, type='primary'):
                 success = group_manager.leave_group(group_id)
                 if success:
-                    st.success(f"그룹 '{group_name}'을(를) 성공적으로 나갔습니다.")
+                    st.success(localization.get_text("exit_group_success").format(group_name=group_name))
                     st.rerun()
 
         with col_no:
-            if st.button("아니요", key="confirm_no_button", use_container_width=True, type='primary'):
-                st.info("그룹 나가기가 취소되었습니다.")
+            if st.button(localization.get_text("no_button"), key="confirm_no_button", use_container_width=True, type='primary'):
+                st.info(localization.get_text("exit_group_cancelled"))
 
-    @st.dialog("게시물 삭제")
+
+    @st.dialog(localization.get_text("delete_group_dialog"))
     def show_delete_confirmation_dialog(self):
         user_id = st.session_state.get("user_id")
         group_manager = GroupManager(user_id)
 
         if "delete_group_id" in st.session_state:
             with st.container():
-                st.markdown(f"정말로 '{st.session_state['delete_group_name']}' 그룹을 삭제하시겠습니까?")
+                st.markdown(localization.get_text("delete_group_confirmation").format(group_name=st.session_state['delete_group_name']))
 
                 col1, col2 = st.columns(2)
                 with col1:
-                    # '예' 버튼
-                    if st.button("예", key=f"confirm_delete_{st.session_state['delete_group_id']}",
-                                 use_container_width=True, type="primary"):
+                    if st.button(localization.get_text("yes_button"), key=f"confirm_delete_{st.session_state['delete_group_id']}",
+                                use_container_width=True, type="primary"):
                         group_id = st.session_state["delete_group_id"]
-
-                        # 그룹 생성자인지 확인
                         if group_manager.is_group_creator(group_id):
                             group_manager.delete_group(group_id)
-                            st.success(f"'{st.session_state['delete_group_name']}' 그룹이 삭제되었습니다.")
-
+                            st.success(localization.get_text("group_deleted").format(group_name=st.session_state['delete_group_name']))
                         else:
-                            st.error("그룹 생성자만 삭제할 수 있습니다.")
+                            st.error(localization.get_text("not_group_creator"))
 
-                        # 세션 상태 초기화
                         del st.session_state["delete_group_id"]
                         del st.session_state["delete_group_name"]
                         st.rerun()
 
                 with col2:
-                    # '아니오' 버튼
-                    if st.button("아니오", key=f"cancel_delete_{st.session_state['delete_group_id']}",
-                                 use_container_width=True, type="primary"):
-                        st.info("그룹 삭제가 취소되었습니다.")
-
-                        # 세션 상태 초기화
+                    if st.button(localization.get_text("no_button"), key=f"cancel_delete_{st.session_state['delete_group_id']}",
+                                use_container_width=True, type="primary"):
+                        st.info(localization.get_text("delete_group_cancelled"))
                         del st.session_state["delete_group_id"]
                         del st.session_state["delete_group_name"]
                         st.rerun()
@@ -3567,7 +3706,7 @@ class GroupManager:
             return user_groups
         except Exception as e:
             session.rollback()  # 예외 발생 시 롤백
-            print(f"오류 발생: {e}")
+            st.error(localization.get_text("db_error").format(error=e))
             return []
         finally:
             session.close()
@@ -3584,7 +3723,7 @@ class GroupManager:
                 return False
         except Exception as e:
             session.rollback()
-            st.error(f"오류 발생: {e}")
+            st.error(localization.get_text("db_error").format(error=e))            
             return False
         # 그룹에 속해있는 멤버들의 아이디를 반환한다
 
@@ -3688,26 +3827,26 @@ class GroupManager:
             st.error(localization.get_text("group_delete_error").format(error=e))
         finally:
             session.close()  # 세션 종료
-    def leave_group(self, group_id):
-        try:
-            # 사용자 그룹 탈퇴 확인
-            group_member = session.query(GroupMember).filter_by(group_id=group_id, user_id=self.user_id).first()
+def leave_group(self, group_id):
+    try:
+        #그룹 탈퇴 확인
+        group_member = session.query(GroupMember).filter_by(group_id=group_id, user_id=self.user_id).first()
 
-            if not group_member:
-                st.error(f"이 그룹에 소속되어 있지 않습니다.")
-                return
+        if not group_member:
+            st.error(localization.get_text("not_in_group"))
+            return
 
-            # 그룹에서 사용자 제거
-            session.delete(group_member)
-            session.commit()
+        # 그룹에서 사용자 제거
+        session.delete(group_member)
+        session.commit()
 
-            st.success(f"'{group_id}' 그룹에서 성공적으로 탈퇴했습니다.")
-        except Exception as e:
-            session.rollback()
-            st.error(f"그룹 탈퇴 중 오류 발생: {e}")
+        st.success(localization.get_text("leave_group_success").format(group_id=group_id))
+    except Exception as e:
+        session.rollback()
+        st.error(localization.get_text("leave_group_error").format(error=e))
+    finally:
+        session.close()  # 세션 종료
 
-        finally:
-            session.close()  # 세션 종료
 
 
     def update_group(self, group_id, group_name, category, status, meeting_date, meeting_time):
