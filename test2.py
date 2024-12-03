@@ -1670,6 +1670,7 @@ class TurnPages:
             if st.button('채팅 입장하기', key='enter_chat', use_container_width=True):
                 chatting = Chatting(group.group_id)  # session 객체 필요
                 chatting.display_chat_interface()
+
             if st.button('그룹 탈퇴', key='out_group', use_container_width=True):
                 self.exit_group(group.group_id, group.group_name)
 
@@ -3493,7 +3494,7 @@ class Chatting:
         else:
             return localization.get_text("group_not_found")
 
-    # 채팅 인터페이스를 표시하는 함수
+    @st.dialog('채팅')
     def display_chat_interface(self):
         group_name = self.get_group_name(self.group_id)
         st.subheader(localization.get_text("chat_title").format(group=group_name))
@@ -3506,7 +3507,7 @@ class Chatting:
 
         # 그룹별 메세지 상태 초기화
         if f"messages_{self.group_id}" not in st.session_state:
-            st.session_state[f"messages_{self.group_id}"] = self.load_messages(self.group_id)
+            st.session_state[f"messages_{self.group_id}"] = self.load_messages()
 
         # 채팅 기록 표시
         st.markdown(localization.get_text("chat_history"))
@@ -3531,7 +3532,7 @@ class Chatting:
             if new_message.strip():  # 메세지가 공백이 아니어야 함
                 self.save_message(sender_id, new_message)
                 st.session_state[f"new_message_{self.group_id}"] = ""  # 입력 필드 초기화
-                st.session_state[f"messages_{self.group_id}"] = self.load_messages(self.group_id)  # 메세지 갱신
+                st.session_state[f"messages_{self.group_id}"] = self.load_messages()  # 메세지 갱신
             else:
                 st.warning(localization.get_text("message_required"))
 
