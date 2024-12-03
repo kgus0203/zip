@@ -1317,7 +1317,7 @@ class TurnPages:
             user_name = user_data['user_name']
             with col1:
                 profile_picture = user_data['profile_picture']
-                st.image(profile_picture, use_column_width=True)
+                st.image(profile_picture)
             with col2:
                 st.write(f"**{user_name}**")
             with col3:
@@ -3184,7 +3184,7 @@ class PostManager:
 
                         if post.p_image_path:
                             self.create_location_name()
-                            st.image(post.p_image_path, use_container_width=True)
+                            st.image(post.p_image_path)
 
                         with st.expander(localization.get_text("view_more_expander")):
                             self.display_post(post.p_id)
