@@ -1,5 +1,5 @@
 import sqlite3
-
+#들여쓰기 맞춰두었습니다
 
 def create_db():
    conn = sqlite3.connect('zip.db')
@@ -9,7 +9,8 @@ def create_db():
    # user 테이블
    cursor.execute("""
    CREATE TABLE IF NOT EXISTS user (
-       user_id TEXT PRIMARY KEY,
+       user_seq INTEGER PRIMARY KEY AUTOINCREMENT,
+       user_id TEXT NOT NULL,
        user_password TEXT NOT NULL,
        user_email TEXT NOT NULL,
        user_is_online INTEGER DEFAULT 0,
@@ -25,7 +26,7 @@ def create_db():
 
 
     # friend 테이블 (친구 목록)
-    cursor.execute("""
+   cursor.execute("""
     CREATE TABLE IF NOT EXISTS friend (
         friend_id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id TEXT NOT NULL,
@@ -34,9 +35,27 @@ def create_db():
         FOREIGN KEY (friend_user_id) REFERENCES user(user_id)
     )
     """)
+   cursor.execute("""
+               CREATE TABLE IF NOT EXISTS password_recovery (
+                   id INTEGER PRIMARY KEY AUTOINCREMENT,
+                   user_email TEXT NOT NULL,
+                   token TEXT NOT NULL,
+                   created_at TEXT NOT NULL
+               )
+           """)
 
+   cursor.execute("""
+                  CREATE TABLE IF NOT EXISTS like (
+                      like_id INTEGER PRIMARY KEY ,
+                      user_id TEXT NOT NULL,
+                      post_id INTEGER NOT NULL,
+                      FOREIGN KEY (user_id) REFERENCES user(user_id),
+                      FOREIGN KEY (post_id) REFERENCES posting(p_id)
+                      
+                  )
+              """)
     # block 테이블 (차단 목록)
-    cursor.execute("""
+   cursor.execute("""
     CREATE TABLE IF NOT EXISTS block (
         block_id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id TEXT NOT NULL,
@@ -47,7 +66,7 @@ def create_db():
     """)
 
     # myFriendrequest 테이블 (내가 보낸 친구 신청 목록)
-    cursor.execute("""
+   cursor.execute("""
     CREATE TABLE IF NOT EXISTS myFriendrequest (
         request_id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id TEXT NOT NULL,
@@ -58,7 +77,7 @@ def create_db():
     """)
 
     # otherRequest 테이블 (다른 사람이 보낸 친구 신청 목록)
-    cursor.execute("""
+   cursor.execute("""
     CREATE TABLE IF NOT EXISTS otherRequest (
         request_id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id TEXT NOT NULL,
@@ -77,10 +96,10 @@ def create_db():
        group_name TEXT UNIQUE NOT NULL,
        group_creator TEXT NOT NULL,
        category INTEGER,
-       date TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+       date DATETIME DEFAULT CURRENT_TIMESTAMP,
        location INTEGER,
-       meeting_date TEXT,
-       meeting_time TEXT,
+       meeting_date DATE DEFAULT CURRENT_DATE,
+       meeting_time TIME DEFAULT CURRENT_TIME,
        status TEXT DEFAULT '진행 중',
        update_date TEXT NOT NULL,
        modify_date TEXT NOT NULL,
@@ -98,7 +117,7 @@ def create_db():
        group_id TEXT NOT NULL,
        user_id TEXT NOT NULL,
        role TEXT DEFAULT 'member' CHECK (role IN ('admin', 'member')),
-       joined_at TEXT DEFAULT CURRENT_TIMESTAMP,
+       joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
        FOREIGN KEY (group_id) REFERENCES "group"(group_id),
        FOREIGN KEY (user_id) REFERENCES user(user_id)
    )
@@ -156,6 +175,7 @@ def create_db():
    cursor.execute("""
    CREATE TABLE IF NOT EXISTS posting (
        p_id INTEGER PRIMARY KEY AUTOINCREMENT,
+       p_user TEXT NOT NULL, 
        p_title TEXT NOT NULL,
        p_content TEXT NOT NULL,
        p_image_path TEXT,
@@ -163,17 +183,21 @@ def create_db():
        p_location INTEGER,
        p_category INTEGER,
        like_num INTEGER DEFAULT 0,
+       total_like_num INTEGER DEFAULT 0,
        file BLOB,
        upload_date DATETIME DEFAULT CURRENT_TIMESTAMP,
        modify_date DATETIME DEFAULT CURRENT_TIMESTAMP,
        FOREIGN KEY (p_location) REFERENCES locations(location_id),
-       FOREIGN KEY (p_category) REFERENCES food_categories(category_id)
+       FOREIGN KEY (p_category) REFERENCES food_categories(category_id),
+       FOREIGN KEY (p_user) REFERENCES user(user_id)
    )
    """)
    cursor.execute('''
        CREATE TABLE IF NOT EXISTS settings (
            id INTEGER PRIMARY KEY AUTOINCREMENT,
-           current_theme TEXT
+           user TEXT NOT NULL,
+           current_theme TEXT,
+           FOREIGN KEY (user) REFERENCES user(user_id)
        );
    ''')
 
