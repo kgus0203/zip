@@ -1034,7 +1034,7 @@ class Localization:
             }
 
         }
-
+    @st.cache_data
     def get_text(self, key):
 
         try:
@@ -1049,7 +1049,7 @@ class Localization:
             self.lang = new_lang
         else:
             st.error(f"Language '{new_lang}' is not supported.")
-
+    @st.cache_data
     def show_translations(self):
         """
         현재 선택된 언어의 번역 데이터를 Streamlit에서 시각화합니다.
