@@ -1049,11 +1049,9 @@ class Localization:
             self.lang = new_lang
         else:
             st.error(f"Language '{new_lang}' is not supported.")
-    @st.cache_data
+
     def show_translations(self):
-        """
-        현재 선택된 언어의 번역 데이터를 Streamlit에서 시각화합니다.
-        """
+
         st.json(self.translations.get(self.lang, {}))
 
 
@@ -1086,6 +1084,7 @@ class Page:
         self.turn_pages = TurnPages(self)
         self.group_page = GroupPage(self)
         self.friend_page = FriendPage(self)
+
     @st.cache_data
     def render_page(self):
         # 페이지 렌더링
@@ -1113,6 +1112,7 @@ class Page:
             page_functions[st.session_state.current_page]()  # 매핑된 함수 호출
         else:
             st.warning(localization.get_text("page_not_found"))  # 잘못된 페이지 처리
+
     @st.cache_data
     # 페이지 전환 함수
     def change_page(self, page_name: str):
