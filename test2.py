@@ -16,6 +16,7 @@ from sqlalchemy.ext.declarative import declarative_base
 import pandas as pd
 import os
 import requests
+from datetime import timedelta
 
 # SQLAlchemy Base 선언
 Base = declarative_base()
@@ -408,14 +409,18 @@ class TurnPages:
             del st.session_state["action"]
 
     def usermanager_page(self):
-
         st.title("사용자 관리 페이지")
+
+        # 이메일 입력 필드
         email = st.text_input('이메일을 입력하세요: ')
 
+        # SMTP 이메일과 비밀번호를 초기화
+        smtp_email = "kgus0203001@gmail.com"  # 발신 이메일 주소
+        smtp_password = "pwhj fwkw yqzg ujha"  # 발신 이메일 비밀번호
+
+        # 이메일 확인 버튼 클릭
         if st.button("확인", key="forgot_confirm_button", use_container_width=True):
-            smtp_email = "kgus0203001@gmail.com"  # 발신 이메일 주소
-            smtp_password = "pwhj fwkw yqzg ujha"  # 발신 이메일 비밀번호
-            user_manager = UserManager(smtp_email, smtp_password)
+            user_manager = UserManager(smtp_email, smtp_password, session)
 
             # 이메일 등록 여부 확인
             user_info = user_manager.is_email_registered(email)
@@ -423,27 +428,35 @@ class TurnPages:
                 st.success(f"비밀번호 복구 메일을 전송했습니다")
                 # 복구 이메일 전송
                 token = user_manager.generate_token()
-                user_manager.save_recovery_token(email, token)
-                user_manager.send_recovery_email(email, token)
+                user_manager.save_recovery_token(email)
+                user_manager.send_recovery_email(email)
                 st.success("복구 토큰이 이메일로 발송되었습니다!")
-
             else:
                 st.warning("등록되지 않은 이메일입니다.")
                 return
+
+        # 복구 토큰 입력 받기
         token = st.text_input("복구 토큰", placeholder="이메일로 받은 토큰을 입력하세요")
         # 새 비밀번호 입력
         new_password = st.text_input("새 비밀번호", placeholder="새 비밀번호를 입력하세요", type="password")
 
+        # 비밀번호 복구 버튼 클릭
         if st.button("비밀번호 복구", use_container_width=True):
             if not email or not token or not new_password:
                 st.error("모든 필드를 입력하세요.")
                 return
+
+            # 비밀번호 복구를 위한 UserManager 인스턴스 생성
+            user_manager = UserManager(smtp_email, smtp_password, session)
+
+            # 토큰 검증 후 비밀번호 재설정
             if user_manager.verify_token(email, token):
                 user_manager.reset_password(email, new_password)
                 st.success("비밀번호가 성공적으로 변경되었습니다!")
             else:
                 st.error("유효하지 않은 토큰이거나 토큰이 만료되었습니다.")
 
+        # 뒤로가기 버튼
         if st.button("뒤로가기↩️", use_container_width=True):
             self.page.go_back()
 
@@ -494,6 +507,59 @@ class TurnPages:
                     st.session_state["delete_group_name"] = group["group_name"]
                     if group_manager.is_group_creator(group['group_id']):
                         self.show_delete_confirmation_dialog()
+                # 그룹원 내쫓기 버튼
+                if st.button(f"그룹원 내쫓기", key=f"kick_{group['group_id']}", use_container_width=True):
+                    self.kick_member(group['group_id'], group['group_name'])
+
+    @st.dialog("그룹원 내쫓기")
+    def kick_member(self, group_id, group_name):
+        """그룹원 내쫓기 대화형 UI"""
+        st.markdown(f"### 그룹 '{group_name}'의 그룹원 목록")
+
+        user_id = st.session_state.get("user_id")
+        group_manager = GroupManager(user_id)
+
+        group_members = group_manager.get_group_members(group_id)
+
+        if not group_members:
+            st.warning("이 그룹에 멤버가 없습니다.")
+            return
+
+        for member in group_members:
+            member_id, role = member[0], member[1]
+            col1, col2 = st.columns([4, 1])
+            with col1:
+                st.write(f"- {member_id} ({'관리자' if role == 'admin' else '멤버'})")
+            with col2:
+                if member_id != user_id:  # 본인은 내쫓을 수 없음
+                    if st.button(f"내쫓기", key=f"kick_member_{group_id}_{member_id}"):
+                        if group_manager.kick_member(group_id, member_id):
+                            st.success(f"{member_id}님을 그룹에서 내쫓았습니다.")
+                            # 상태를 변경하여 새로고침
+                            st.session_state["page_refresh"] = True
+                            st.rerun()
+                            return
+                        else:
+                            st.error(f"{member_id}님을 내쫓는 중 오류가 발생했습니다.")
+
+    @st.dialog("그룹 나가기")
+    def exit_group(self, group_id, group_name):
+        st.write(f"정말로 '{group_name}' 그룹을 나가시겠습니까?")
+        col_yes, col_no = st.columns(2)  # 예/아니요 버튼 나란히 배치
+        user_id = st.session_state.get("user_id")
+        group_manager = GroupManager(user_id)
+
+        with col_yes:
+            if st.button("예", key="confirm_yes_button",use_container_width=True, type='primary'):
+                # 그룹 나가기 처리
+                success = group_manager.leave_group(group_id)
+                if success:
+                    st.success(f"그룹 '{group_name}'을(를) 성공적으로 나갔습니다.")
+                    st.rerun()
+
+        with col_no:
+            if st.button("아니요", key="confirm_no_button",use_container_width=True, type='primary'):
+                st.info("그룹 나가기가 취소되었습니다.")
 
     @st.dialog("게시물 삭제")
     def show_delete_confirmation_dialog(self):
@@ -557,28 +623,12 @@ class TurnPages:
 
             # 그룹원 표시
 
-            if 'invitee_id' not in st.session_state:
-                st.session_state['invitee_id'] = ''  # 초기 값 설정
-
-            invitee_id = st.text_input("초대할 사용자 ID를 입력하세요", key=f"invite_input_{group.group_id}",
-                                       value=st.session_state['invitee_id'])
-
-            if st.button("초대 요청 보내기", key=f"send_invite_{group.group_id}", use_container_width=True):
-                if invitee_id:
-                    request_dao = GroupRequestDAO()
-                    success = request_dao.send_request(invitee_id, group.group_id)  # 초대 요청 저장
-                    if success:
-                        st.success(f"{invitee_id}님에게 초대 요청을 보냈습니다.")
-                        st.info("그룹 초대가 되었습니다.")  # 그룹 초대 확인 메시지
-                        st.session_state['invitee_id'] = ''  # 성공적으로 보냈으면 필드 초기화
-                    else:
-                        st.error("초대 요청을 보내는 데 실패했습니다.")
-                else:
-                    st.error("초대할 사용자 ID를 입력하세요.")  # ID 입력 안 했을 때 에러 메시지
             if st.button('채팅 입장하기', key='enter_chat', use_container_width=True):
 
                 chatting = Chatting(group.group_id)  # session 객체 필요
                 chatting.display_chat_interface()
+            if st.button('그룹 탈퇴', key='out_group', use_container_width=True):
+                self.exit_group(group.group_id, group.group_name)
 
 
     # 대기 중인 친구 요청을 표시하는 함수
@@ -828,7 +878,22 @@ class GroupPage():
                 st.error("해제 중 오류가 발생했습니다.")
         if st.button(f"그룹 참여 ({group_name})", key=f"join_{group_name}", use_container_width=True):
             self.group_manager.join_group(group_name)
+        if f"invitee_id_{group_id}" not in st.session_state:
+            st.session_state[f"invitee_id_{group_id}"] = ""  # 초기화
 
+        with st.form(key=f"invite_form_{group_id}"):
+            invitee_id = st.text_input("초대할 사용자 ID를 입력하세요",
+                                       key=f"invitee_id_{group_id}")  # value는 자동으로 session_state 사용
+            submit_button = st.form_submit_button("초대 보내기")
+            if submit_button:
+                if invitee_id:  # st.session_state를 직접 수정하지 않음, 위젯 자체에 저장된 값 사용
+                    result = self.group_manager.invite_user_to_group(group_id, invitee_id)
+                    if result["success"]:
+                        st.success(result["message"])
+                    else:
+                        st.error(result["message"])
+                else:
+                    st.warning("사용자 ID를 입력하세요.")
 
 
         with st.expander("그룹 초대"):
@@ -839,18 +904,23 @@ class GroupPage():
             invitee_id = st.text_input("초대할 사용자 ID를 입력하세요", key=f"invite_input_{group_id}",
                                        value=st.session_state['invitee_id'])
 
-            if st.button("초대 요청 보내기", key=f"send_invite_{group_id}", use_container_width=True):
-                if invitee_id:
-                    request_dao = GroupRequestDAO()
-                    success = self.request_dao.send_request(invitee_id, group_id)  # 초대 요청 저장
-                    if success:
-                        st.success(f"{invitee_id}님에게 초대 요청을 보냈습니다.")
-                        st.info("그룹 초대가 되었습니다.")  # 그룹 초대 확인 메시지
-                        st.session_state['invitee_id'] = ''  # 성공적으로 보냈으면 필드 초기화
+            if f"invitee_id_group{group_id}" not in st.session_state:
+                st.session_state['invitee_id'] = ""  # 초기화
+
+            with st.form(key=f"invite_form_group{group_id}"):
+                invitee_id = st.text_input("초대할 사용자 ID를 입력하세요",
+                                           key=f"invitee_id_group{group_id}")  # value는 자동으로 session_state 사용
+                submit_button = st.form_submit_button("초대 보내기")
+                if submit_button:
+                    if invitee_id:  # st.session_state를 직접 수정하지 않음, 위젯 자체에 저장된 값 사용
+                        result = self.group_manager.invite_user_to_group(group_id, invitee_id)
+                        if result["success"]:
+                            st.success(result["message"])
+                        else:
+                            st.error(result["message"])
                     else:
-                        st.error("초대 요청을 보내는 데 실패했습니다.")
-                else:
-                    st.error("초대할 사용자 ID를 입력하세요.")  # ID 입력 안 했을 때 에러 메시지
+                        st.warning("사용자 ID를 입력하세요.")
+
         if st.button('채팅 입장하기', key='enter_chat', use_container_width=True):
             if self.group_manager.is_group_member(group_id):
                 chatting = Chatting(group_id)  # session 객체 필요
@@ -1347,20 +1417,24 @@ class UserVO:
 
 
 class UserManager:
-    def __init__(self, smtp_email, smtp_password):
+    def __init__(self, smtp_email, smtp_password, session):
         self.smtp_email = smtp_email
         self.smtp_password = smtp_password
+        self.session = session  # SQLAlchemy session passed to the class
 
     def is_email_registered(self, email):
-        user = session.query(User).filter_by(user_email=email).first()
-        session.close()
+        # 이메일이 등록되어 있는지 확인
+        user = self.session.query(User).filter_by(user_email=email).first()
         return user is not None
 
     def generate_token(self, length=16):
+        # 랜덤 토큰 생성
         characters = string.ascii_letters + string.digits
         return ''.join(secrets.choice(characters) for _ in range(length))
 
-    def send_recovery_email(self, email, token):
+    def send_recovery_email(self, email):
+        # 비밀번호 복구 이메일 전송
+        token = self.generate_token()
         subject = "Password Recovery Token"
         body = (
             f"안녕하세요,\n\n"
@@ -1382,43 +1456,51 @@ class UserManager:
                 connection.login(user=self.smtp_email, password=self.smtp_password)  # 로그인
                 connection.sendmail(from_addr=self.smtp_email, to_addrs=email, msg=msg.as_string())  # 이메일 전송
             print(f"Recovery email sent to {email}.")
+
+            # 보낸 토큰을 session_state에 저장
+            st.session_state['recovery_token'] = token
+            st.session_state['token_sent_time'] = datetime.utcnow()
         except smtplib.SMTPException as e:
             print(f"Failed to send email: {e}")
         except Exception as e:
             print(f"Unexpected error: {e}")
 
-    def save_recovery_token(self, email, token):
-        recovery = PasswordRecovery(user_email=email, token=token)
-        session.add(recovery)
-        session.commit()
-        session.close()
+    def save_recovery_token(self, email):
+        # 복구 토큰을 데이터베이스에 저장
+        token = self.generate_token()
+        recovery = PasswordRecovery(user_email=email, token=token, created_at=datetime.utcnow())
+        self.session.add(recovery)
+        self.session.commit()
 
     def verify_token(self, email, token):
+        # 세션에서 저장된 토큰과 비교, 토큰의 유효성 확인
+        stored_token = st.session_state.get('recovery_token')
+        sent_time = st.session_state.get('token_sent_time')
 
-        recovery = session.query(PasswordRecovery).filter_by(user_email=email, token=token).first()
-        session.close()
-        # 토큰이 1시간 이내에 생성된 경우에만 유효
-        if recovery and (datetime.utcnow() - recovery.created_at).seconds < 3600:
+        # Check if the token exists and if it is not expired (valid for 1 hour)
+        if stored_token == token and sent_time and (datetime.utcnow() - sent_time) < timedelta(hours=1):
             return True
         return False
 
     def reset_password(self, email, new_password):
-
+        # 비밀번호를 재설정
         hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt())
-        user = session.query(User).filter_by(user_email=email).first()
+        user = self.session.query(User).filter_by(user_email=email).first()
         if user:
             user.user_password = hashed_password
-            session.commit()
-        session.close()
+            self.session.commit()
+            print("비밀번호가 성공적으로 변경되었습니다.")
+        else:
+            print("이메일에 해당하는 사용자가 없습니다.")
 
     def recover_password(self, email, new_password, token):
-
+        # 복구 토큰이 유효한지 확인
         if not self.verify_token(email, token):
             print("유효하지 않은 토큰입니다.")
             return
+        # 비밀번호 복구
         self.reset_password(email, new_password)
         print("비밀번호가 성공적으로 복구되었습니다.")
-
 
 # DAO 클래스
 class UserDAO:
@@ -2406,6 +2488,23 @@ class GroupManager:
         groups = (session.query(Group).all())
         return groups
 
+    def invite_user_to_group(self, group_id, invitee_id):
+        try:
+            user_exists = session.query(User).filter(User.user_id == invitee_id).first()
+            if not user_exists: return {"success": False, "message": "존재하지 않는 사용자입니다."}
+            already_member = session.query(GroupMember).filter(GroupMember.group_id == group_id,
+                                                               GroupMember.user_id == invitee_id).first()
+            if already_member: return {"success": False, "message": "이미 그룹에 포함된 사용자입니다."}
+            new_member = GroupMember(group_id=group_id, user_id=invitee_id, role="member", joined_at=datetime.now())
+            session.add(new_member)
+            session.commit()
+            return {"success": True, "message": f"{invitee_id} 사용자가 그룹에 성공적으로 추가되었습니다."}
+        except Exception as e:
+            session.rollback()
+            return {"success": False, "message": f"DB 오류:{e}"}
+        finally:
+            session.close()
+
     def get_user_groups(self):
         try:
             # 사용자가 속한 그룹을 조회 (GroupMember를 통해 User와 Group을 연결)
@@ -2418,6 +2517,21 @@ class GroupManager:
             return []
         finally:
             session.close()
+
+    def kick_member(self, group_id, user_id):
+        try:
+            group_member = session.query(GroupMember).filter_by(group_id=group_id, user_id=user_id).first()
+            if group_member:
+                session.delete(group_member)
+                session.commit()
+                return True
+            else:
+                st.warning("해당 사용자가 그룹에 없습니다.")
+                return False
+        except Exception as e:
+            session.rollback()
+            st.error(f"오류 발생: {e}")
+            return False
 
     # 그룹에 속해있는 멤버들의 아이디를 반환한다
     def get_group_members(self, group_id):
@@ -2517,6 +2631,28 @@ class GroupManager:
         except Exception as e:
             session.rollback()
             st.error(f"그룹 삭제 중 오류 발생: {e}")
+
+        finally:
+            session.close()  # 세션 종료
+
+    def leave_group(self, group_id):
+        try:
+            # 사용자 그룹 탈퇴 확인
+            group_member = session.query(GroupMember).filter_by(group_id=group_id, user_id=self.user_id).first()
+
+            if not group_member:
+                st.error(f"이 그룹에 소속되어 있지 않습니다.")
+                return
+
+            # 그룹에서 사용자 제거
+            session.delete(group_member)
+            session.commit()
+
+            st.success(f"'{group_id}' 그룹에서 성공적으로 탈퇴했습니다.")
+
+        except Exception as e:
+            session.rollback()
+            st.error(f"그룹 탈퇴 중 오류 발생: {e}")
 
         finally:
             session.close()  # 세션 종료
