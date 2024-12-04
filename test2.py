@@ -1716,7 +1716,7 @@ class TurnPages:
         col_yes, col_no = st.columns(2)
         user_id = st.session_state.get("user_id")
         group_manager = GroupManager(user_id)
-        st.rerun()
+
 
         with col_yes:
             if st.button(localization.get_text("yes_button"), key="confirm_yes_button", use_container_width=True,
