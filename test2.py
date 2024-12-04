@@ -3110,7 +3110,7 @@ class PostManager:
         st.write(localization.get_text("total_likes").format(total_likes=total_likes))
 
         btn_label = localization.get_text("unlike_button") if like else localization.get_text("like_button")
-        if st.button(btn_label, key=post_id, use_container_width=True):
+        if st.button(btn_label, key=post_id, use_container_width=True, type='primary'):
             self.toggle_like(post_id, user_id)
 
     def create_location_name(self):
@@ -3160,6 +3160,7 @@ class PostManager:
                          use_container_width=True):
                 self.update_post(post_id, title, content, image_file, file_file, selected_category_id)
                 st.success(localization.get_text("edit_post_success_message"))
+                st.run()
 
         else:
             st.error(localization.get_text("edit_post_not_found_error"))
@@ -3299,7 +3300,7 @@ class PostManager:
                                [localization.get_text("sort_by_latest"), localization.get_text("sort_by_popularity")])
         # 정렬 기준 설정
         if sort_by == localization.get_text("sort_by_popularity"):
-            posts = session.query(Posting).order_by(Posting.like_num.desc()).all()
+            posts = session.query(Posting).order_by(Posting.total_like_num.desc()).all()
         else:
             posts = session.query(Posting).order_by(Posting.upload_date.desc()).all()
 
@@ -3542,10 +3543,14 @@ class SetView:
             if st.button(localization.get_text("change_email_button"), key='change_email', use_container_width=True):
                 self.update_user_field("user_email", new_email)
 
-            new_password = st.text_input(localization.get_text("new_password"))
-            if st.button(localization.get_text("change_password_button"), key='change_password'):
-                self.user_dao.update_user_password(self.user_vo.user_id, new_password)
+            new_password = st.text_input(localization.get_text("new_password"),type='password')
+            if st.button(localization.get_text("change_password_button"), key='change_password',use_container_width=True):
 
+                if len(new_password)>=8:
+                    self.user_dao.update_user_password(self.user_vo.user_id, new_password)
+                    st.success('비밀번호가 변경되었습니다. ')
+                else:
+                    st.warning("비밀번호는 8자리 이상이어야 합니다.")
             uploaded_file = st.file_uploader(localization.get_text("upload_new_profile_picture"),
                                              type=["jpg", "png", "jpeg"])
             if uploaded_file is not None:
