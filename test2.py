@@ -2357,7 +2357,7 @@ class FriendPage:
         with col2:
             if st.button(localization.get_text("back_button"), use_container_width=True, key='friendlist_key'):
                 self.page.go_back()
-        col1, col2, col3, col4, col5 = st.columns([2, 2, 2, 3, 2])
+        col1, col2, col3, col4, col5 = st.columns([2, 2, 2, 2, 2])
         with col1:
             if st.button(localization.get_text("send_friend_request_button"), key="add_friend_button",
                          use_container_width=True):
