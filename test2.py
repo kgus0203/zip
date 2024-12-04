@@ -4107,9 +4107,6 @@ class FriendManager():
                 st.title(localization.get_text("blocked_list_title"))
                 for blocked in blocked_users:
                     st.write(f"- {blocked.blocked_user_id}")
-            else:
-                # 차단된 사용자가 없을 경우 메시지 출력
-                st.warning(localization.get_text("no_blocked_users"))
         finally:
             session.close()  # 세션 종료
 
@@ -4252,13 +4249,7 @@ class FriendRequest:
 
             session.commit()
 
-            # 디버깅 로그 (데이터 저장 확인)
-            DEBUG_MODE = True
-            if DEBUG_MODE:
-                friend_requests = session.query(MyFriendRequest).filter(MyFriendRequest.user_id == self.user_id,
-                                                                        MyFriendRequest.requested_user_id == friend_id).all()
-                st.write(localization.get_text("debug_my_friend_requests"), friend_requests)
-
+           
             st.success(localization.get_text("friend_request_sent_success").format(friend_id=friend_id))
 
 
