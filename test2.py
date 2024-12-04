@@ -406,6 +406,7 @@ class Localization:
                 "status": "상태",
                 "meeting_date": "약속 날짜",
                 "meeting_time": "약속 시간",
+                "chat": "그룹 채팅",
                 "enter_chat_button": "채팅 입장하기",
                 "leave_group_button": "그룹 탈퇴",
                 "choose_language": "언어를 선택해주세요",
@@ -786,6 +787,7 @@ class Localization:
                 "group_name": "Group Name",
                 "category": "Category",
                 "status": "Status",
+                "chat": "group chat",
                 "meeting_date": "Meeting Date",
                 "meeting_time": "Meeting Time",
                 "enter_chat_button": "Enter Chat",
@@ -1165,6 +1167,7 @@ class Localization:
                 "exit_group_confirmation": "本当にグループ「{group_name}」を退出しますか？",
                 "yes_button": "はい",
                 "no_button": "いいえ",
+                "chat": "グループチェチング",
                 "exit_group_success": "グループ「{group_name}」を正常に退出しました。",
                 "exit_group_cancelled": "グループ退出がキャンセルされました。",
                 "delete_group_dialog": "グループを削除",
@@ -1786,7 +1789,6 @@ class TurnPages:
                 st.markdown(f"**{localization.get_text('meeting_time')}:** {group.meeting_time}")
 
             # 그룹원 표시
-
             if st.button(localization.get_text("enter_chat_button"), key='enter_chat', use_container_width=True):
                 chatting = Chatting(group.group_id)  # session 객체 필요
                 chatting.display_chat_interface()
@@ -3580,7 +3582,8 @@ class LikePost:
         if "posts" not in st.session_state:
             st.session_state.posts = []
 
-    def fetch_liked_posts(self, user_id):
+    def fetch_liked_posts(self):
+
         try:
             # post_id를 기준으로 그룹화하여 중복되지 않도록 쿼리
             liked_posts = session.query(
@@ -3590,7 +3593,7 @@ class LikePost:
                 Posting.p_image_path,
                 Posting.p_id
             ).join(Like, Like.post_id == Posting.p_id).filter(
-                Like.user_id == user_id  # user_id가 매개변수 값과 같은 경우
+                Like.like_id > 0
             ).group_by(Posting.p_id).all()  # post_id 기준으로 그룹화하여 중복 제거
 
             return liked_posts
@@ -3599,8 +3602,7 @@ class LikePost:
             session.close()
 
     def display_liked_posts(self):
-        user_id = st.session_state.get("user_id")
-        liked_posts = self.fetch_liked_posts(user_id)
+        liked_posts = self.fetch_liked_posts()
         # Display liked posts with the like button
         if liked_posts:
             for post in liked_posts:
@@ -3642,7 +3644,7 @@ class Chatting:
         else:
             return localization.get_text("group_not_found")
 
-    @st.dialog('채팅')
+    @st.dialog(localization.get_text("chat"))
     def display_chat_interface(self):
         group_name = self.get_group_name(self.group_id)
         st.subheader(localization.get_text("chat_title").format(group=group_name))
