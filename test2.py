@@ -91,15 +91,6 @@ class Localization:
                 "confirm_button": "확인",
                 "password_recovery_email_sent": "비밀번호 복구 메일을 전송했습니다",
                 "email_not_registered_warning": "등록되지 않은 이메일입니다.",
-                "friend_management": "친구 관리",
-                "my_friend_list_button": "내 친구 리스트",
-                "friend_requests_button": "친구 대기",
-                "friend_requests_title": "친구 요청 관리",
-                "user_manager_page_title": "사용자 관리 페이지",
-                "email_input_prompt": "이메일을 입력하세요",
-                "confirm_button": "확인",
-                "password_recovery_email_sent": "비밀번호 복구 메일을 전송했습니다.",
-                "email_not_registered_warning": "등록되지 않은 이메일입니다.",
                 "view_post_header": "게시물 목록",
                 "upload_post_button": "글 작성",
                 "my_made_groups_expander": "내가 만든 그룹 목록",
@@ -129,7 +120,6 @@ class Localization:
                 "meeting_time": "약속 시간",
                 "members_count": "인원수",
                 "not_set": "설정되지 않음",
-                "no_members": "멤버 없음",
                 "detail_button": "세부 정보",
                 "detail_group_page": "그룹 세부 정보",
                 "group_block_list_title": "그룹 차단 목록",
@@ -216,7 +206,7 @@ class Localization:
                 "friend_request_warning": "친구 요청할 ID를 입력해주세요.",
                 "unblock_friend_dialog_title": "친구 차단 해제 창",
                 "unblock_friend_input_label": "차단 해제할 친구의 ID를 입력하세요:",
-                "unblock_friend_button": "친구 차단 해제",
+                "unblock_friend_button": "차단 해제",
                 "unblock_friend_warning": "친구 차단 해제할 ID를 입력해주세요.",
                 "blocked_list_title": "차단된 친구 목록",
                 "blocked_users_subheader": "현재 차단된 사용자:",
@@ -236,8 +226,10 @@ class Localization:
                 "block_friend_warning": "친구 차단할 ID를 입력해주세요.",
                 "friend_requests_dialog_title": "친구 대기 창",
                 "friend_list_title": "내 친구 리스트",
-                "send_friend_request_button": "친구 요청 보내기",
+                "send_friend_request_button": "친구 요청",
                 "password_length_error": "비밀번호는 최소 8자 이상이어야 합니다.",
+                "password_change_success": "비밀번호가 변경되었습니다.",
+                "password_minimum_length": "비밀번호는 8자리 이상이어야 합니다.",
                 "user_id_exists_error": "이미 사용 중인 아이디입니다.",
                 "login_success": "{user_id}님, 로그인 성공!",
                 "password_incorrect_error": "비밀번호가 틀렸습니다.",
@@ -315,6 +307,7 @@ class Localization:
                 "change_password_button": "비밀번호 변경",
                 "profile_picture_changed": "프로필 사진이 변경되었습니다.",
                 "favorites": "관심목록",
+                "friend_requests_title": "친구 대기 창",
                 "message_saved": "{sender}님의 메세지가 저장되었습니다.",
                 "group_not_found": "그룹이 존재하지 않습니다.",
                 "chat_title": "채팅: {group}",
@@ -407,6 +400,7 @@ class Localization:
                 "delete_group_cancelled": "그룹 삭제가 취소되었습니다.",
                 "my_groups_expander": "내가 속한 그룹 목록",
                 "no_joined_groups": "가입한 그룹이 없습니다.",
+                "no_maded_groups": "생성된 그룹이 없습니다.",
                 "group_name": "그룹 이름",
                 "category": "카테고리",
                 "status": "상태",
@@ -483,7 +477,7 @@ class Localization:
                 "view_post_header": "Post List",
                 "upload_post_button": "Create Post",
                 "my_made_groups_expander": "Groups I Created",
-                "no_joined_groups": "No groups created.",
+                "no_maded_groups": "No groups created",
                 "group_name": "Group Name",
                 "category": "Category",
                 "status": "Status",
@@ -503,13 +497,13 @@ class Localization:
                 "create_group_button": "Create Group",
                 "blocked_list_button": "Blocked List",
                 "search_group_button": "Search Groups",
+                "friend_requests_title": "Friend Pending Requests",
                 "category": "Category",
                 "status": "Status",
                 "meeting_date": "Meeting Date",
                 "meeting_time": "Meeting Time",
                 "members_count": "Members Count",
                 "not_set": "Not set",
-                "no_members": "No members",
                 "detail_button": "Details",
                 "detail_group_page": "Group Details",
                 "group_block_list_title": "Blocked Groups List",
@@ -696,6 +690,8 @@ class Localization:
                 "profile_picture_changed": "Profile picture has been changed.",
                 "favorites": "Favorites",
                 "message_saved": "Message from {sender} has been saved.",
+                "password_change_success": "Password has been successfully changed.",
+                "password_minimum_length": "Password must be at least 8 characters long.",
                 "group_not_found": "Group does not exist.",
                 "chat_title": "Chat: {group}",
                 "login_required": "Login is required.",
@@ -865,7 +861,7 @@ class Localization:
                 "view_post_header": "投稿リスト",
                 "upload_post_button": "投稿作成",
                 "my_made_groups_expander": "作成したグループ",
-                "no_joined_groups": "作成したグループがありません。",
+                "no_maded_groups": "作成したグループがありません。",
                 "group_name": "グループ名",
                 "category": "カテゴリー",
                 "status": "状態",
@@ -891,7 +887,6 @@ class Localization:
                 "meeting_time": "約束時間",
                 "members_count": "メンバー数",
                 "not_set": "設定されていません",
-                "no_members": "メンバーがいません",
                 "detail_button": "詳細",
                 "detail_group_page": "グループ詳細",
                 "group_block_list_title": "ブロックされたグループリスト",
@@ -915,6 +910,7 @@ class Localization:
                 "last_modified": "最終更新日",
                 "meeting_date": "会議日",
                 "meeting_time": "会議時間",
+                "friend_requests_title": "友達リクエスト保留",
                 "not_set": "設定されていません",
                 "group_members": "グループメンバー",
                 "no_members_in_group": "このグループにはメンバーがいません。",
@@ -958,6 +954,8 @@ class Localization:
                 "search_group_dialog_title": "グループ検索",
                 "search_group_header": "グループを検索して参加",
                 "search_criteria_label": "検索基準を選択",
+                "password_change_success": "パスワードが変更されました。",
+                "password_minimum_length": "パスワードは8文字以上である必要があります。",
                 "search_by_name": "名前",
                 "search_by_date": "日付",
                 "search_by_category": "カテゴリー",
@@ -1240,7 +1238,7 @@ class Page:
             'View Post': self.turn_pages.view_post,
             'Setting': self.turn_pages.setting_page,
             'User manager': self.turn_pages.usermanager_page,
-            'ID PW 변경': self.turn_pages.id_pw_change_page,
+            'ID PW 변경': self.turn_pages.change_password_page,
             'Upload Post': self.turn_pages.upload_post,
             'Group page': self.group_page.groups_page,
             'Detail group': self.group_page.detail_group,
@@ -1306,8 +1304,8 @@ class TurnPages:
         self.page = page
         self.friend_page = FriendPage
 
-    def id_pw_change_page(self):
-        st.title(localization.get_text("id_pw_change_title"))
+    def change_password_page(self):
+        st.title(localization.get_text("change_password_title"))
 
         # 현재 로그인된 사용자 ID 가져오기
         user_id = st.session_state.get('logged_in_user')
@@ -1316,38 +1314,30 @@ class TurnPages:
             self.page.change_page('Login')  # 로그인 페이지로 이동
             return
 
-        # 초기화 상태 설정
-        if "id_pw_change_step" not in st.session_state:
-            st.session_state['id_pw_change_step'] = "select_action"
-
-        if "current_user_id" not in st.session_state:
-            st.session_state['current_user_id'] = user_id
-
-        # ID 또는 PW 변경 선택
-        if st.session_state['id_pw_change_step'] == "select_action":
-            action = st.radio(localization.get_text("select_change_action"),
-                              [localization.get_text("change_id"), localization.get_text("change_pw")])
-            if st.button(localization.get_text("next_button"), use_container_width=True):
-                st.session_state['action'] = action
-                st.session_state['id_pw_change_step'] = "input_new_value"
-
-        # 새로운 ID/PW 입력 및 저장
-        elif st.session_state['id_pw_change_step'] == "input_new_value":
-            new_value = st.text_input(
-                localization.get_text("enter_new_value").format(action=st.session_state['action']))
-            if new_value and st.button(localization.get_text("save_button"), use_container_width=True):
-                change = ChangeIDPW(
-                    user_id=st.session_state['current_user_id'],
-                    new_value=new_value
-                )
-                if st.session_state['action'] == localization.get_text("change_id") and change.update_id():
-                    st.success(localization.get_text("id_change_success"))
-                    st.session_state.user.clear()  # 세션 초기화로 로그아웃 처리
-                    self.page.change_page("Home")  # 첫 페이지로 이동
-                elif st.session_state['action'] == localization.get_text("change_pw") and change.update_password():
-                    st.success(localization.get_text("pw_change_success"))
-                    st.session_state.user.clear()  # 세션 초기화로 로그아웃 처리
-                    self.page.change_page("Home")  # 첫 페이지로 이동
+        # 새 비밀번호 입력
+        new_password = st.text_input(localization.get_text("enter_new_password"), type="password")
+        if st.button(localization.get_text("save_button"), use_container_width=True):
+            if new_password:
+                try:
+                    # 비밀번호 변경 로직
+                    user = session.query(User).filter(User.user_id == user_id).first()
+                    if user:
+                        # 비밀번호를 해싱하여 저장
+                        hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt())
+                        user.password = hashed_password
+                        session.commit()
+                        st.success(localization.get_text("password_change_success"))
+                        st.session_state.clear()  # 세션 초기화로 로그아웃 처리
+                        self.page.change_page('Login')  # 로그인 페이지로 이동
+                    else:
+                        st.error(localization.get_text("user_not_found"))
+                except Exception as e:
+                    session.rollback()
+                    st.error(localization.get_text("password_change_error").format(error=str(e)))
+                finally:
+                    session.close()
+            else:
+                st.warning(localization.get_text("password_empty_warning"))
 
     @st.dialog(localization.get_text("login_page_title"))
     def login_page(self):
@@ -1391,8 +1381,6 @@ class TurnPages:
                     self.page.change_page('after_login')
                 else:
                     st.error(localization.get_text("login_error_failed"))
-        if st.button(localization.get_text("back_button"), use_container_width=True):
-            self.page.go_back()
 
     @st.dialog(localization.get_text("signup_page_title"))
     def signup_page(self):
@@ -1417,8 +1405,6 @@ class TurnPages:
                     self.page.change_page('Home')
                 else:
                     st.error(localization.get_text("signup_error_failed"))
-        if st.button(localization.get_text("back_button"), use_container_width=True):
-            self.page.go_back()
 
     def after_login(self):
         # 타이틀을 중앙에 크게 배치
@@ -1462,18 +1448,10 @@ class TurnPages:
                 if st.button(localization.get_text("logout_button"), key="logout_button", use_container_width=True):
                     st.session_state.clear()
                     st.warning(localization.get_text("logout_success"))
+                    st.rerun()
             with col4:
                 if st.button(localization.get_text("profile_button"), key="profile_button", use_container_width=True):
                     self.page.change_page("Setting")
-
-            col1, col2 = st.columns([1, 1])
-            with col1:
-                if st.button(localization.get_text("view_post_button"), key='view_post_button',
-                             use_container_width=True):
-                    self.page.change_page('View Post')
-            with col2:
-                if st.button(localization.get_text("group_button"), key='group_button', use_container_width=True):
-                    self.page.change_page("Group page")
         else:
             st.error(localization.get_text("no_user_info_error"))
 
@@ -1579,12 +1557,17 @@ class TurnPages:
 
     def sidebar(self):
 
-        # 사이드바에는 친구만 존재
-        st.sidebar.title(localization.get_text("friend_management"))
+        st.sidebar.title(localization.get_text("home_title"))
 
         # 친구 리스트
         if st.sidebar.button(localization.get_text("my_friend_list_button"), use_container_width=True):
             self.page.change_page("Friend List Page")
+
+        if st.sidebar.button(localization.get_text("view_post_button"), key='view_post_button',use_container_width=True):
+            self.page.change_page('View Post')
+
+        if st.sidebar.button(localization.get_text("group_button"), key='group_button', use_container_width=True):
+            self.page.change_page("Group page")
 
         if "action" in st.session_state:
             st.write(st.session_state["action"])
@@ -1724,11 +1707,13 @@ class TurnPages:
                         else:
                             st.error(localization.get_text("kick_error").format(member_id=member_id))
 
+    @st.dialog(localization.get_text("exit_group_confirmation"))
     def exit_group(self, group_id, group_name):
         st.write(localization.get_text("exit_group_confirmation").format(group_name=group_name))
         col_yes, col_no = st.columns(2)
         user_id = st.session_state.get("user_id")
         group_manager = GroupManager(user_id)
+        st.rerun()
 
         with col_yes:
             if st.button(localization.get_text("yes_button"), key="confirm_yes_button", use_container_width=True,
@@ -1786,28 +1771,29 @@ class TurnPages:
 
         # 유저가 속한 그룹인지 확인한다.
 
-        with st.expander('내가 속한 그룹 목록', icon='🍙'):
+        with st.expander(localization.get_text("my_groups_expander"), icon='🍙'):
             groups = group_manager.get_user_groups()
 
             if not groups:
-                st.info("가입한 그룹이 없습니다.")
+                st.info(localization.get_text("no_joined_groups"))
                 return
 
             for group in groups:
-                st.markdown(f"**그룹 이름:** {group.group_name}")
-                st.markdown(f"**카테고리:** {group.category}")
-                st.markdown(f"**상태:** {group.status}")
-                st.markdown(f"**약속 날짜:** {group.meeting_date}")
-                st.markdown(f"**약속 시간:** {group.meeting_time}")
+                st.markdown(f"**{localization.get_text('group_name')}:** {group.group_name}")
+                st.markdown(f"**{localization.get_text('category')}:** {group.category}")
+                st.markdown(f"**{localization.get_text('status')}:** {group.status}")
+                st.markdown(f"**{localization.get_text('meeting_date')}:** {group.meeting_date}")
+                st.markdown(f"**{localization.get_text('meeting_time')}:** {group.meeting_time}")
 
             # 그룹원 표시
 
-            if st.button('채팅 입장하기', key='enter_chat', use_container_width=True):
+            if st.button(localization.get_text("enter_chat_button"), key='enter_chat', use_container_width=True):
                 chatting = Chatting(group.group_id)  # session 객체 필요
                 chatting.display_chat_interface()
 
-            if st.button('그룹 탈퇴', key='out_group', use_container_width=True):
+            if st.button(localization.get_text("leave_group_button"), key='out_group', use_container_width=True):
                 self.exit_group(group.group_id, group.group_name)
+
 
     # 대기 중인 친구 요청을 표시하는 함수
     def show_friend_requests_page(self):
@@ -1895,7 +1881,7 @@ class GroupPage():
 
         # 그룹이 없을때
         if not groups:
-            st.error(localization.get_text("no_joined_groups"))
+            st.error(localization.get_text("no_maded_groups"))
 
         st.markdown(
             """
@@ -2147,6 +2133,7 @@ class GroupPage():
             group_id = location_search.add_group(group_name, self.user_id, categories, meeting_date, meeting_time)
             if group_id:
                 group_manager.add_group_member(group_id)
+                st.rerun()
 
     @st.dialog(localization.get_text("update_group_dialog_title"))
     def group_update_page(self):
@@ -2390,7 +2377,7 @@ class FriendPage:
                          use_container_width=True):
                 self.request_friends_page()
 
-    @st.dialog("친구 대기창")
+    @st.dialog(localization.get_text("friend_requests_title"))
     def request_friends_page(self):
         st.title(localization.get_text("friend_requests_title"))
         self.show_friend_requests_page()
@@ -2896,7 +2883,7 @@ class LocationSearch:
         return new_location.location_id
 
     def display_location_on_map(self):
-        col1, col2 = st.columns([8, 1])
+        col1, col2 = st.columns([8, 2])
         with col1:
             query = st.text_input(localization.get_text("search_location_input"), "영남대역", key='place')  # 기본값: 영남대역
         with col2:
@@ -3385,6 +3372,23 @@ class ThemeManager:
                     "button_face": localization.get_text("light_mode_button_label")
                 }
             }
+        else:
+            # themes 딕셔너리에 'light'와 'dark'가 없으면 추가
+            if "light" not in self.th.themes:
+                self.th.themes["light"] = {
+                    "theme.base": "light",
+                    "theme.backgroundColor": "white",
+                    "theme.textColor": "black",
+                    "button_face": localization.get_text("dark_mode_button_label")
+                }
+            if "dark" not in self.th.themes:
+                self.th.themes["dark"] = {
+                    "theme.base": "dark",
+                    "theme.backgroundColor": "black",
+                    "theme.textColor": "white",
+                    "button_face": localization.get_text("light_modee_button_label")
+                }
+
 
     def get_saved_theme(self, user_id):
         setting = session.query(Settings).filter(Settings.user == user_id).first()
@@ -3427,10 +3431,14 @@ class ThemeManager:
 
     def render_button(self, user_id):
         current_theme = self.get_saved_theme(user_id)
-        button_label = self.th.themes.get(current_theme, {}).get("button_face",
-                                                                 "Unknown theme")
 
-        # Render the theme toggle button and handle the click event
+        # 현재 테마에 따라 버튼 라벨을 동적으로 설정
+        if current_theme == "dark":
+            button_label = localization.get_text("dark_mode_button_label")  # 라이트 모드로 변경 버튼
+        else:
+            button_label = localization.get_text("light_mode_button_label")  # 다크 모드로 변경 버튼
+
+        # 버튼을 렌더링하고 클릭 이벤트 처리
         if st.button(button_label, use_container_width=True, key='change_theme'):
             self.change_theme(user_id)
             st.rerun()
@@ -3546,11 +3554,11 @@ class SetView:
             new_password = st.text_input(localization.get_text("new_password"),type='password')
             if st.button(localization.get_text("change_password_button"), key='change_password',use_container_width=True):
 
-                if len(new_password)>=8:
+                if len(new_password) >= 8:
                     self.user_dao.update_user_password(self.user_vo.user_id, new_password)
-                    st.success('비밀번호가 변경되었습니다. ')
+                    st.success(localization.get_text("password_change_success"))
                 else:
-                    st.warning("비밀번호는 8자리 이상이어야 합니다.")
+                    st.warning(localization.get_text("password_minimum_length"))
             uploaded_file = st.file_uploader(localization.get_text("upload_new_profile_picture"),
                                              type=["jpg", "png", "jpeg"])
             if uploaded_file is not None:
@@ -3857,6 +3865,7 @@ class GroupManager:
             st.error(localization.get_text("group_delete_error").format(error=e))
         finally:
             session.close()  # 세션 종료
+            st.rerun()
 
     def leave_group(self, group_id):
         try:
@@ -4152,7 +4161,6 @@ class FriendManager():
 
             if not blocked:
                 # 차단된 사용자가 아닌 경우 경고 메시지 출력
-                st.warning(localization.get_text("not_blocked_user"))
                 return
 
             # 차단 해제
