@@ -4347,6 +4347,7 @@ class FriendManager():
             st.error(f"오류 발생: {e}")
             return []
         finally:
+            session.close()
 
 
 # ------------------------------------------------------친구 요청 관리 --------------------------------------------------
@@ -4454,6 +4455,9 @@ class FriendRequest:
         finally:
             session.close()
 
+
+app = Page()
+app.render_page()
 
 app = Page()
 app.render_page()
