@@ -324,7 +324,7 @@ class Localization:
                 "group_not_found": "그룹을 찾을 수 없습니다.",
                 "group_deleted_success": "그룹이 성공적으로 삭제되었습니다!",
                 "group_delete_error": "그룹 삭제 중 오류 발생: {error}",
-                "group_updated_success": "그룹이 성공적으로 수정되었습니다!",
+                "group_updated_success": "'{group_name}' 그룹이 성공적으로 수정되었습니다!",
                 "db_error": "DB 오류: {error}",
                 "already_member": "이미 해당 그룹의 멤버입니다.",
                 "group_joined_success": "'{group_name}' 그룹에 성공적으로 참여하였습니다.",
@@ -710,7 +710,7 @@ class Localization:
                 "group_not_found": "Group not found.",
                 "group_deleted_success": "Group deleted successfully!",
                 "group_delete_error": "Error occurred while deleting group: {error}",
-                "group_updated_success": "Group updated successfully!",
+                "group_updated_success": "Group '{group_name}' updated successfully!",
                 "db_error": "Database error: {error}",
                 "already_member": "You are already a member of this group.",
                 "group_joined_success": "Successfully joined the group '{group_name}'.",
@@ -1095,7 +1095,7 @@ class Localization:
                 "group_not_found": "グループが見つかりません。",
                 "group_deleted_success": "グループが正常に削除されました！",
                 "group_delete_error": "グループ削除中にエラーが発生しました: {error}",
-                "group_updated_success": "グループが正常に更新されました！",
+                "group_updated_success": "'{group_name}' グループが正常に更新されました！",
                 "db_error": "データベースエラー: {error}",
                 "already_member": "既にこのグループのメンバーです。",
                 "group_joined_success": "'{group_name}' グループに正常に参加しました。",
@@ -1796,11 +1796,11 @@ class TurnPages:
                 st.markdown(f"**{localization.get_text('meeting_time')}:** {group.meeting_time}")
 
                 # 그룹원 표시
-                if st.button(localization.get_text("enter_chat_button"), key='enter_chat', use_container_width=True):
+                if st.button(localization.get_text("enter_chat_button"), key=f'enter_chat_{group.group_id}', use_container_width=True):
                     chatting = Chatting(group.group_id)  # session 객체 필요
                     chatting.display_chat_interface()
 
-                if st.button(localization.get_text("leave_group_button"), key='out_group', use_container_width=True):
+                if st.button(localization.get_text("leave_group_button"), key=f'out_group_{group.group_id}', use_container_width=True):
                     self.exit_group(group.group_id, group.group_name)
 
     # 대기 중인 친구 요청을 표시하는 함수
