@@ -3718,12 +3718,26 @@ class GroupManager:
         self.user_id = user_id
 
     def get_all_groups(self):
-        groups = (session.query(Group).all())
-        return groups
+    # 차단된 사용자 목록 가져오기
+        blocked_users = session.query(Block.blocked_user_id).filter(Block.user_id == self.user_id).subquery()
 
-    def get_user_groups(self):
-        groups = (session.query(Group).all())
+    # 차단된 사용자가 만든 그룹 제외
+        groups = session.query(Group).filter(~Group.group_creator.in_(blocked_users)).all()
         return groups
+ 
+    def get_user_groups(self):
+    # 차단된 사용자 목록 가져오기
+        blocked_users = session.query(Block.blocked_user_id).filter(Block.user_id == self.user_id).subquery()
+
+    # 차단된 사용자가 만든 그룹 제외
+        user_groups = session.query(Group).join(GroupMember, Group.group_id == GroupMember.group_id) \
+            .filter(
+                GroupMember.user_id == self.user_id,
+                ~Group.group_creator.in_(blocked_users)
+            ).all()
+
+        return user_groups
+
 
     # 그룹에 속해있는 멤버들의 아이디를 반환한다
     def get_group_members(self, group_id):
@@ -3986,11 +4000,13 @@ class GroupManager:
 
 # --------------------------------------------------그룹 검색 데이터관리 -----------------------------------
 
-
 class GroupSearch:
-    # 그룹 검색
-    def search_groups(self, user_input, search_criteria):
-        # 기본적인 Group 쿼리 시작
+
+    def search_groups(self, user_input, search_criteria, user_id):
+    # 차단된 사용자 목록 가져오기
+        blocked_users = session.query(Block.blocked_user_id).filter(Block.user_id == user_id).subquery()
+
+    # 기본적인 Group 쿼리 시작
         query = session.query(
             Group.group_name, Group.group_creator, Group.meeting_date, Group.meeting_time,
             FoodCategory.category, Location.location_name,
@@ -4001,9 +4017,11 @@ class GroupSearch:
             Location, Group.location == Location.location_id, isouter=True
         ).join(
             GroupMember, Group.group_id == GroupMember.group_id, isouter=True
+        ).filter(
+            ~Group.group_creator.in_(blocked_users)  # 차단된 사용자가 만든 그룹 제외
         )
 
-        # 검색 기준에 따른 조건 추가
+    # 검색 기준에 따른 조건 추가
         if search_criteria == localization.get_text("search_by_name"):
             query = query.filter(Group.group_name.like(f"%{user_input}%"))
         elif search_criteria == localization.get_text("search_by_date"):
@@ -4011,13 +4029,15 @@ class GroupSearch:
         elif search_criteria == localization.get_text("search_by_category"):
             query = query.filter(Group.category == user_input)
 
-        # 그룹 데이터 조회 실행
+    # 그룹 데이터 조회 실행
         groups = query.group_by(Group.group_id).all()
 
-        # 세션 종료
+    # 세션 종료
         session.close()
 
         return groups
+
+
 
 
 class FriendManager():
