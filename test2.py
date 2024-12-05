@@ -4144,129 +4144,219 @@ class GroupSearch:
         return groups
 
 
-class FriendManager():
-    def __init__(self, user_id):
-        self.user_id = user_id
+class FriendPage:
+    def __init__(self, page: Page):
+        self.user_id = st.session_state.get("user_id")
+        self.page = page
+        self.friend_manager = FriendManager(self.user_id)
+        self.friend_request = FriendRequest(self.user_id)  
 
-    # 친구 리스트 출력
+
+
     def show_friend_list(self):
+        session = SessionLocal()
         try:
-            # 친구 목록 가져오기
-            friends = session.query(Friend.friend_user_id).filter(Friend.user_id == self.user_id).all()
-
+            friends = session.query(Friend).filter(Friend.user_id == self.user_id).all()
             if friends:
-                # 친구 리스트 제목 출력
-                st.title(localization.get_text("friend_list_title"))
                 for friend in friends:
-                    st.write(f"- {friend.friend_user_id}")
+                    profile_picture = (
+                        session.query(User.profile_picture_path)
+                        .filter(User.user_id == friend.friend_user_id)
+                        .scalar()
+                    )
+                    if not profile_picture or not os.path.exists(profile_picture):
+                        profile_picture = "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png"
+                    st.image(profile_picture, width=50)
+                    st.write(friend.friend_user_id)
             else:
-                # 친구가 없을 경우 메시지 출력
-                st.warning(localization.get_text("no_friends"))
+                st.write("친구가 없습니다.")
         finally:
-            session.close()  # 세션 종료
+            session.close()
 
-    # 차단 리스트 출력
-    def show_blocked_list(self):
-        try:
-            # 차단된 사용자 목록 가져오기
-            blocked_users = session.query(Block.blocked_user_id).filter(Block.user_id == self.user_id).all()
+    def show_friend_requests_page(self):
+        st.title("친구 요청 관리")
+        st.subheader("내가 보낸 친구 요청")
+        sent_requests = self.friend_request.get_my_sent_requests()
+        for req in sent_requests:
+            st.write(f"- {req}")
 
-            if blocked_users:
-                # 차단된 사용자 목록 제목 출력
-                st.title(localization.get_text("blocked_list_title"))
-                for blocked in blocked_users:
-                    st.write(f"- {blocked.blocked_user_id}")
-        finally:
-            session.close()  # 세션 종료
+        st.subheader("다른 사람이 보낸 친구 요청")
+        received_requests = self.friend_request.get_received_requests()
+        for req in received_requests:
+            col1, col2 = st.columns(2)
+            with col1:
+                st.write(f"- {req}")
+            with col2:
+                if st.button(f"수락 ({req})"):
+                    self.friend_request.accept_friend_request(req)
+                if st.button(f"거절 ({req})"):
+                    self.friend_request.reject_friend_request(req)
 
-    # 친구 차단
-    def block_friend(self, friend_id):
-        # 자신을 차단하려고 하면 오류 메시지 출력
-        if self.user_id == friend_id:
-            st.error(localization.get_text("block_self_error"))
+        if st.button("뒤로 가기"):
+            st.session_state["current_page"] = "after_login"
+            st.rerun()
+    
+    def friend_posts_page(self):
+    # 현재 사용자의 친구 포스팅 가져오기
+        posts = self.get_friend_posts()
+
+        if posts:
+            st.title("친구들의 포스팅")
+            for post in posts:
+            # 포스팅 제목과 내용 출력
+                st.subheader(post.p_title)
+                st.write(post.p_content)
+
+            # 이미지가 있는 경우 출력
+                if post.p_image_path and os.path.exists(post.p_image_path):
+                    st.image(post.p_image_path, width=200)
+                else:
+                    st.write("이미지가 없습니다.")
+        else:
+            st.warning("친구들의 포스팅이 없습니다.")
+
+    @st.dialog("친구 추가 창")
+    def add_friend_page(self):
+
+        # 상호작용할 ID 입력창
+        target_id = st.text_input(localization.get_text("friend_request_input_label"), key="friend_action_input")
+
+        if st.button(localization.get_text("friend_request_button"), use_container_width=True):
+            if target_id:
+                # 친구 추가 함수 호출 (user_id와 target_id)
+                self.friend_request.add_friend(target_id)
+            else:
+                st.warning(localization.get_text("friend_request_warning"))
+
+    @st.dialog(localization.get_text("unblock_friend_dialog_title"))
+    def unblock_friend_page(self):
+        # 상호작용할 ID 입력창
+        target_id = st.text_input(localization.get_text("unblock_friend_input_label"), key="friend_action_input")
+
+        if st.button(localization.get_text("unblock_friend_button"), use_container_width=True):
+            if target_id:
+                # 친구 차단 해제 함수 호출 (user_id와 target_id)
+                self.friend_manager.unblock_friend(target_id)
+            else:
+                st.warning(localization.get_text("unblock_friend_warning"))
+
+        st.title(localization.get_text("blocked_list_title"))
+        self.show_blocked_list_page()
+
+    def show_blocked_list_page(self):
+        blocked_users = self.friend_manager.show_blocked_list()  # 차단된 유저 목록 가져오기
+        if blocked_users:
+            st.subheader(localization.get_text("blocked_users_subheader"))
+            for user in blocked_users:
+                st.write(f"- {user['blocked_user_id']}")
+        else:
+            st.write(localization.get_text("no_blocked_users"))
+
+    def friend_posts_page(self):
+        # 현재 선택된 친구 ID
+        friend_id = st.session_state.get('current_friend_id')
+        if not friend_id:
+            st.error(localization.get_text("no_friend_id_error"))
             return
 
+        # 세션 시작
+        session = SessionLocal()
         try:
-            # user 테이블에서 해당 ID 존재 여부 확인
-            user_exists = session.query(User).filter(User.user_id == friend_id).first()
-            if not user_exists:
-                st.error(localization.get_text("user_not_found"))  # 해당 ID가 user 테이블에 없을 경우
-                return
+            # 친구의 포스팅 가져오기
+            posts = session.query(Posting).filter(Posting.p_user == friend_id).all()
 
-            # 이미 차단되었는지 확인
-            already_blocked = session.query(Block).filter(
-                Block.user_id == self.user_id,
-                Block.blocked_user_id == friend_id
-            ).first()
-            if already_blocked:
-                st.warning(localization.get_text("already_blocked"))
-                return
+            if posts:
+                st.title(localization.get_text("friend_posts_title").format(friend_id=friend_id))
+                for post in posts:
+                    st.subheader(post.p_title)
+                    st.write(post.p_content)
 
-            # 친구 목록에서 삭제
-            session.query(Friend).filter(
-                Friend.user_id == self.user_id,
-                Friend.friend_user_id == friend_id
-            ).delete()
-
-            # 차단 테이블에 추가
-            new_block = Block(user_id=self.user_id, blocked_user_id=friend_id)
-            session.add(new_block)
-            session.commit()
-
-            # 차단 성공 메시지
-            st.success(localization.get_text("block_success").format(friend_id=friend_id))
+                    # 이미지 경로가 존재하고 실제로 파일이 있으면 이미지를 표시
+                    if post.p_image_path and os.path.exists(post.p_image_path):
+                        st.image(post.p_image_path, width=200)
+                    else:
+                        st.write(localization.get_text("no_image_message"))
+            else:
+                st.warning(localization.get_text("no_posts_warning"))
+        except Exception as e:
+            st.error(localization.get_text("db_error").format(error=e))
         finally:
             session.close()  # 세션 종료
 
-    # 친구 차단 해제
-    def unblock_friend(self, friend_id):
-        try:
-            # 차단된 사용자인지 확인
-            blocked = session.query(Block).filter(
-                Block.user_id == self.user_id,
-                Block.blocked_user_id == friend_id
-            ).first()
+    @st.dialog(localization.get_text("delete_friend_dialog_title"))
+    def delete_friend(self):
+        # 상호작용할 ID 입력창
+        target_id = st.text_input(localization.get_text("delete_friend_input_label"), key="friend_action_input")
 
-            if not blocked:
-                # 차단된 사용자가 아닌 경우 경고 메시지 출력
-                return
+        if st.button(localization.get_text("delete_friend_button"), use_container_width=True):
+            if target_id:
+                # 친구 삭제 함수 호출 (user_id와 target_id)
+                self.friend_manager.delete_friend(target_id)
+            else:
+                st.warning(localization.get_text("delete_friend_warning"))
 
-            # 차단 해제
-            session.delete(blocked)
-            session.commit()
+    # 친구 상태 표시 함수
+    def display_friend(self, name, online):
+        status_color = "status-on" if online else "status-off"
+        st.sidebar.markdown(
+            f"""
+                <div class="friend-row">
+                    <span>{name}</span>
+                    <div class="status-circle {status_color}"></div>
+                </div>
+                """,
+            unsafe_allow_html=True
+        )
 
-            # 차단 해제 성공 메시지
-            st.success(localization.get_text("unblock_success").format(friend_id=friend_id))
-        finally:
-            session.close()  # 세션 종료
+    @st.dialog(localization.get_text("block_friend_dialog_title"))
+    def block_friend_page(self):
+        # 상호작용할 ID 입력창
+        target_id = st.text_input(localization.get_text("block_friend_input_label"), key="friend_action_input")
 
-    # 친구 삭제
-    def delete_friend(self, friend_id):
-        # 자신을 삭제하려고 하면 오류 메시지 출력
-        if self.user_id == friend_id:
-            st.error(localization.get_text("delete_self_error"))
-            return
+        if st.button(localization.get_text("block_friend_button"), use_container_width=True):
+            if target_id:
+                # 친구 차단 함수 호출 (user_id와 target_id)
+                self.friend_manager.block_friend(target_id)
+            else:
+                st.warning(localization.get_text("block_friend_warning"))
 
-        try:
-            # 친구 관계 확인
-            is_friend = session.query(Friend).filter(
-                Friend.user_id == self.user_id,
-                Friend.friend_user_id == friend_id
-            ).first()
+    def FriendList_page(self):
+        col1, col2 = st.columns([4, 2])
+        with col1:
+            st.title(localization.get_text("friend_list_title"))  # 제목을 왼쪽에 배치
+        with col2:
+            if st.button(localization.get_text("back_button"), use_container_width=True, key='friendlist_key'):
+                self.page.go_back()
+        col1, col2, col3, col4, col5 = st.columns([2, 2, 2, 2, 2])
+        with col1:
+            if st.button(localization.get_text("send_friend_request_button"), key="add_friend_button",
+                         use_container_width=True):
+                self.add_friend_page()
+        with col2:
+            if st.button(localization.get_text("block_friend_button"), key="block_friend_button",
+                         use_container_width=True):
+                self.block_friend_page()
+        with col3:
+            if st.button(localization.get_text("unblock_friend_button"), key="unblock_friend_button",
+                         use_container_width=True):
+                self.unblock_friend_page()
+        with col4:
+            if st.button(localization.get_text("delete_friend_button"), key="delete_friend_button",
+                         use_container_width=True):
+                self.delete_friend()
+        with col5:
+            if st.button(localization.get_text("friend_requests_button"), key="friend_requests_button",
+                         use_container_width=True):
+                self.request_friends_page()
+    # 친구 리스트 출력
+        
+        self.show_friend_list()  # 친구 목록 출력 함수 호출
 
-            if not is_friend:
-                # 친구가 아닌 경우 경고 메시지 출력
-                st.warning(localization.get_text("not_in_friend_list"))
-                return
-
-            # 친구 삭제
-            session.delete(is_friend)
-            session.commit()
-
-            # 삭제 성공 메시지
-            st.success(localization.get_text("delete_friend_success").format(friend_id=friend_id))
-        finally:
-            session.close()  # 세션 종료
+    @st.dialog(localization.get_text("friend_requests_title"))
+    def request_friends_page(self):
+        st.title(localization.get_text("friend_requests_title"))
+        self.show_friend_requests_page()
+        
 
 
 # ------------------------------------------------------친구 요청 관리 --------------------------------------------------
