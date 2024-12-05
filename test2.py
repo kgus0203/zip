@@ -3597,6 +3597,11 @@ class LikePost:
                 Like.user_id == user_id  # user_id가 매개변수 값과 같은 경우
             ).group_by(Posting.p_id).all()  # post_id 기준으로 그룹화하여 중복 제거
 
+            return liked_posts
+        finally:
+            # 세션 종료
+            session.close()
+
     def display_liked_posts(self):
         user_id = st.session_state.get("user_id")
         liked_posts = self.fetch_liked_posts(user_id)
