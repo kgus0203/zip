@@ -3009,33 +3009,41 @@ class LocationSearch:
 
     def add_group(self, group_name, user_id, category, meeting_date, meeting_time):
         location_id = self.get_selected_location_id()
-        # 그룹 생성 버튼
         current_date = modify_date = datetime.now()
+
         if not group_name or not location_id or not meeting_date or not meeting_time:
             st.error(localization.get_text("missing_required_fields"))
-        else:
-            # 그룹 모델 인스턴스 생성
-            new_group = Group(
-                group_name=group_name,
-                group_creator=user_id,
-                category=category,  # category[0]은 ID 값
-                location=location_id,
-                meeting_date=meeting_date,
-                meeting_time=meeting_time,
-                update_date=current_date,
-                modify_date=current_date,
-                status=localization.get_text("status_in_progress")
-            )
-            # 세션에 그룹 추가
-            session.add(new_group)
-            session.commit()
-            session.refresh(new_group)  # 새로운 그룹 객체에 자동 생성된 group_id가 반영됨
+            return
 
-            # 성공 메시지
-            st.success(localization.get_text("group_creation_success").format(group_name=group_name))
+        # 그룹 이름 중복 확인
+        existing_group = session.query(Group).filter(Group.group_name == group_name).first()
+        if existing_group:
+            st.error('그룹 이름이 이미 존재합니다')
+            return
 
-            # 생성된 그룹 ID 반환
-            return new_group.group_id  # 생성된 그룹의 ID를 반환
+        # 그룹 모델 인스턴스 생성
+        new_group = Group(
+            group_name=group_name,
+            group_creator=user_id,
+            category=category,
+            location=location_id,
+            meeting_date=meeting_date,
+            meeting_time=meeting_time,
+            update_date=current_date,
+            modify_date=current_date,
+            status=localization.get_text("status_in_progress")
+        )
+
+        # 세션에 그룹 추가
+        session.add(new_group)
+        session.commit()
+        session.refresh(new_group)  # 새로운 그룹 객체에 자동 생성된 group_id가 반영됨
+
+        # 성공 메시지
+        st.success(localization.get_text("group_creation_success").format(group_name=group_name))
+
+        # 생성된 그룹 ID 반환
+        return new_group.group_id  # 생성된 그룹의 ID를 반환
 
 
 class PostManager:
@@ -3949,9 +3957,19 @@ class GroupManager:
                 st.error(localization.get_text("group_not_found"))
                 return
 
+            # 그룹 이름 중복 확인 (다른 그룹과 중복 여부 확인)
+            existing_group = session.query(Group).filter(
+                Group.group_name == group_name,
+                Group.group_id != group_id  # 현재 그룹 제외
+            ).first()
+
+            if existing_group:
+                st.error('그룹 이름이 이미 존재합니다')
+                return
+
             # 수정할 데이터 설정
             group.group_name = group_name
-            group.category = category  # selected_category는 튜플 형태로 가정
+            group.category = category
             group.status = status
             group.meeting_date = meeting_date
             group.meeting_time = meeting_time
@@ -3959,7 +3977,7 @@ class GroupManager:
 
             # 세션 커밋
             session.commit()
-            st.success(localization.get_text("group_updated_success").format(group_name=group_name))
+            st.success(localization.get_text("group_updated_success"))
         except Exception as e:
             st.error(localization.get_text("db_error").format(error=e))
             session.rollback()  # 오류 발생 시 롤백
