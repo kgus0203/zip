@@ -1795,13 +1795,13 @@ class TurnPages:
                 st.markdown(f"**{localization.get_text('meeting_date')}:** {group.meeting_date}")
                 st.markdown(f"**{localization.get_text('meeting_time')}:** {group.meeting_time}")
 
-            # 그룹원 표시
-            if st.button(localization.get_text("enter_chat_button"), key='enter_chat', use_container_width=True):
-                chatting = Chatting(group.group_id)  # session 객체 필요
-                chatting.display_chat_interface()
+                # 그룹원 표시
+                if st.button(localization.get_text("enter_chat_button"), key='enter_chat', use_container_width=True):
+                    chatting = Chatting(group.group_id)  # session 객체 필요
+                    chatting.display_chat_interface()
 
-            if st.button(localization.get_text("leave_group_button"), key='out_group', use_container_width=True):
-                self.exit_group(group.group_id, group.group_name)
+                if st.button(localization.get_text("leave_group_button"), key='out_group', use_container_width=True):
+                    self.exit_group(group.group_id, group.group_name)
 
     # 대기 중인 친구 요청을 표시하는 함수
     def show_friend_requests_page(self):
