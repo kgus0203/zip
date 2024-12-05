@@ -369,7 +369,7 @@ class Localization:
                 "password_reset_success": "비밀번호가 성공적으로 변경되었습니다!",
                 "invalid_or_expired_token": "유효하지 않은 토큰이거나 토큰이 만료되었습니다.",
                 "my_groups_expander": "내가 속한 그룹 목록",
-                "no_joined_groups": "가입한 그룹이 없습니다.",
+                "no_create_groups": "만든 그룹이 없습니다.",
                 "group_name": "그룹 이름",
                 "category": "카테고리",
                 "status": "상태",
@@ -780,7 +780,7 @@ class Localization:
                 "not_group_creator": "Only the group creator can delete this group.",
                 "delete_group_cancelled": "Group deletion cancelled.",
                 "my_groups_expander": "My Groups",
-                "no_joined_groups": "You have not joined any groups.",
+                "no_create_groups": "You have not created any groups.",
                 "group_name": "Group Name",
                 "category": "Category",
                 "status": "Status",
@@ -1139,7 +1139,7 @@ class Localization:
                 "enter_chat_button": "チャットに参加",
                 "leave_group_button": "グループを脱退",
                 "my_groups_expander": "参加中のグループリスト",
-                "no_joined_groups": "参加中のグループはありません。",
+                "no_create_groups": "作ったグループはありません。",
                 "group_name": "グループ名",
                 "category": "カテゴリー",
                 "status": "状態",
@@ -1645,7 +1645,7 @@ class TurnPages:
             group_manager = GroupManager(user_id)
             groups = group_manager.get_my_groups()
             if not groups:
-                st.info(localization.get_text("no_joined_groups"))
+                st.info(localization.get_text("no_create_groups"))
                 return
 
             for group in groups:
