@@ -2146,7 +2146,7 @@ class GroupPage():
     @st.dialog(localization.get_text("update_group_dialog_title"))
     def group_update_page(self):
         # 그룹 ID 가져오기 (세션에 저장된 그룹 ID)
-        group_id = st.session_state.get("group_id_to_edit")
+        group_id = st.session_state.get("group_id")
         if not group_id:
             st.error(localization.get_text("group_id_not_found_error"))
             return
