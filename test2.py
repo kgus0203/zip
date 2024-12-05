@@ -1230,7 +1230,6 @@ class Page:
         self.group_page = GroupPage(self)
         self.friend_page = FriendPage(self)
 
-
     def render_page(self):
         # 페이지 렌더링
         page_functions = {
@@ -1566,7 +1565,8 @@ class TurnPages:
         if st.sidebar.button(localization.get_text("my_friend_list_button"), use_container_width=True):
             self.page.change_page("Friend List Page")
 
-        if st.sidebar.button(localization.get_text("view_post_button"), key='view_post_button',use_container_width=True):
+        if st.sidebar.button(localization.get_text("view_post_button"), key='view_post_button',
+                             use_container_width=True):
             self.page.change_page('View Post')
 
         if st.sidebar.button(localization.get_text("group_button"), key='group_button', use_container_width=True):
@@ -1614,10 +1614,12 @@ class TurnPages:
             # 비밀번호 복구를 위한 UserManager 인스턴스 생성
             user_manager = UserManager(smtp_email, smtp_password)
 
-
             # 토큰 검증 후 비밀번호 재설정
             if user_manager.verify_token(email, token):
-                st.success(localization.get_text("password_reset_success"))
+                if len(new_password)>=8:
+                    st.success(localization.get_text("password_reset_success"))
+                else:
+                    st.warning('비밀번호는 8자리 이상입니다')
             else:
                 st.error(localization.get_text("invalid_or_expired_token"))
 
@@ -1717,7 +1719,6 @@ class TurnPages:
         user_id = st.session_state.get("user_id")
         group_manager = GroupManager(user_id)
 
-
         with col_yes:
             if st.button(localization.get_text("yes_button"), key="confirm_yes_button", use_container_width=True,
                          type='primary'):
@@ -1795,7 +1796,6 @@ class TurnPages:
 
             if st.button(localization.get_text("leave_group_button"), key='out_group', use_container_width=True):
                 self.exit_group(group.group_id, group.group_name)
-
 
     # 대기 중인 친구 요청을 표시하는 함수
     def show_friend_requests_page(self):
@@ -2459,12 +2459,14 @@ class GroupBlock(Base):
     user_id = Column(String, ForeignKey('user.user_id'), nullable=False)
     blocked_group_id = Column(Integer, ForeignKey('group.group_id'), nullable=False)
 
+
 class Like(Base):
-    __tablename__='like'
+    __tablename__ = 'like'
 
     like_id = Column(Integer, primary_key=True)
     user_id = Column(String, ForeignKey('user.user_id'), nullable=False)
-    post_id = Column(Integer, ForeignKey('posting.p_id'), nullable=False )
+    post_id = Column(Integer, ForeignKey('posting.p_id'), nullable=False)
+
 
 class GroupMember(Base):
     __tablename__ = 'group_member'
@@ -2732,7 +2734,6 @@ class UserDAO:
                 user_profile_picture=user.profile_picture_path
             )
         return None
-
 
     def update_user_field(self, user_id, field_name, field_value):
 
@@ -3391,7 +3392,6 @@ class ThemeManager:
                     "button_face": localization.get_text("light_modee_button_label")
                 }
 
-
     def get_saved_theme(self, user_id):
         setting = session.query(Settings).filter(Settings.user == user_id).first()
         session.close()
@@ -3553,8 +3553,9 @@ class SetView:
             if st.button(localization.get_text("change_email_button"), key='change_email', use_container_width=True):
                 self.update_user_field("user_email", new_email)
 
-            new_password = st.text_input(localization.get_text("new_password"),type='password')
-            if st.button(localization.get_text("change_password_button"), key='change_password',use_container_width=True):
+            new_password = st.text_input(localization.get_text("new_password"), type='password')
+            if st.button(localization.get_text("change_password_button"), key='change_password',
+                         use_container_width=True):
 
                 if len(new_password) >= 8:
                     self.user_dao.update_user_password(self.user_vo.user_id, new_password)
@@ -3606,7 +3607,7 @@ class LikePost:
         # Display liked posts with the like button
         if liked_posts:
             for post in liked_posts:
-                post_user, post_content, post_title, p_image , p_id= post
+                post_user, post_content, post_title, p_image, p_id = post
                 st.write(f"**Creator ID**: {post_user}")
                 st.write(f"Title: {post_title}, content : {post_content}")
                 if p_image:
@@ -4249,7 +4250,6 @@ class FriendRequest:
 
             session.commit()
 
-           
             st.success(localization.get_text("friend_request_sent_success").format(friend_id=friend_id))
 
 
