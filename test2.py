@@ -3138,7 +3138,7 @@ class PostManager:
                          use_container_width=True):
                 self.update_post(post_id, title, content, image_file, file_file, selected_category_id)
                 st.success(localization.get_text("edit_post_success_message"))
-                st.run()
+                st.rerun()
 
         else:
             st.error(localization.get_text("edit_post_not_found_error"))
