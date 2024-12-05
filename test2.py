@@ -39,7 +39,7 @@ class Localization:
 
         return {
             "ko": {
-                "check":"확인",
+                "check": "확인",
                 "id_pw_change_title": "ID/PW 변경",
                 "no_user_info_error": "사용자 정보가 없습니다. 다시 로그인해주세요.",
                 "select_change_action": "변경할 항목을 선택하세요",
@@ -155,7 +155,7 @@ class Localization:
                 "group_unblocked_error": "해제 중 오류가 발생했습니다.",
                 "invite_to_group": "그룹 초대",
                 "enter_invitee_id": "초대할 사용자 ID를 입력하세요",
-                "group_id_not_found_error":"그룹 ID를 찾을 수 없습니다.",
+                "group_id_not_found_error": "그룹 ID를 찾을 수 없습니다.",
                 "send_invite": "초대 요청 보내기",
                 "invite_sent_success": "님에게 초대 요청을 보냈습니다.",
                 "group_invite_confirmed": "그룹 초대가 되었습니다.",
@@ -416,7 +416,7 @@ class Localization:
 
             },
             "en": {
-                "check":"check",
+                "check": "check",
                 "id_pw_change_title": "ID/PW Change",
                 "no_user_info_error": "User information not found. Please log in again.",
                 "select_change_action": "Select an item to change",
@@ -801,7 +801,7 @@ class Localization:
 
             },
             "jp": {
-                "check":"確認",
+                "check": "確認",
                 "id_pw_change_title": "ID/PW変更",
                 "no_user_info_error": "ユーザー情報がありません。もう一度ログインしてください。",
                 "select_change_action": "変更する項目を選択してください",
@@ -843,7 +843,7 @@ class Localization:
                 "general_file_upload": "一般ファイル",
                 "category_select": "カテゴリー",
                 "group_id_not_found_error": "グループIDが見つかりません。",
-                "post_register_button":"投稿登録",
+                "post_register_button": "投稿登録",
                 "post_register_success": "投稿が登録されました。",
                 "user_info_not_found": "ユーザー情報が見つかりません。",
                 "my_page_header": "マイページ",
@@ -1253,7 +1253,8 @@ class Page:
             'GroupBlockList': self.group_page.group_block_list_page,
             'Group Update Page': self.group_page.group_update_page,  # 그룹 수정 페이지 등록
             'Friend List Page': self.friend_page.FriendList_page,
-            "FriendRequests": self.turn_pages.show_friend_requests_page
+            "FriendRequests": self.turn_pages.show_friend_requests_page,
+            'FriendPostPage' : self.friend_page.friend_posts_page
 
         }
 
@@ -1622,7 +1623,7 @@ class TurnPages:
 
             # 토큰 검증 후 비밀번호 재설정
             if user_manager.verify_token(email, token):
-                if len(new_password)>=8:
+                if len(new_password) >= 8:
                     st.success(localization.get_text("password_reset_success"))
                 else:
                     st.warning('비밀번호는 8자리 이상입니다')
@@ -1796,11 +1797,13 @@ class TurnPages:
                 st.markdown(f"**{localization.get_text('meeting_time')}:** {group.meeting_time}")
 
                 # 그룹원 표시
-                if st.button(localization.get_text("enter_chat_button"), key=f'enter_chat_{group.group_id}', use_container_width=True):
+                if st.button(localization.get_text("enter_chat_button"), key=f'enter_chat_{group.group_id}',
+                             use_container_width=True):
                     chatting = Chatting(group.group_id)  # session 객체 필요
                     chatting.display_chat_interface()
 
-                if st.button(localization.get_text("leave_group_button"), key=f'out_group_{group.group_id}', use_container_width=True):
+                if st.button(localization.get_text("leave_group_button"), key=f'out_group_{group.group_id}',
+                             use_container_width=True):
                     self.exit_group(group.group_id, group.group_name)
 
     # 대기 중인 친구 요청을 표시하는 함수
@@ -2249,9 +2252,7 @@ class FriendPage:
         self.user_id = st.session_state.get("user_id")
         self.page = page
         self.friend_manager = FriendManager(self.user_id)
-        self.friend_request = FriendRequest(self.user_id)  
-
-
+        self.friend_request = FriendRequest(self.user_id)
 
     def show_friend_list(self):
         session = SessionLocal()
@@ -2272,56 +2273,17 @@ class FriendPage:
                     with col2:
                         st.write(f"{friend.friend_user_id}")  # 친구 ID 표시
                     with col3:
-                    # '포스팅 보기' 버튼
+                        # '포스팅 보기' 버튼
                         if st.button(f"포스팅 보기 ({friend.friend_user_id})", key=f"view_posts_{friend.friend_user_id}"):
-                        # 상대방 포스팅 보기 페이지로 이동
+                            # 상대방 포스팅 보기 페이지로 이동
                             st.session_state['current_friend_id'] = friend.friend_user_id
-                            st.session_state['current_page'] = 'FriendPosts'
+                            st.session_state['current_page'] = 'FriendPostPage'
                             st.rerun()
             else:
                 st.write("친구가 없습니다.")
         finally:
             session.close()
-    
-    def friend_posts_page(self):
-    # 현재 사용자의 친구 포스팅 가져오기
-        posts = self.get_friend_posts()
 
-        if posts:
-            st.title("친구들의 포스팅")
-            for post in posts:
-            # 포스팅 제목과 내용 출력
-                st.subheader(post.p_title)
-                st.write(post.p_content)
-
-            # 이미지가 있는 경우 출력
-                if post.p_image_path and os.path.exists(post.p_image_path):
-                    st.image(post.p_image_path, width=200)
-                else:
-                    st.write("이미지가 없습니다.")
-        else:
-            st.warning("친구들의 포스팅이 없습니다.")
-
-    
-    def get_friend_posts(self):
-        session = SessionLocal()
-        try:
-        # 친구들의 포스팅 가져오기
-            friend_posts = (
-                session.query(Posting)
-                .join(Friend, Friend.friend_user_id == Posting.p_user)
-                .filter(Friend.user_id == self.user_id)
-                .all()
-            )
-            return friend_posts
-        except Exception as e:
-            st.error(f"오류 발생: {e}")
-            return []
-        finally:
-            session.close()
-
-    
-    
 
     def show_friend_requests_page(self):
         st.title("친구 요청 관리")
@@ -2345,27 +2307,7 @@ class FriendPage:
         if st.button("뒤로 가기"):
             st.session_state["current_page"] = "after_login"
             st.rerun()
-    
-    
-    
-    def friend_posts_page(self):
-    # 현재 사용자의 친구 포스팅 가져오기
-        posts = self.get_friend_posts()
 
-        if posts:
-            st.title("친구들의 포스팅")
-            for post in posts:
-            # 포스팅 제목과 내용 출력
-                st.subheader(post.p_title)
-                st.write(post.p_content)
-
-            # 이미지가 있는 경우 출력
-                if post.p_image_path and os.path.exists(post.p_image_path):
-                    st.image(post.p_image_path, width=200)
-                else:
-                    st.write("이미지가 없습니다.")
-        else:
-            st.warning("친구들의 포스팅이 없습니다.")
 
     @st.dialog("친구 추가 창")
     def add_friend_page(self):
@@ -2404,6 +2346,7 @@ class FriendPage:
         else:
             st.write(localization.get_text("no_blocked_users"))
 
+    @st.dialog('친구의 포스트')
     def friend_posts_page(self):
         # 현재 선택된 친구 ID
         friend_id = st.session_state.get('current_friend_id')
@@ -2411,8 +2354,6 @@ class FriendPage:
             st.error(localization.get_text("no_friend_id_error"))
             return
 
-        # 세션 시작
-        session = SessionLocal()
         try:
             # 친구의 포스팅 가져오기
             posts = session.query(Posting).filter(Posting.p_user == friend_id).all()
@@ -2500,15 +2441,15 @@ class FriendPage:
             if st.button(localization.get_text("friend_requests_button"), key="friend_requests_button",
                          use_container_width=True):
                 self.request_friends_page()
-    # 친구 리스트 출력
-        
+        # 친구 리스트 출력
+
         self.show_friend_list()  # 친구 목록 출력 함수 호출
 
     @st.dialog(localization.get_text("friend_requests_title"))
     def request_friends_page(self):
         st.title(localization.get_text("friend_requests_title"))
         self.show_friend_requests_page()
-        
+
 
 # -------------------------------------디비-----------------------------------------------------------------------------
 
@@ -4238,12 +4179,12 @@ class FriendManager():
                         profile_picture = "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png"
                     st.image(profile_picture, width=50)
                     st.write(friend.friend_user_id)
-                   
+
             else:
                 st.write("친구가 없습니다.")
         finally:
             session.close()
-    
+
     def show_friend_requests_page(self):
         st.title("친구 요청 관리")
         st.subheader("내가 보낸 친구 요청")
@@ -4369,23 +4310,7 @@ class FriendManager():
             st.success(localization.get_text("delete_friend_success").format(friend_id=friend_id))
         finally:
             session.close()  # 세션 종료
-    
-    def get_friend_posts(self):
-        session = SessionLocal()
-        try:
-        # 친구들의 포스팅 가져오기
-            friend_posts = (
-                session.query(Posting)
-                .join(Friend, Friend.friend_user_id == Posting.p_user)
-                .filter(Friend.user_id == self.user_id)
-                .all()
-            )
-            return friend_posts
-        except Exception as e:
-            st.error(f"오류 발생: {e}")
-            return []
-        finally:
-            session.close()
+
 
 
 # ------------------------------------------------------친구 요청 관리 --------------------------------------------------
@@ -4460,6 +4385,7 @@ class FriendRequest:
             return [req.requester_user_id for req in requests]
         finally:
             session.close()
+
     # 친구 신청 받기
     def accept_friend_request(self, requester_id):
         session = SessionLocal()
@@ -4476,7 +4402,6 @@ class FriendRequest:
             st.success(f"{requester_id}님과 친구가 되었습니다.")
         finally:
             session.close()
-
 
     # 친구 신청 거절
     def reject_friend_request(self, requester_id):
@@ -4496,5 +4421,4 @@ class FriendRequest:
 
 app = Page()
 app.render_page()
-
 
