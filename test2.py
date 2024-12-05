@@ -2179,25 +2179,28 @@ class FriendPage:
                         .filter(User.user_id == friend.friend_user_id)
                         .scalar()
                     )
+                # 프로필 사진이 없거나 경로가 유효하지 않으면 기본 이미지 사용
                     if not profile_picture or not os.path.exists(profile_picture):
                         profile_picture = "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png"
-                        col1, col2, col3 = st.columns([1, 6, 2])  # 사진 1칸, 텍스트 6칸, 버튼 2칸
+                
+                # 항상 컬럼 초기화
+                    col1, col2, col3 = st.columns([1, 6, 2])  # 사진 1칸, 텍스트 6칸, 버튼 2칸
+                
                     with col1:
                         st.image(profile_picture, width=50)  # 작은 크기로 사진 표시
                     with col2:
                         st.write(f"{friend.friend_user_id}")  # 친구 ID 표시
                     with col3:
-                        # '포스팅 보기' 버튼
+                    # '포스팅 보기' 버튼
                         if st.button(f"포스팅 보기 ({friend.friend_user_id})", key=f"view_posts_{friend.friend_user_id}"):
-                            # 상대방 포스팅 보기 페이지로 이동
+                        # 상대방 포스팅 보기 페이지로 이동
                             st.session_state['current_friend_id'] = friend.friend_user_id
                             self.friend_posts_page()
-
             else:
-                st.write("친구가 없습니다.")
+                    st.write("친구가 없습니다.")
+
         finally:
             session.close()
-
 
     def show_friend_requests_page(self):
         st.title("친구 요청 관리")
@@ -4247,6 +4250,7 @@ class FriendRequest:
             ).delete()
             session.commit()
             st.success(f"{requester_id}님의 친구 요청을 거절했습니다.")
+            st.rerun()  # 상태 변경 후 페이지 새로고침
         finally:
             session.close()
 
