@@ -2278,12 +2278,50 @@ class FriendPage:
                             st.session_state['current_friend_id'] = friend.friend_user_id
                             st.session_state['current_page'] = 'FriendPosts'
                             st.rerun()
-                    
-                    
             else:
                 st.write("친구가 없습니다.")
         finally:
             session.close()
+    
+    def friend_posts_page(self):
+    # 현재 사용자의 친구 포스팅 가져오기
+        posts = self.get_friend_posts()
+
+        if posts:
+            st.title("친구들의 포스팅")
+            for post in posts:
+            # 포스팅 제목과 내용 출력
+                st.subheader(post.p_title)
+                st.write(post.p_content)
+
+            # 이미지가 있는 경우 출력
+                if post.p_image_path and os.path.exists(post.p_image_path):
+                    st.image(post.p_image_path, width=200)
+                else:
+                    st.write("이미지가 없습니다.")
+        else:
+            st.warning("친구들의 포스팅이 없습니다.")
+
+    
+    def get_friend_posts(self):
+        session = SessionLocal()
+        try:
+        # 친구들의 포스팅 가져오기
+            friend_posts = (
+                session.query(Posting)
+                .join(Friend, Friend.friend_user_id == Posting.p_user)
+                .filter(Friend.user_id == self.user_id)
+                .all()
+            )
+            return friend_posts
+        except Exception as e:
+            st.error(f"오류 발생: {e}")
+            return []
+        finally:
+            session.close()
+
+    
+    
 
     def show_friend_requests_page(self):
         st.title("친구 요청 관리")
