@@ -4459,5 +4459,4 @@ class FriendRequest:
 app = Page()
 app.render_page()
 
-app = Page()
-app.render_page()
+
