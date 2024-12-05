@@ -1789,7 +1789,30 @@ class TurnPages:
                 if st.button(localization.get_text("leave_group_button"), key=f'out_group_{group.group_id}',
                              use_container_width=True):
                     self.exit_group(group.group_id, group.group_name)
+                
+                if st.button(localization.get_text("invite_to_group"), key=f"invite_group_{group.group_id}", use_container_width=True):
+                    self.invite_user_to_group(group.group_id)
 
+    @st.dialog("invite_to_group")
+    def invite_user_to_group(self, group_id):
+        group_manager = GroupManager(st.session_state.get("user_id"))
+
+        if 'invitee_id' not in st.session_state:
+            st.session_state['invitee_id'] = ''  # 초대할 사용자 ID 초기화
+
+        with st.form(key=f"invite_form_{group_id}"):
+            invitee_id = st.text_input(localization.get_text("enter_invitee_id"), key=f"invitee_id_{group_id}")
+            submit_button = st.form_submit_button(localization.get_text("send_invite"))
+            
+            if submit_button:
+                if invitee_id:  # 사용자가 ID를 입력했을 경우
+                    result = group_manager.invite_user_to_group(group_id, invitee_id)
+                    if result["success"]:
+                        st.success(result["message"])
+                    else:
+                        st.error(result["message"])
+                else:
+                    st.warning(localization.get_text("enter_valid_invitee_id"))
     # 대기 중인 친구 요청을 표시하는 함수
     def show_friend_requests_page(self):
         user_id = st.session_state.get("user_id")
@@ -1961,7 +1984,6 @@ class GroupPage():
             """,
             unsafe_allow_html=True
         )
-
     # 그룹 세부 정보 페이지
     def detail_group(self):
         col1, col2 = st.columns([6, 2])  # 비율 6 : 2
@@ -2006,27 +2028,9 @@ class GroupPage():
         else:
             st.warning(localization.get_text("no_members_in_group"))
 
-
-        if st.button(localization.get_text("invite_to_group"), key=f"invite_group_{group_id}",
-                     use_container_width=True):
+        if st.button(f"{localization.get_text('join_group')} ({group_name})", key=f"join_{group_name}",
+                    use_container_width=True):
             self.group_manager.join_group(group_name)
-            # 입력 필드 상태를 세션 상태에 저장해서 유지
-            if 'invitee_id' not in st.session_state:
-                st.session_state['invitee_id'] = ''  # 초기 값 설정
-
-            with st.form(key=f"invite_form_{group_id}"):
-                invitee_id = st.text_input("초대할 사용자 ID를 입력하세요",
-                                           key=f"invitee_id_{group_id}")  # value는 자동으로 session_state 사용
-                submit_button = st.form_submit_button("초대 보내기")
-                if submit_button:
-                    if invitee_id:  # st.session_state를 직접 수정하지 않음, 위젯 자체에 저장된 값 사용
-                        result = self.group_manager.invite_user_to_group(group_id, invitee_id)
-                        if result["success"]:
-                            st.success(result["message"])
-                        else:
-                            st.error(result["message"])
-                    else:
-                        st.warning("사용자 ID를 입력하세요.")
 
 
     @st.dialog(localization.get_text("create_group_dialog_title"))
@@ -4257,4 +4261,3 @@ class FriendRequest:
 
 app = Page()
 app.render_page()
-
