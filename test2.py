@@ -3584,8 +3584,7 @@ class LikePost:
         if "posts" not in st.session_state:
             st.session_state.posts = []
 
-    def fetch_liked_posts(self):
-
+    def fetch_liked_posts(self, user_id):
         try:
             # post_id를 기준으로 그룹화하여 중복되지 않도록 쿼리
             liked_posts = session.query(
@@ -3595,16 +3594,12 @@ class LikePost:
                 Posting.p_image_path,
                 Posting.p_id
             ).join(Like, Like.post_id == Posting.p_id).filter(
-                Like.like_id > 0
+                Like.user_id == user_id  # user_id가 매개변수 값과 같은 경우
             ).group_by(Posting.p_id).all()  # post_id 기준으로 그룹화하여 중복 제거
 
-            return liked_posts
-        finally:
-            # 세션 종료
-            session.close()
-
     def display_liked_posts(self):
-        liked_posts = self.fetch_liked_posts()
+        user_id = st.session_state.get("user_id")
+        liked_posts = self.fetch_liked_posts(user_id)
         # Display liked posts with the like button
         if liked_posts:
             for post in liked_posts:
