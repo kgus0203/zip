@@ -1794,7 +1794,7 @@ class TurnPages:
                 if st.button(localization.get_text("invite_to_group"), key=f"invite_group_{group.group_id}", use_container_width=True):
                     self.invite_user_to_group(group.group_id)
 
-    @st.dialog("invite_to_group")
+    @st.dialog(localization.get_text("invite_to_group"))
     def invite_user_to_group(self, group_id):
         group_manager = GroupManager(st.session_state.get("user_id"))
 
