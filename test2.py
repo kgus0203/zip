@@ -1254,7 +1254,6 @@ class Page:
             'Group Update Page': self.group_page.group_update_page,  # 그룹 수정 페이지 등록
             'Friend List Page': self.friend_page.FriendList_page,
             "FriendRequests": self.turn_pages.show_friend_requests_page,
-            'FriendPostPage' : self.friend_page.friend_posts_page
 
         }
 
@@ -2277,8 +2276,8 @@ class FriendPage:
                         if st.button(f"포스팅 보기 ({friend.friend_user_id})", key=f"view_posts_{friend.friend_user_id}"):
                             # 상대방 포스팅 보기 페이지로 이동
                             st.session_state['current_friend_id'] = friend.friend_user_id
-                            st.session_state['current_page'] = 'FriendPostPage'
-                            st.rerun()
+                            self.friend_posts_page()
+
             else:
                 st.write("친구가 없습니다.")
         finally:
