@@ -147,11 +147,7 @@ class Localization:
                 "not_set": "설정되지 않음",
                 "group_members": "그룹원",
                 "no_members_in_group": "이 그룹에 소속된 멤버가 없습니다.",
-                "block_group": "그룹 차단",
-                "unblock_group": "차단 해제",
-                "group_blocked_success": "그룹이 차단되었습니다.",
                 "group_blocked_error": "차단 중 오류가 발생했습니다.",
-                "group_unblocked_success": "차단이 해제되었습니다.",
                 "group_unblocked_error": "해제 중 오류가 발생했습니다.",
                 "invite_to_group": "그룹 초대",
                 "enter_invitee_id": "초대할 사용자 ID를 입력하세요",
@@ -535,11 +531,7 @@ class Localization:
                 "not_set": "Not set",
                 "group_members": "Group Members",
                 "no_members_in_group": "No members in this group.",
-                "block_group": "Block Group",
-                "unblock_group": "Unblock Group",
-                "group_blocked_success": "Group has been blocked.",
                 "group_blocked_error": "Error occurred while blocking the group.",
-                "group_unblocked_success": "Group has been unblocked.",
                 "group_unblocked_error": "Error occurred while unblocking the group.",
                 "invite_to_group": "Invite to Group",
                 "enter_invitee_id": "Enter the ID of the user to invite",
@@ -922,12 +914,6 @@ class Localization:
                 "not_set": "設定されていません",
                 "group_members": "グループメンバー",
                 "no_members_in_group": "このグループにはメンバーがいません。",
-                "block_group": "グループをブロック",
-                "unblock_group": "ブロックを解除",
-                "group_blocked_success": "グループがブロックされました。",
-                "group_blocked_error": "グループのブロック中にエラーが発生しました。",
-                "group_unblocked_success": "グループのブロックが解除されました。",
-                "group_unblocked_error": "ブロック解除中にエラーが発生しました。",
                 "invite_to_group": "グループに招待",
                 "enter_invitee_id": "招待するユーザーのIDを入力してください",
                 "send_invite": "招待リクエストを送信",
@@ -1250,7 +1236,6 @@ class Page:
             'Upload Post': self.turn_pages.upload_post,
             'Group page': self.group_page.groups_page,
             'Detail group': self.group_page.detail_group,
-            'GroupBlockList': self.group_page.group_block_list_page,
             'Group Update Page': self.group_page.group_update_page,  # 그룹 수정 페이지 등록
             'Friend List Page': self.friend_page.FriendList_page,
             "FriendRequests": self.turn_pages.show_friend_requests_page,
@@ -1961,32 +1946,6 @@ class GroupPage():
             # 그룹들 사이에 구분선
             st.markdown("---")
 
-    def group_block_list_page(self):
-        st.title(localization.get_text("group_block_list_title"))
-
-        # 로그인 확인
-        user_id = st.session_state.get("user_id")
-        if not user_id:
-            st.error(localization.get_text("login_required_error"))
-            return
-
-        block_dao = GroupBlockDAO(user_id)  # GroupBlockDAO 인스턴스 생성
-        blocked_groups = block_dao.get_blocked_groups()  # 차단된 그룹 ID 목록 가져오기
-        # 차단된 그룹이 있으면 정보를 반환함
-        if not blocked_groups:
-            st.warning(localization.get_text("no_blocked_groups"))
-        else:
-            for group_id in blocked_groups:
-                st.markdown(f"**{localization.get_text('blocked_group_id')}:** {group_id}")
-                if st.button(f"{localization.get_text('unblock_button')} (ID: {group_id})",
-                             key=f"unblock_group_{group_id}", use_container_width=True):
-                    if block_dao.unblock_group(group_id):
-                        st.success(f"{localization.get_text('unblock_success')} {group_id}")
-                    else:
-                        st.error(localization.get_text("unblock_error"))
-        if st.button(localization.get_text("back_button"), use_container_width=True):
-            self.page.go_back()
-
     # 멤버 박스 출력 함수 (그룹장은 왕관 아이콘만 표시하고, 다른 멤버는 번호만 표시)
     def display_member_box(self, member_name, is_admin, member_number):
         number_emojis = ["1️⃣", "2️⃣", "3️⃣", "4️⃣", "5️⃣", "6️⃣", "7️⃣", "8️⃣", "9️⃣", "🔟"]
@@ -2047,25 +2006,6 @@ class GroupPage():
         else:
             st.warning(localization.get_text("no_members_in_group"))
 
-        # GroupBlockDAO 초기화
-        if "block_dao" not in st.session_state:
-            st.session_state["block_dao"] = GroupBlockDAO(user_id)  # zip.db를 기본값으로 사용
-        block_dao = st.session_state["block_dao"]
-
-        # 그룹 차단/해제 기능
-        if st.button(localization.get_text("block_group"), key=f"block_group_{group_id}", use_container_width=True):
-            success = block_dao.block_group(group_id)
-            if success:
-                st.success(localization.get_text("group_blocked_success"))
-            else:
-                st.error(localization.get_text("group_blocked_error"))
-
-        if st.button(localization.get_text("unblock_group"), key=f"unblock_group_{group_id}", use_container_width=True):
-            success = block_dao.unblock_group(st.session_state.get("user_id"), group_id)
-            if success:
-                st.success(localization.get_text("group_unblocked_success"))
-            else:
-                st.error(localization.get_text("group_unblocked_error"))
 
         if st.button(localization.get_text("invite_to_group"), key=f"invite_group_{group_id}",
                      use_container_width=True):
@@ -2088,31 +2028,6 @@ class GroupPage():
                     else:
                         st.warning("사용자 ID를 입력하세요.")
 
-    def group_block_list_page(self):
-        st.title(localization.get_text("group_block_list_title"))
-
-        # 로그인 확인
-        user_id = st.session_state.get("user_id")
-        if not user_id:
-            st.error(localization.get_text("login_required"))
-            return
-
-        block_dao = GroupBlockDAO(user_id)  # GroupBlockDAO 인스턴스 생성
-        blocked_groups = block_dao.get_blocked_groups()  # 차단된 그룹 ID 목록 가져오기
-
-        if not blocked_groups:
-            st.warning(localization.get_text("no_blocked_groups"))
-        else:
-            for group_id in blocked_groups:
-                st.markdown(f"**{localization.get_text('blocked_group_id')}:** {group_id}")
-                if st.button(f"{localization.get_text('unblock')} ({group_id})", key=f"unblock_group_{group_id}",
-                             use_container_width=True):
-                    if block_dao.unblock_group(group_id):
-                        st.success(f"{localization.get_text('group_unblocked_success')} ({group_id})")
-                    else:
-                        st.error(localization.get_text("group_unblock_error"))
-        if st.button(localization.get_text("back_button"), use_container_width=True):
-            self.page.go_back()
 
     @st.dialog(localization.get_text("create_group_dialog_title"))
     def group_creation_page(self):
@@ -4041,89 +3956,7 @@ class GroupManager:
             session.close()  # 세션 종료
 
 
-# --------------------------------------------------그룹 차단 데이터관리 -----------------------------------
-
-class GroupBlockDAO:
-    def __init__(self, user_id):
-        self.user_id = user_id
-
-    # 사용자가 그룹을 차단함
-    def block_group(self, group_id):
-
-        try:
-            # 그룹 차단 추가
-            block = GroupBlock(user_id=self.user_id, blocked_group_id=group_id)
-
-            # 세션에 추가하고 커밋
-            session.add(block)
-            session.commit()
-            session.close()
-            # 차단 성공 메시지
-            st.success(localization.get_text("group_blocked_success"))
-            return True
-        except Exception as e:
-            # 오류 메시지 출력
-            st.error(localization.get_text("group_block_error").format(error=e))
-            session.rollback()  # 예외가 발생한 경우 롤백
-        return False
-
-    # 그룹 차단 해제
-    def unblock_group(self, group_id):
-        try:
-            # 그룹 차단 레코드 삭제
-            block = session.query(GroupBlock).filter_by(user_id=self.user_id, blocked_group_id=group_id).first()
-
-            if block:
-                # 해당 레코드를 삭제하고 커밋
-                session.delete(block)
-                session.commit()
-                session.close()
-                # 차단 해제 성공 메시지
-                st.success(localization.get_text("group_unblocked_success"))
-                return True
-            else:
-                # 차단된 그룹이 없을 경우 경고 메시지 출력
-                st.warning(localization.get_text("group_not_blocked"))
-                return False
-        except Exception as e:
-            # 오류 메시지 출력
-            st.error(localization.get_text("group_unblock_error").format(error=e))
-            session.rollback()  # 예외가 발생한 경우 롤백
-        return False
-
-    # 차단된 그룹 리스트를 반환
-    def get_blocked_groups(self):
-        try:
-            # 차단된 그룹 조회
-            blocked_groups = session.query(GroupBlock.blocked_group_id).filter_by(user_id=self.user_id).all()
-
-            # 세션 종료
-            session.close()
-
-            # 결과를 리스트로 반환
-            return [group[0] for group in blocked_groups]
-        except Exception as e:
-            # 오류 메시지 출력
-            st.error(localization.get_text("blocked_groups_error").format(error=e))
-            session.close()  # 세션 종료
-        return []
-
-    # 그룹이 차단되었는지 확인
-    def is_group_blocked(self, group_id):
-        try:
-            # 조건에 맞는 차단된 그룹 레코드 존재 여부 확인
-            result = session.query(GroupBlock).filter_by(user_id=self.user_id, blocked_group_id=group_id).first()
-
-            # 세션 종료
-            session.close()
-
-            # 결과가 있으면 True, 없으면 False 반환
-            return result is not None
-        except Exception as e:
-            # 오류 메시지 출력
-            st.error(localization.get_text("is_group_blocked_error").format(error=e))
-            session.close()  # 세션 종료
-        return False
+# --------------------------------------------------그룹 검색 데이터관리 -----------------------------------
 
 
 class GroupSearch:
