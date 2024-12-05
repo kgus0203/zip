@@ -2249,7 +2249,7 @@ class FriendPage:
         self.user_id = st.session_state.get("user_id")
         self.page = page
         self.friend_manager = FriendManager(self.user_id)
-        self.friend_request = FriendRequest(self.user_id)
+        self.friend_request = FriendRequest(self.user_id)  
 
 
 
@@ -2266,8 +2266,20 @@ class FriendPage:
                     )
                     if not profile_picture or not os.path.exists(profile_picture):
                         profile_picture = "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png"
-                    st.image(profile_picture, width=50)
-                    st.write(friend.friend_user_id)
+                        col1, col2, col3 = st.columns([1, 6, 2])  # 사진 1칸, 텍스트 6칸, 버튼 2칸
+                    with col1:
+                        st.image(profile_picture, width=50)  # 작은 크기로 사진 표시
+                    with col2:
+                        st.write(f"{friend.friend_user_id}")  # 친구 ID 표시
+                    with col3:
+                    # '포스팅 보기' 버튼
+                        if st.button(f"포스팅 보기 ({friend.friend_user_id})", key=f"view_posts_{friend.friend_user_id}"):
+                        # 상대방 포스팅 보기 페이지로 이동
+                            st.session_state['current_friend_id'] = friend.friend_user_id
+                            st.session_state['current_page'] = 'FriendPosts'
+                            st.rerun()
+                    
+                    
             else:
                 st.write("친구가 없습니다.")
         finally:
@@ -2295,6 +2307,27 @@ class FriendPage:
         if st.button("뒤로 가기"):
             st.session_state["current_page"] = "after_login"
             st.rerun()
+    
+    
+    
+    def friend_posts_page(self):
+    # 현재 사용자의 친구 포스팅 가져오기
+        posts = self.get_friend_posts()
+
+        if posts:
+            st.title("친구들의 포스팅")
+            for post in posts:
+            # 포스팅 제목과 내용 출력
+                st.subheader(post.p_title)
+                st.write(post.p_content)
+
+            # 이미지가 있는 경우 출력
+                if post.p_image_path and os.path.exists(post.p_image_path):
+                    st.image(post.p_image_path, width=200)
+                else:
+                    st.write("이미지가 없습니다.")
+        else:
+            st.warning("친구들의 포스팅이 없습니다.")
 
     @st.dialog("친구 추가 창")
     def add_friend_page(self):
@@ -2429,11 +2462,15 @@ class FriendPage:
             if st.button(localization.get_text("friend_requests_button"), key="friend_requests_button",
                          use_container_width=True):
                 self.request_friends_page()
+    # 친구 리스트 출력
+        
+        self.show_friend_list()  # 친구 목록 출력 함수 호출
 
     @st.dialog(localization.get_text("friend_requests_title"))
     def request_friends_page(self):
         st.title(localization.get_text("friend_requests_title"))
         self.show_friend_requests_page()
+        
 
 # -------------------------------------디비-----------------------------------------------------------------------------
 
@@ -4294,6 +4331,22 @@ class FriendManager():
             st.success(localization.get_text("delete_friend_success").format(friend_id=friend_id))
         finally:
             session.close()  # 세션 종료
+    
+    def get_friend_posts(self):
+        session = SessionLocal()
+        try:
+        # 친구들의 포스팅 가져오기
+            friend_posts = (
+                session.query(Posting)
+                .join(Friend, Friend.friend_user_id == Posting.p_user)
+                .filter(Friend.user_id == self.user_id)
+                .all()
+            )
+            return friend_posts
+        except Exception as e:
+            st.error(f"오류 발생: {e}")
+            return []
+        finally:
 
 
 # ------------------------------------------------------친구 요청 관리 --------------------------------------------------
@@ -4400,7 +4453,6 @@ class FriendRequest:
             st.success(f"{requester_id}님의 친구 요청을 거절했습니다.")
         finally:
             session.close()
-
 
 
 app = Page()
