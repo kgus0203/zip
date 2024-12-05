@@ -2245,6 +2245,51 @@ class FriendPage:
         self.friend_manager = FriendManager(self.user_id)
         self.friend_request = FriendRequest(self.user_id)
 
+
+
+    def show_friend_list(self):
+        session = SessionLocal()
+        try:
+            friends = session.query(Friend).filter(Friend.user_id == self.user_id).all()
+            if friends:
+                for friend in friends:
+                    profile_picture = (
+                        session.query(User.profile_picture_path)
+                        .filter(User.user_id == friend.friend_user_id)
+                        .scalar()
+                    )
+                    if not profile_picture or not os.path.exists(profile_picture):
+                        profile_picture = "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png"
+                    st.image(profile_picture, width=50)
+                    st.write(friend.friend_user_id)
+            else:
+                st.write("친구가 없습니다.")
+        finally:
+            session.close()
+
+    def show_friend_requests_page(self):
+        st.title("친구 요청 관리")
+        st.subheader("내가 보낸 친구 요청")
+        sent_requests = self.friend_request.get_my_sent_requests()
+        for req in sent_requests:
+            st.write(f"- {req}")
+
+        st.subheader("다른 사람이 보낸 친구 요청")
+        received_requests = self.friend_request.get_received_requests()
+        for req in received_requests:
+            col1, col2 = st.columns(2)
+            with col1:
+                st.write(f"- {req}")
+            with col2:
+                if st.button(f"수락 ({req})"):
+                    self.friend_request.accept_friend_request(req)
+                if st.button(f"거절 ({req})"):
+                    self.friend_request.reject_friend_request(req)
+
+        if st.button("뒤로 가기"):
+            st.session_state["current_page"] = "after_login"
+            st.rerun()
+
     @st.dialog("친구 추가 창")
     def add_friend_page(self):
 
@@ -2383,7 +2428,6 @@ class FriendPage:
     def request_friends_page(self):
         st.title(localization.get_text("friend_requests_title"))
         self.show_friend_requests_page()
-
 
 # -------------------------------------디비-----------------------------------------------------------------------------
 
@@ -4208,181 +4252,104 @@ class FriendRequest:
 
     # 친구 신청 함수
     def add_friend(self, friend_id):
-
         if self.user_id == friend_id:
-            st.error(localization.get_text("add_self_as_friend_error"))
+            st.error("자신을 친구로 추가할 수 없습니다.")
             return
 
+        session = SessionLocal()
         try:
             # 차단 여부 확인
-            blocked_user = session.query(Block).filter(Block.user_id == self.user_id,
-                                                       Block.blocked_user_id == friend_id).first()
-            if blocked_user:
-                st.error(localization.get_text("unblock_before_request_error"))
+            blocked = session.query(Block).filter(
+                Block.user_id == self.user_id, Block.blocked_user_id == friend_id
+            ).first()
+            if blocked:
+                st.error("먼저 차단을 해제해주세요.")
                 return
 
             # 상대방 존재 확인
             user_exists = session.query(User).filter(User.user_id == friend_id).first()
             if not user_exists:
-                st.error(localization.get_text("user_id_not_found_error"))
+                st.error("없는 ID입니다.")
                 return
 
             # 이미 친구인지 확인
-            already_friends = session.query(Friend).filter(Friend.user_id == self.user_id,
-                                                           Friend.friend_user_id == friend_id).first()
+            already_friends = session.query(Friend).filter(
+                Friend.user_id == self.user_id, Friend.friend_user_id == friend_id
+            ).first()
             if already_friends:
-                st.error(localization.get_text("already_friends_error"))
+                st.error("이미 친구입니다.")
                 return
 
             # 이미 요청을 보냈는지 확인
-            already_requested = session.query(MyFriendRequest).filter(MyFriendRequest.user_id == self.user_id,
-                                                                      MyFriendRequest.requested_user_id == friend_id).first()
+            already_requested = session.query(MyFriendRequest).filter(
+                MyFriendRequest.user_id == self.user_id, MyFriendRequest.requested_user_id == friend_id
+            ).first()
             if already_requested:
-                st.error(localization.get_text("already_requested_error"))
+                st.error("이미 친구 요청을 보냈습니다.")
                 return
 
             # 친구 요청 등록
-            new_friend_request = MyFriendRequest(user_id=self.user_id, requested_user_id=friend_id)
-            new_other_request = MyFriendRequest(user_id=friend_id, requested_user_id=self.user_id)
-
-            session.add(new_friend_request)
-            session.add(new_other_request)
-
+            session.add(MyFriendRequest(user_id=self.user_id, requested_user_id=friend_id))
+            session.add(OtherRequest(user_id=friend_id, requester_user_id=self.user_id))
             session.commit()
-
-            st.success(localization.get_text("friend_request_sent_success").format(friend_id=friend_id))
-
-
+            st.success(f"{friend_id}님에게 친구 요청을 보냈습니다.")
         finally:
-            session.close()  # 세션 종료
+            session.close()
 
     # 내가 보낸 요청 목록
     def get_my_sent_requests(self):
-
+        session = SessionLocal()
         try:
-            # 내가 보낸 친구 요청 목록을 가져오기
-            sent_requests = session.query(MyFriendRequest.requested_user_id).filter(
-                MyFriendRequest.user_id == self.user_id).all()
-
-            # 결과가 없으면 빈 리스트 반환
-            if not sent_requests:
-                return []
-
-            return [request[0] for request in sent_requests]  # 튜플에서 요청한 user_id만 반환
-
-
+            requests = session.query(MyFriendRequest).filter(
+                MyFriendRequest.user_id == self.user_id
+            ).all()
+            return [req.requested_user_id for req in requests]
         finally:
-            session.close()  # 세션 종료
+            session.close()
 
     # 내가 받은 친구 요청
     def get_received_requests(self):
-
+        session = SessionLocal()
         try:
-            # 내가 받은 친구 요청 목록을 가져오기
-            received_requests = session.query(OtherRequest.requester_user_id).filter(
-                OtherRequest.user_id == self.user_id).all()
-
-            # 결과가 없으면 빈 리스트 반환
-            if not received_requests:
-                return []
-
-            return [request[0] for request in received_requests]  # 튜플에서 요청한 user_id만 반환
-
-
+            requests = session.query(OtherRequest).filter(
+                OtherRequest.user_id == self.user_id
+            ).all()
+            return [req.requester_user_id for req in requests]
         finally:
-            session.close()  # 세션 종료
-
+            session.close()
     # 친구 신청 받기
     def accept_friend_request(self, requester_id):
-
+        session = SessionLocal()
         try:
-            # 친구 관계 추가
-            new_friend_1 = Friend(user_id=self.user_id, friend_user_id=requester_id)
-            new_friend_2 = Friend(user_id=requester_id, friend_user_id=self.user_id)
-            session.add(new_friend_1)
-            session.add(new_friend_2)
-
-            # 요청 삭제 (수락된 경우)
-            # 내가 받은 친구 요청 삭제
-            request_to_delete = session.query(MyFriendRequest).filter(
-                MyFriendRequest.requested_user_id == self.user_id,
-                MyFriendRequest.user_id == requester_id
-            ).first()
-            if request_to_delete:
-                session.delete(request_to_delete)
-
-            # 상대방이 보낸 요청 삭제
-            request_to_delete = session.query(OtherRequest).filter(
-                OtherRequest.user_id == self.user_id,
-                OtherRequest.requester_user_id == requester_id
-            ).first()
-            if request_to_delete:
-                session.delete(request_to_delete)
-
-            # 상대방의 요청 리스트에서도 삭제 (반대 방향)
-            request_to_delete = session.query(MyFriendRequest).filter(
-                MyFriendRequest.requested_user_id == requester_id,
-                MyFriendRequest.user_id == self.user_id
-            ).first()
-            if request_to_delete:
-                session.delete(request_to_delete)
-
-            request_to_delete = session.query(OtherRequest).filter(
-                OtherRequest.user_id == requester_id,
-                OtherRequest.requester_user_id == self.user_id
-            ).first()
-            if request_to_delete:
-                session.delete(request_to_delete)
-
-            # 커밋하여 변경사항 저장
+            session.add(Friend(user_id=self.user_id, friend_user_id=requester_id))
+            session.add(Friend(user_id=requester_id, friend_user_id=self.user_id))
+            session.query(MyFriendRequest).filter(
+                MyFriendRequest.user_id == requester_id, MyFriendRequest.requested_user_id == self.user_id
+            ).delete()
+            session.query(OtherRequest).filter(
+                OtherRequest.user_id == self.user_id, OtherRequest.requester_user_id == requester_id
+            ).delete()
             session.commit()
-            st.success(localization.get_text("friend_request_accepted_success").format(requester_id=requester_id))
-
-
+            st.success(f"{requester_id}님과 친구가 되었습니다.")
         finally:
-            session.close()  # 세션 종료
+            session.close()
+
 
     # 친구 신청 거절
     def reject_friend_request(self, requester_id):
-
+        session = SessionLocal()
         try:
-            # 내가 받은 친구 요청 삭제
-            request_to_delete = session.query(MyFriendRequest).filter(
-                MyFriendRequest.requested_user_id == self.user_id,
-                MyFriendRequest.user_id == requester_id
-            ).first()
-            if request_to_delete:
-                session.delete(request_to_delete)
-
-            # 내가 받은 요청 리스트에서 삭제
-            request_to_delete = session.query(OtherRequest).filter(
-                OtherRequest.user_id == self.user_id,
-                OtherRequest.requester_user_id == requester_id
-            ).first()
-            if request_to_delete:
-                session.delete(request_to_delete)
-
-            # 상대방의 요청 리스트에서도 삭제
-            request_to_delete = session.query(MyFriendRequest).filter(
-                MyFriendRequest.requested_user_id == requester_id,
-                MyFriendRequest.user_id == self.user_id
-            ).first()
-            if request_to_delete:
-                session.delete(request_to_delete)
-
-            request_to_delete = session.query(OtherRequest).filter(
-                OtherRequest.user_id == requester_id,
-                OtherRequest.requester_user_id == self.user_id
-            ).first()
-            if request_to_delete:
-                session.delete(request_to_delete)
-
-            # 커밋하여 변경사항 저장
+            session.query(MyFriendRequest).filter(
+                MyFriendRequest.user_id == requester_id, MyFriendRequest.requested_user_id == self.user_id
+            ).delete()
+            session.query(OtherRequest).filter(
+                OtherRequest.user_id == self.user_id, OtherRequest.requester_user_id == requester_id
+            ).delete()
             session.commit()
-            st.success(localization.get_text("friend_request_rejected_success").format(requester_id=requester_id))
-
+            st.success(f"{requester_id}님의 친구 요청을 거절했습니다.")
         finally:
-            session.close()  # 세션 종료
+            session.close()
+
 
 
 app = Page()
