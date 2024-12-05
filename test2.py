@@ -2175,7 +2175,13 @@ class FriendPage:
     def show_friend_list(self):
         session = SessionLocal()
         try:
-            friends = session.query(Friend).filter(Friend.user_id == self.user_id).all()
+        # 친구 목록 가져오기 (차단된 사용자 제외)
+            friends = session.query(Friend).filter(
+                Friend.user_id == self.user_id,
+                ~Friend.friend_user_id.in_(
+                    session.query(Block.blocked_user_id).filter(Block.user_id == self.user_id)
+                )
+            ).all()
             if friends:
                 for friend in friends:
                     profile_picture = (
@@ -4079,12 +4085,6 @@ class FriendManager():
             if already_blocked:
                 st.warning(localization.get_text("already_blocked"))
                 return
-
-            # 친구 목록에서 삭제
-            session.query(Friend).filter(
-                Friend.user_id == self.user_id,
-                Friend.friend_user_id == friend_id
-            ).delete()
 
             # 차단 테이블에 추가
             new_block = Block(user_id=self.user_id, blocked_user_id=friend_id)
