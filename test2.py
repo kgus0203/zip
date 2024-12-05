@@ -3028,7 +3028,12 @@ class PostManager:
             session.commit()
 
     def get_all_posts(self):
-        return session.query(Posting).all()
+
+        blocked_users = session.query(Block.blocked_user_id).filter(Block.user_id == user_id).subquery()
+
+    # 차단된 사용자의 포스팅 제외
+        return session.query(Posting).filter(~Posting.p_user.in_(blocked_users)).all()
+        
 
     def get_my_posts(self, user_id):
         try:
@@ -3173,7 +3178,14 @@ class PostManager:
         return self.locations_df
 
     def display_posts(self, user_id):
-        posts = session.query(Posting).filter_by(p_user=user_id).all()
+        # 차단된 사용자 목록 가져오기
+        blocked_users = session.query(Block.blocked_user_id).filter(Block.user_id == user_id).subquery()
+
+    # 사용자 게시물 가져오기 (차단된 사용자 제외)
+        posts = session.query(Posting).filter(
+            Posting.p_user == user_id,
+            ~Posting.p_user.in_(blocked_users)
+        ).all()
 
         for post in posts:
             st.write(localization.get_text("post_id_and_title").format(post_id=post.p_id, title=post.p_title))
@@ -3286,18 +3298,21 @@ class PostManager:
             return None
 
     def display_posts_on_home(self, user_id):
+
+        # 차단된 사용자 목록 가져오기
+        blocked_users = session.query(Block.blocked_user_id).filter(Block.user_id == user_id).subquery()
         # 정렬 방식 선택
         sort_by = st.selectbox(localization.get_text("sort_posts_label"),
                                [localization.get_text("sort_by_latest"), localization.get_text("sort_by_popularity")])
-        # 정렬 기준 설정
+    # 정렬 기준 설정
         if sort_by == localization.get_text("sort_by_popularity"):
-            posts = session.query(Posting).order_by(Posting.total_like_num.desc()).all()
+            posts = session.query(Posting).filter(~Posting.p_user.in_(blocked_users)).order_by(Posting.total_like_num.desc()).all()
         else:
-            posts = session.query(Posting).order_by(Posting.upload_date.desc()).all()
+            posts = session.query(Posting).filter(~Posting.p_user.in_(blocked_users)).order_by(Posting.upload_date.desc()).all()
 
         if not posts:
             st.write(localization.get_text("no_recommended_posts_message"))
-            return
+            return   
 
         # 포스트를 두 개씩 나열
         for i in range(0, len(posts), 2):
@@ -3318,7 +3333,6 @@ class PostManager:
 
                         with st.expander(localization.get_text("view_more_expander")):
                             self.display_post(post.p_id)
-
 
 # ----------------------------------------------------카테고리 -----------------------------
 class CategoryManager:
