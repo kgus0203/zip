@@ -2161,7 +2161,7 @@ class GroupPage():
         )
         user_input = None
         groups = []
-
+        user_id = st.session_state.get("user_id")
         # 그룹 검색 처리
         if search_criteria == localization.get_text("search_by_name"):
             user_input = st.text_input(localization.get_text("group_name_prompt"))
@@ -2174,7 +2174,7 @@ class GroupPage():
         with st.expander(localization.get_text("search_button_label")):
             # 검색 실행
             if user_input:
-                groups = search_group.search_groups(user_input, search_criteria)
+                groups = search_group.search_groups(user_input, search_criteria,user_id)
 
             # 결과 표시
             if not groups:
@@ -4080,8 +4080,6 @@ class GroupManager:
 class GroupSearch:
 
     def search_groups(self, user_input, search_criteria, user_id):
-        # 차단된 사용자 목록 가져오기
-        blocked_users = session.query(Block.blocked_user_id).filter(Block.user_id == user_id).subquery()
 
         # 기본적인 Group 쿼리 시작
         query = session.query(
@@ -4094,8 +4092,6 @@ class GroupSearch:
             Location, Group.location == Location.location_id, isouter=True
         ).join(
             GroupMember, Group.group_id == GroupMember.group_id, isouter=True
-        ).filter(
-            ~Group.group_creator.in_(blocked_users)  # 차단된 사용자가 만든 그룹 제외
         )
 
         # 검색 기준에 따른 조건 추가
