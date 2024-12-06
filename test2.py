@@ -1584,8 +1584,8 @@ class TurnPages:
             # 이메일 등록 여부 확인
             user_info = user_manager.is_email_registered(email)
             if user_info:
-                st.success(localization.get_text("password_recovery_email_sent"))
                 user_manager.save_recovery_token(email)
+                st.success('복구 메일을 전송했습니다')
 
             else:
                 st.warning(localization.get_text("email_not_registered_warning"))
