@@ -1,4 +1,3 @@
-
 import streamlit as st
 from sqlalchemy import (
     create_engine, Column, Integer, String, ForeignKey, Boolean, DateTime, Text, Float, func, CheckConstraint, Date,
@@ -1575,6 +1574,9 @@ class TurnPages:
         # SMTP 이메일과 비밀번호를 초기화
         smtp_email = "kgus0203001@gmail.com"  # 발신 이메일 주소
         smtp_password = "pwhj fwkw yqzg ujha"  # 발신 이메일 비밀번호
+        
+        change_id=st.checkbox('아이디 복구')
+        change_password = st.checkbox('비밀번호 복구')
         if st.button(localization.get_text("confirm_button"), key="forgot_confirm_button", use_container_width=True):
 
             user_manager = UserManager(smtp_email, smtp_password)
@@ -1592,28 +1594,49 @@ class TurnPages:
         # 복구 토큰 입력 받기
         token = st.text_input(localization.get_text("enter_recovery_token"),
                               placeholder=localization.get_text("token_placeholder"))
+        if change_id: 
+            new_id =  st.text_input('아이디 변경')
+            # 비밀번호 복구 버튼 클릭
+            # 비밀번호 복구 버튼 클릭
+            if st.button('복구', use_container_width=True):
+                if not email or not token or not new_id:
+                    st.error(localization.get_text("all_fields_required"))
+                    return
 
-        # 새 비밀번호 입력
-        new_password = st.text_input(localization.get_text("new_password_label"),
-                                     placeholder=localization.get_text("new_password_placeholder"), type="password")
+                # 비밀번호 복구를 위한 UserManager 인스턴스 생성
+                user_manager = UserManager(smtp_email, smtp_password)
 
-        # 비밀번호 복구 버튼 클릭
-        if st.button(localization.get_text("recover_password_button"), use_container_width=True):
-            if not email or not token or not new_password:
-                st.error(localization.get_text("all_fields_required"))
-                return
-
-            # 비밀번호 복구를 위한 UserManager 인스턴스 생성
-            user_manager = UserManager(smtp_email, smtp_password)
-
-            # 토큰 검증 후 비밀번호 재설정
-            if user_manager.verify_token(email, token):
-                if len(new_password) >= 8:
+                # 토큰 검증 후 비밀번호 재설정
+                if user_manager.verify_token(email, token):
+                    user_manager.recover_id(email, new_id, token)
                     st.success(localization.get_text("password_reset_success"))
                 else:
-                    st.warning('비밀번호는 8자리 이상입니다')
-            else:
-                st.error(localization.get_text("invalid_or_expired_token"))
+                    st.error(localization.get_text("invalid_or_expired_token"))
+            
+            return
+        if change_password:
+            # 새 비밀번호 입력
+            new_password = st.text_input(localization.get_text("new_password_label"),
+                                         placeholder=localization.get_text("new_password_placeholder"), type="password")
+
+            # 비밀번호 복구 버튼 클릭
+            if st.button('복구', use_container_width=True):
+                if not email or not token or not new_password:
+                    st.error(localization.get_text("all_fields_required"))
+                    return
+    
+                # 비밀번호 복구를 위한 UserManager 인스턴스 생성
+                user_manager = UserManager(smtp_email, smtp_password)
+    
+                # 토큰 검증 후 비밀번호 재설정
+                if user_manager.verify_token(email, token):
+                    if len(new_password) >= 8:
+                        user_manager.recover_password(email,new_password, token )
+                        st.success(localization.get_text("password_reset_success"))
+                    else:
+                        st.warning('비밀번호는 8자리 이상입니다')
+                else:
+                    st.error(localization.get_text("invalid_or_expired_token"))
 
             # 뒤로가기 버튼
             if st.button(localization.get_text("back_button"), use_container_width=True):
@@ -1790,8 +1813,9 @@ class TurnPages:
                 if st.button(localization.get_text("leave_group_button"), key=f'out_group_{group.group_id}',
                              use_container_width=True):
                     self.exit_group(group.group_id, group.group_name)
-                
-                if st.button(localization.get_text("invite_to_group"), key=f"invite_group_{group.group_id}", use_container_width=True):
+
+                if st.button(localization.get_text("invite_to_group"), key=f"invite_group_{group.group_id}",
+                             use_container_width=True):
                     self.invite_user_to_group(group.group_id)
 
     @st.dialog(localization.get_text("invite_to_group"))
@@ -1804,7 +1828,7 @@ class TurnPages:
         with st.form(key=f"invite_form_{group_id}"):
             invitee_id = st.text_input(localization.get_text("enter_invitee_id"), key=f"invitee_id_{group_id}")
             submit_button = st.form_submit_button(localization.get_text("send_invite"))
-            
+
             if submit_button:
                 if invitee_id:  # 사용자가 ID를 입력했을 경우
                     result = group_manager.invite_user_to_group(group_id, invitee_id)
@@ -1814,6 +1838,7 @@ class TurnPages:
                         st.error(result["message"])
                 else:
                     st.warning(localization.get_text("enter_valid_invitee_id"))
+
     # 대기 중인 친구 요청을 표시하는 함수
     def show_friend_requests_page(self):
         user_id = st.session_state.get("user_id")
@@ -1985,6 +2010,7 @@ class GroupPage():
             """,
             unsafe_allow_html=True
         )
+
     # 그룹 세부 정보 페이지
     def detail_group(self):
         col1, col2 = st.columns([6, 2])  # 비율 6 : 2
@@ -2030,9 +2056,8 @@ class GroupPage():
             st.warning(localization.get_text("no_members_in_group"))
 
         if st.button(f"{localization.get_text('join_group')} ({group_name})", key=f"join_{group_name}",
-                    use_container_width=True):
+                     use_container_width=True):
             self.group_manager.join_group(group_name)
-
 
     @st.dialog(localization.get_text("create_group_dialog_title"))
     def group_creation_page(self):
@@ -2176,7 +2201,7 @@ class FriendPage:
     def show_friend_list(self):
         session = SessionLocal()
         try:
-        # 친구 목록 가져오기 (차단된 사용자 제외)
+            # 친구 목록 가져오기 (차단된 사용자 제외)
             friends = session.query(Friend).filter(
                 Friend.user_id == self.user_id,
                 ~Friend.friend_user_id.in_(
@@ -2190,25 +2215,25 @@ class FriendPage:
                         .filter(User.user_id == friend.friend_user_id)
                         .scalar()
                     )
-                # 프로필 사진이 없거나 경로가 유효하지 않으면 기본 이미지 사용
+                    # 프로필 사진이 없거나 경로가 유효하지 않으면 기본 이미지 사용
                     if not profile_picture or not os.path.exists(profile_picture):
                         profile_picture = "https://cdn.pixabay.com/photo/2015/10/05/22/37/blank-profile-picture-973460_960_720.png"
-                
-                # 항상 컬럼 초기화
+
+                    # 항상 컬럼 초기화
                     col1, col2, col3 = st.columns([1, 6, 2])  # 사진 1칸, 텍스트 6칸, 버튼 2칸
-                
+
                     with col1:
                         st.image(profile_picture, width=50)  # 작은 크기로 사진 표시
                     with col2:
                         st.write(f"{friend.friend_user_id}")  # 친구 ID 표시
                     with col3:
-                    # '포스팅 보기' 버튼
+                        # '포스팅 보기' 버튼
                         if st.button(f"포스팅 보기 ({friend.friend_user_id})", key=f"view_posts_{friend.friend_user_id}"):
-                        # 상대방 포스팅 보기 페이지로 이동
+                            # 상대방 포스팅 보기 페이지로 이동
                             st.session_state['current_friend_id'] = friend.friend_user_id
                             self.friend_posts_page()
             else:
-                    st.write("친구가 없습니다.")
+                st.write("친구가 없습니다.")
 
         finally:
             session.close()
@@ -2235,7 +2260,6 @@ class FriendPage:
         if st.button("뒤로 가기"):
             st.session_state["current_page"] = "after_login"
             st.rerun()
-
 
     @st.dialog("친구 추가 창")
     def add_friend_page(self):
@@ -2651,10 +2675,6 @@ class UserManager:
 
     def reset_password(self, email, new_password):
         # 비밀번호 길이 제약 (8자 이상)
-        if len(new_password) < 8:
-            st.error(localization.get_text("password_length_error"))  # 길이가 8자 미만일 때 출력할 에러 메시지
-            return
-
         # 비밀번호 해싱
         hashed_password = bcrypt.hashpw(new_password.encode('utf-8'), bcrypt.gensalt())
 
@@ -2677,6 +2697,27 @@ class UserManager:
             print(localization.get_text("invalid_token"))
             return
         self.reset_password(email, new_password)
+        print(localization.get_text("password_reset_success"))
+        
+    def reset_id(self, email, new_id):
+        # 비밀번호 길이 제약 (8자 이상)
+
+        user = session.query(User).filter_by(user_email=email).first()
+
+        if user:
+            session.commit()
+            st.success(localization.get_text("password_reset_success"))  # 성공 메시지
+        else:
+            st.warning(localization.get_text("email_not_found"))  # 이메일이 존재하지 않으면 경고 메시지
+
+        session.close()
+
+    def recover_id(self, email, new_id, token):
+
+        if not self.verify_token(email, token):
+            print(localization.get_text("invalid_token"))
+            return
+        self.reset_id(email, id)
         print(localization.get_text("password_reset_success"))
 
 
@@ -3032,9 +3073,8 @@ class PostManager:
 
         blocked_users = session.query(Block.blocked_user_id).filter(Block.user_id == user_id).subquery()
 
-    # 차단된 사용자의 포스팅 제외
+        # 차단된 사용자의 포스팅 제외
         return session.query(Posting).filter(~Posting.p_user.in_(blocked_users)).all()
-        
 
     def get_my_posts(self, user_id):
         try:
@@ -3182,7 +3222,7 @@ class PostManager:
         # 차단된 사용자 목록 가져오기
         blocked_users = session.query(Block.blocked_user_id).filter(Block.user_id == user_id).subquery()
 
-    # 사용자 게시물 가져오기 (차단된 사용자 제외)
+        # 사용자 게시물 가져오기 (차단된 사용자 제외)
         posts = session.query(Posting).filter(
             Posting.p_user == user_id,
             ~Posting.p_user.in_(blocked_users)
@@ -3305,17 +3345,19 @@ class PostManager:
         # 정렬 방식 선택
         sort_by = st.selectbox(localization.get_text("sort_posts_label"),
                                [localization.get_text("sort_by_latest"), localization.get_text("sort_by_popularity")])
-    # 정렬 기준 설정
+        # 정렬 기준 설정
         if sort_by == localization.get_text("sort_by_popularity"):
-            posts = session.query(Posting).filter(~Posting.p_user.in_(blocked_users)).order_by(Posting.total_like_num.desc()).all()
+            posts = session.query(Posting).filter(~Posting.p_user.in_(blocked_users)).order_by(
+                Posting.total_like_num.desc()).all()
         else:
-            posts = session.query(Posting).filter(~Posting.p_user.in_(blocked_users)).order_by(Posting.upload_date.desc()).all()
+            posts = session.query(Posting).filter(~Posting.p_user.in_(blocked_users)).order_by(
+                Posting.upload_date.desc()).all()
 
         if not posts:
             st.write(localization.get_text("no_recommended_posts_message"))
-            return   
+            return
 
-        # 포스트를 두 개씩 나열
+            # 포스트를 두 개씩 나열
         for i in range(0, len(posts), 2):
             cols = st.columns(2)
             for j, col in enumerate(cols):
@@ -3334,6 +3376,7 @@ class PostManager:
 
                         with st.expander(localization.get_text("view_more_expander")):
                             self.display_post(post.p_id)
+
 
 # ----------------------------------------------------카테고리 -----------------------------
 class CategoryManager:
@@ -3718,26 +3761,25 @@ class GroupManager:
         self.user_id = user_id
 
     def get_all_groups(self):
-    # 차단된 사용자 목록 가져오기
+        # 차단된 사용자 목록 가져오기
         blocked_users = session.query(Block.blocked_user_id).filter(Block.user_id == self.user_id).subquery()
 
-    # 차단된 사용자가 만든 그룹 제외
+        # 차단된 사용자가 만든 그룹 제외
         groups = session.query(Group).filter(~Group.group_creator.in_(blocked_users)).all()
         return groups
- 
+
     def get_user_groups(self):
-    # 차단된 사용자 목록 가져오기
+        # 차단된 사용자 목록 가져오기
         blocked_users = session.query(Block.blocked_user_id).filter(Block.user_id == self.user_id).subquery()
 
-    # 차단된 사용자가 만든 그룹 제외
+        # 차단된 사용자가 만든 그룹 제외
         user_groups = session.query(Group).join(GroupMember, Group.group_id == GroupMember.group_id) \
             .filter(
-                GroupMember.user_id == self.user_id,
-                ~Group.group_creator.in_(blocked_users)
-            ).all()
+            GroupMember.user_id == self.user_id,
+            ~Group.group_creator.in_(blocked_users)
+        ).all()
 
         return user_groups
-
 
     # 그룹에 속해있는 멤버들의 아이디를 반환한다
     def get_group_members(self, group_id):
@@ -4003,10 +4045,10 @@ class GroupManager:
 class GroupSearch:
 
     def search_groups(self, user_input, search_criteria, user_id):
-    # 차단된 사용자 목록 가져오기
+        # 차단된 사용자 목록 가져오기
         blocked_users = session.query(Block.blocked_user_id).filter(Block.user_id == user_id).subquery()
 
-    # 기본적인 Group 쿼리 시작
+        # 기본적인 Group 쿼리 시작
         query = session.query(
             Group.group_name, Group.group_creator, Group.meeting_date, Group.meeting_time,
             FoodCategory.category, Location.location_name,
@@ -4021,7 +4063,7 @@ class GroupSearch:
             ~Group.group_creator.in_(blocked_users)  # 차단된 사용자가 만든 그룹 제외
         )
 
-    # 검색 기준에 따른 조건 추가
+        # 검색 기준에 따른 조건 추가
         if search_criteria == localization.get_text("search_by_name"):
             query = query.filter(Group.group_name.like(f"%{user_input}%"))
         elif search_criteria == localization.get_text("search_by_date"):
@@ -4029,15 +4071,13 @@ class GroupSearch:
         elif search_criteria == localization.get_text("search_by_category"):
             query = query.filter(Group.category == user_input)
 
-    # 그룹 데이터 조회 실행
+        # 그룹 데이터 조회 실행
         groups = query.group_by(Group.group_id).all()
 
-    # 세션 종료
+        # 세션 종료
         session.close()
 
         return groups
-
-
 
 
 class FriendManager():
@@ -4184,7 +4224,6 @@ class FriendManager():
             st.success(localization.get_text("delete_friend_success").format(friend_id=friend_id))
         finally:
             session.close()  # 세션 종료
-
 
 
 # ------------------------------------------------------친구 요청 관리 --------------------------------------------------
