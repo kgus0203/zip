@@ -1892,22 +1892,18 @@ class GroupPage():
                 unsafe_allow_html=True,
             )
         with col2:
-            button_col1, button_col2, button_col3, button_col4 = st.columns(4)
+            button_col1, button_col2, button_col3 = st.columns(3)
             # 그룹생성 버튼
             with button_col1:
                 if st.button(localization.get_text("create_group_button"), use_container_width=True):
                     self.group_creation_page()
-            # 그룹차단 버튼
-            with button_col2:
-                if st.button(localization.get_text("blocked_list_button"), use_container_width=True):  # 여기에 추가
-                    st.session_state["current_page"] = "GroupBlockList"
-                    st.rerun()
+           
             # 뒤로가기 버튼
-            with button_col3:
+            with button_col2:
                 if st.button(localization.get_text("back_button"), use_container_width=True):
                     self.page.go_back()
             # 그룹검색 버튼
-            with button_col4:
+            with button_col3:
                 if st.button(localization.get_text("search_group_button"), use_container_width=True):
                     self.search_groups_page()
 
