@@ -3584,7 +3584,6 @@ class SetView:
             if updated_user:
                 self.user_vo = updated_user
                 st.session_state["user_vo"] = updated_user
-                st.success(localization.get_text("field_updated").format(field=field_name))
             else:
                 st.error(localization.get_text("user_info_fetch_failed"))
         else:
