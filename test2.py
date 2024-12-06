@@ -2445,6 +2445,7 @@ class Group(Base):
     location = Column(Integer, nullable=True)
     meeting_date = Column(Date, server_default=func.current_date())  # Default: CURRENT_DATE
     meeting_time = Column(Time, server_default=func.current_time())  # Default: CURRENT_TIME
+    max_memebers= Column( Integer, default=10, nullable=False)
     status = Column(String, default='진행 중')
     update_date = Column(DateTime, default=func.now(), onupdate=func.now())
     modify_date = Column(DateTime, default=func.now(), onupdate=func.now())
