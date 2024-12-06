@@ -2021,7 +2021,7 @@ class GroupPage():
             st.error(localization.get_text("group_info_not_found"))
             return
 
-        group_name, modify_date, meeting_date, meeting_time = group_info[1], group_info[3], group_info[4], group_info[5]
+        group_name, modify_date, meeting_date, meeting_time, location_name = group_info[1], group_info[3], group_info[4], group_info[5], group_info[7]
 
         # Display group information
         st.markdown(f"### {group_name}")
@@ -2032,6 +2032,8 @@ class GroupPage():
             f"**{localization.get_text('meeting_date')}:** {meeting_date if meeting_date else localization.get_text('not_set')}")
         st.markdown(
             f"**{localization.get_text('meeting_time')}:** {meeting_time if meeting_time else localization.get_text('not_set')}")
+        st.markdown(
+            f"**{localization.get_text('location')}:** {location_name if location_name else localization.get_text('not_set')}")
 
         members = self.group_manager.get_group_members(group_id)
 
@@ -2445,6 +2447,7 @@ class Group(Base):
     update_date = Column(DateTime, default=func.now(), onupdate=func.now())
     modify_date = Column(DateTime, default=func.now(), onupdate=func.now())
     max_members = Column(Integer, nullable=False, default=10)
+    location = Column(Integer, ForeignKey("locations.location_id"))  # 외래 키 설정
 
 
 
@@ -3888,7 +3891,9 @@ class GroupManager:
                 Group.meeting_date,
                 Group.meeting_time,
                 Group.max_members
+                Location.location_name
             )
+            .join(Location, Group.location == Location.location_id)
             .filter(Group.group_id == group_id)  # Filter by group_id
             .first()  # Get the first result (similar to fetchone)
         )
