@@ -1395,7 +1395,7 @@ class TurnPages:
                 # 회원가입 이벤트 처리
                 if signup.sign_up_event():
                     st.success(localization.get_text("signup_success"))
-                    st.rerun()
+                    self.page.change_page('Home')
                 else:
                     st.error(localization.get_text("signup_error_failed"))
 
@@ -2445,7 +2445,6 @@ class Group(Base):
     location = Column(Integer, nullable=True)
     meeting_date = Column(Date, server_default=func.current_date())  # Default: CURRENT_DATE
     meeting_time = Column(Time, server_default=func.current_time())  # Default: CURRENT_TIME
-    max_memebers= Column( Integer, default=10, nullable=False)
     status = Column(String, default='진행 중')
     update_date = Column(DateTime, default=func.now(), onupdate=func.now())
     modify_date = Column(DateTime, default=func.now(), onupdate=func.now())
