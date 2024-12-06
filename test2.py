@@ -1574,11 +1574,11 @@ class TurnPages:
         # SMTP 이메일과 비밀번호를 초기화
         smtp_email = "kgus0203001@gmail.com"  # 발신 이메일 주소
         smtp_password = "pwhj fwkw yqzg ujha"  # 발신 이메일 비밀번호
-        
+
         change_id=st.checkbox('아이디 복구')
         change_password = st.checkbox('비밀번호 복구')
         if st.button(localization.get_text("confirm_button"), key="forgot_confirm_button", use_container_width=True):
-
+            
             user_manager = UserManager(smtp_email, smtp_password)
 
             # 이메일 등록 여부 확인
@@ -1586,7 +1586,6 @@ class TurnPages:
             if user_info:
                 st.success(localization.get_text("password_recovery_email_sent"))
                 user_manager.save_recovery_token(email)
-                user_manager.send_recovery_email(email)
 
             else:
                 st.warning(localization.get_text("email_not_registered_warning"))
@@ -1594,10 +1593,8 @@ class TurnPages:
         # 복구 토큰 입력 받기
         token = st.text_input(localization.get_text("enter_recovery_token"),
                               placeholder=localization.get_text("token_placeholder"))
-        if change_id: 
+        if change_id:
             new_id =  st.text_input('아이디 변경')
-            # 비밀번호 복구 버튼 클릭
-            # 비밀번호 복구 버튼 클릭
             if st.button('복구', use_container_width=True):
                 if not email or not token or not new_id:
                     st.error(localization.get_text("all_fields_required"))
@@ -1609,10 +1606,11 @@ class TurnPages:
                 # 토큰 검증 후 비밀번호 재설정
                 if user_manager.verify_token(email, token):
                     user_manager.recover_id(email, new_id, token)
-                    st.success(localization.get_text("password_reset_success"))
+                    st.success('아이디가 성공적으로 변경되었습니다!')
+                    st.rerun()
                 else:
                     st.error(localization.get_text("invalid_or_expired_token"))
-            
+
             return
         if change_password:
             # 새 비밀번호 입력
@@ -1624,23 +1622,20 @@ class TurnPages:
                 if not email or not token or not new_password:
                     st.error(localization.get_text("all_fields_required"))
                     return
-    
+
                 # 비밀번호 복구를 위한 UserManager 인스턴스 생성
                 user_manager = UserManager(smtp_email, smtp_password)
-    
+
                 # 토큰 검증 후 비밀번호 재설정
                 if user_manager.verify_token(email, token):
                     if len(new_password) >= 8:
                         user_manager.recover_password(email,new_password, token )
                         st.success(localization.get_text("password_reset_success"))
+                        st.rerun()
                     else:
                         st.warning('비밀번호는 8자리 이상입니다')
                 else:
                     st.error(localization.get_text("invalid_or_expired_token"))
-
-            # 뒤로가기 버튼
-            if st.button(localization.get_text("back_button"), use_container_width=True):
-                self.page.go_back()
 
     # 게시글 목록
 
@@ -2698,13 +2693,14 @@ class UserManager:
             return
         self.reset_password(email, new_password)
         print(localization.get_text("password_reset_success"))
-        
+
     def reset_id(self, email, new_id):
         # 비밀번호 길이 제약 (8자 이상)
 
         user = session.query(User).filter_by(user_email=email).first()
 
         if user:
+            user.user_id=new_id
             session.commit()
             st.success(localization.get_text("password_reset_success"))  # 성공 메시지
         else:
