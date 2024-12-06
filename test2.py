@@ -4033,7 +4033,7 @@ class GroupManager:
                 if existing_member:
                     st.warning(localization.get_text("already_member"))
                     return
-                if self.get_group_member_count()>group.max_members:
+                if self.get_group_member_count(group.group_id)>group.max_members:
                     st.warning('참여 가능한 멤버 수를 초과하였습니다.')
                     return
 
