@@ -1395,7 +1395,7 @@ class TurnPages:
                 # 회원가입 이벤트 처리
                 if signup.sign_up_event():
                     st.success(localization.get_text("signup_success"))
-                    self.page.change_page('Home')
+                    st.rerun()
                 else:
                     st.error(localization.get_text("signup_error_failed"))
 
