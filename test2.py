@@ -1585,6 +1585,7 @@ class TurnPages:
             user_info = user_manager.is_email_registered(email)
             if user_info:
                 user_manager.save_recovery_token(email)
+                user_manager.send_recovery_email(email)
                 st.success('복구 메일을 전송했습니다')
 
             else:
