@@ -3890,7 +3890,7 @@ class GroupManager:
                 Group.modify_date,
                 Group.meeting_date,
                 Group.meeting_time,
-                Group.max_members
+                Group.max_members,
                 Location.location_name
             )
             .join(Location, Group.location == Location.location_id)
