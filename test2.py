@@ -1578,7 +1578,7 @@ class TurnPages:
         change_id=st.checkbox('아이디 복구')
         change_password = st.checkbox('비밀번호 복구')
         if st.button(localization.get_text("confirm_button"), key="forgot_confirm_button", use_container_width=True):
-            
+
             user_manager = UserManager(smtp_email, smtp_password)
 
             # 이메일 등록 여부 확인
@@ -1600,9 +1600,6 @@ class TurnPages:
                     st.error(localization.get_text("all_fields_required"))
                     return
 
-                # 비밀번호 복구를 위한 UserManager 인스턴스 생성
-                user_manager = UserManager(smtp_email, smtp_password)
-
                 # 토큰 검증 후 비밀번호 재설정
                 if user_manager.verify_token(email, token):
                     user_manager.recover_id(email, new_id, token)
@@ -1622,9 +1619,6 @@ class TurnPages:
                 if not email or not token or not new_password:
                     st.error(localization.get_text("all_fields_required"))
                     return
-
-                # 비밀번호 복구를 위한 UserManager 인스턴스 생성
-                user_manager = UserManager(smtp_email, smtp_password)
 
                 # 토큰 검증 후 비밀번호 재설정
                 if user_manager.verify_token(email, token):
