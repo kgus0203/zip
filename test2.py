@@ -3012,6 +3012,7 @@ class LocationSearch:
             st.error('그룹 이름이 이미 존재합니다')
             return
 
+
         # 그룹 모델 인스턴스 생성
         new_group = Group(
             group_name=group_name,
@@ -4031,6 +4032,9 @@ class GroupManager:
                     GroupMember.group_id == group.group_id, GroupMember.user_id == self.user_id).first()
                 if existing_member:
                     st.warning(localization.get_text("already_member"))
+                    return
+                if self.get_group_member_count()>group.max_members:
+                    st.warning('참여 가능한 멤버 수를 초과하였습니다.')
                     return
 
                 # 그룹 멤버 추가
