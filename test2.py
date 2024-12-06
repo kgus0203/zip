@@ -2710,7 +2710,7 @@ class UserManager:
         if not self.verify_token(email, token):
             print(localization.get_text("invalid_token"))
             return
-        self.reset_id(email, id)
+        self.reset_id(email, new_id)
         print(localization.get_text("password_reset_success"))
 
 
