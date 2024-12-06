@@ -4209,6 +4209,7 @@ class FriendManager():
 
             if not blocked:
                 # 차단된 사용자가 아닌 경우 경고 메시지 출력
+                st.write("The user is not blocked.")
                 return
 
             # 차단 해제
