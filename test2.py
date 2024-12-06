@@ -1600,6 +1600,7 @@ class TurnPages:
                 if not email or not token or not new_id:
                     st.error(localization.get_text("all_fields_required"))
                     return
+                user_manager = UserManager(smtp_email, smtp_password)
 
                 # 토큰 검증 후 비밀번호 재설정
                 if user_manager.verify_token(email, token):
@@ -1614,12 +1615,13 @@ class TurnPages:
             # 새 비밀번호 입력
             new_password = st.text_input(localization.get_text("new_password_label"),
                                          placeholder=localization.get_text("new_password_placeholder"), type="password")
-
+        
             # 비밀번호 복구 버튼 클릭
             if st.button('복구', use_container_width=True):
                 if not email or not token or not new_password:
                     st.error(localization.get_text("all_fields_required"))
                     return
+                user_manager = UserManager(smtp_email, smtp_password)
 
                 # 토큰 검증 후 비밀번호 재설정
                 if user_manager.verify_token(email, token):
