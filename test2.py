@@ -3800,22 +3800,45 @@ class GroupManager:
 
         return members
 
+    from datetime import datetime
+    from sqlalchemy import func
+
     def invite_user_to_group(self, group_id, invitee_id):
+
         try:
+            # 사용자 및 멤버 상태 확인
             user_exists = session.query(User).filter(User.user_id == invitee_id).first()
-            if not user_exists: return {"success": False, "message": "존재하지 않는 사용자입니다."}
-            already_member = session.query(GroupMember).filter(GroupMember.group_id == group_id,
-                                                               GroupMember.user_id == invitee_id).first()
-            if already_member: return {"success": False, "message": "이미 그룹에 포함된 사용자입니다."}
-            new_member = GroupMember(group_id=group_id, user_id=invitee_id, role="member", joined_at=datetime.now())
+            if not user_exists:
+                return {"success": False, "message": "존재하지 않는 사용자입니다."}
+
+            already_member = session.query(GroupMember).filter(
+                GroupMember.group_id == group_id,
+                GroupMember.user_id == invitee_id
+            ).first()
+            if already_member:
+                return {"success": False, "message": "이미 그룹에 포함된 사용자입니다."}
+
+            # 멤버 수 제한 확인
+            member_count = session.query(func.count(GroupMember.user_id)).filter(
+                GroupMember.group_id == group_id).scalar()
+            group = session.query(Group).filter(Group.group_id == group_id).first()
+            if member_count >= group.max_members:
+                return {"success": False, "message": "그룹 최대 멤버 수를 초과하여 초대할 수 없습니다."}
+
+            # 새 멤버 추가
+            new_member = GroupMember(
+                group_id=group_id,
+                user_id=invitee_id,
+                role="member",
+                joined_at=datetime.now()
+            )
             session.add(new_member)
             session.commit()
             return {"success": True, "message": f"{invitee_id} 사용자가 그룹에 성공적으로 추가되었습니다."}
+
         except Exception as e:
             session.rollback()
-            return {"success": False, "message": f"DB 오류:{e}"}
-        finally:
-            session.close()
+            return {"success": False, "message": f"DB 오류: {str(e)}"}
 
     def get_user_groups(self):
         try:
