@@ -320,7 +320,7 @@ class Localization:
                 "group_not_found": "그룹을 찾을 수 없습니다.",
                 "group_deleted_success": "그룹이 성공적으로 삭제되었습니다!",
                 "group_delete_error": "그룹 삭제 중 오류 발생: {error}",
-                "group_updated_success": "'{group_name}' 그룹이 성공적으로 수정되었습니다!",
+                "group_updated_success": "{group_name} 그룹이 성공적으로 수정되었습니다!",
                 "db_error": "DB 오류: {error}",
                 "already_member": "이미 해당 그룹의 멤버입니다.",
                 "group_joined_success": "'{group_name}' 그룹에 성공적으로 참여하였습니다.",
@@ -1575,7 +1575,7 @@ class TurnPages:
         smtp_email = "kgus0203001@gmail.com"  # 발신 이메일 주소
         smtp_password = "pwhj fwkw yqzg ujha"  # 발신 이메일 비밀번호
 
-        change_id=st.checkbox('아이디 복구')
+        change_id = st.checkbox('아이디 복구')
         change_password = st.checkbox('비밀번호 복구')
         if st.button(localization.get_text("confirm_button"), key="forgot_confirm_button", use_container_width=True):
 
@@ -1595,7 +1595,7 @@ class TurnPages:
         token = st.text_input(localization.get_text("enter_recovery_token"),
                               placeholder=localization.get_text("token_placeholder"))
         if change_id:
-            new_id =  st.text_input('아이디 변경')
+            new_id = st.text_input('아이디 변경')
             if st.button('복구', use_container_width=True):
                 if not email or not token or not new_id:
                     st.error(localization.get_text("all_fields_required"))
@@ -1615,7 +1615,7 @@ class TurnPages:
             # 새 비밀번호 입력
             new_password = st.text_input(localization.get_text("new_password_label"),
                                          placeholder=localization.get_text("new_password_placeholder"), type="password")
-        
+
             # 비밀번호 복구 버튼 클릭
             if st.button('복구', use_container_width=True):
                 if not email or not token or not new_password:
@@ -1626,7 +1626,7 @@ class TurnPages:
                 # 토큰 검증 후 비밀번호 재설정
                 if user_manager.verify_token(email, token):
                     if len(new_password) >= 8:
-                        user_manager.recover_password(email,new_password, token )
+                        user_manager.recover_password(email, new_password, token)
                         st.success(localization.get_text("password_reset_success"))
                         st.rerun()
                     else:
@@ -2029,7 +2029,8 @@ class GroupPage():
 
         # Display group information
         st.markdown(f"### {group_name}")
-        st.markdown(f"**{localization.get_text('current_members')}:** {members} / 10")
+        max_members = group_info[6]  # 최대 인원수 가져오기
+        st.markdown(f"**{localization.get_text('current_members')}:** {members} / {max_members}")
         st.markdown(f"**{localization.get_text('last_modified')}:** {modify_date}")
         st.markdown(
             f"**{localization.get_text('meeting_date')}:** {meeting_date if meeting_date else localization.get_text('not_set')}")
@@ -2077,7 +2078,7 @@ class GroupPage():
         group_manager = GroupManager(self.user_id)
         # 그룹 생성 버튼
         if st.button(localization.get_text("create_group_button"), key="create_group_button"):
-            group_id = location_search.add_group(group_name, self.user_id, categories, meeting_date, meeting_time)
+            group_id = location_search.add_group(group_name, self.user_id, categories, meeting_date, meeting_time, max_members)
             if group_id:
                 group_manager.add_group_member(group_id)
                 st.rerun()
@@ -2111,6 +2112,16 @@ class GroupPage():
         else:
             meeting_time = st.time_input(localization.get_text("meeting_time_label"),
                                          value=datetime.now().time())  # 기본값: 현재 시간
+        # max_members 입력 UI 추가 (meeting_time 입력 UI 바로 아래)
+        max_members = st.number_input(
+            localization.get_text("max_members_label"),
+            min_value=2,
+            max_value=10,
+            step=1,
+            value=group_info[6],  # 기존 최대 인원수 가져오기
+            key="max_members_input"
+        )
+
 
         status_choices = [
             localization.get_text("status_in_progress"),
@@ -2129,7 +2140,7 @@ class GroupPage():
         # 그룹 수정 버튼
         if st.button(localization.get_text("update_group_button"), use_container_width=True):
             self.group_manager.update_group(group_id, group_name, categories, selected_status, meeting_date,
-                                            meeting_time)
+                                            meeting_time,max_members)
 
         if st.button(localization.get_text("back_button"), use_container_width=True):
             self.page.go_back()
@@ -2437,6 +2448,8 @@ class Group(Base):
     status = Column(String, default='진행 중')
     update_date = Column(DateTime, default=func.now(), onupdate=func.now())
     modify_date = Column(DateTime, default=func.now(), onupdate=func.now())
+    max_members = Column(Integer, nullable=False, default=10)
+
 
 
 class Block(Base):
@@ -2697,7 +2710,7 @@ class UserManager:
         user = session.query(User).filter_by(user_email=email).first()
 
         if user:
-            user.user_id=new_id
+            user.user_id = new_id
             session.commit()
             st.success(localization.get_text("password_reset_success"))  # 성공 메시지
         else:
@@ -2985,7 +2998,7 @@ class LocationSearch:
         session.add(new_post)
         session.commit()
 
-    def add_group(self, group_name, user_id, category, meeting_date, meeting_time):
+    def add_group(self, group_name, user_id, category, meeting_date, meeting_time , max_members):
         location_id = self.get_selected_location_id()
         current_date = modify_date = datetime.now()
 
@@ -3007,6 +3020,7 @@ class LocationSearch:
             location=location_id,
             meeting_date=meeting_date,
             meeting_time=meeting_time,
+            max_members=max_members,
             update_date=current_date,
             modify_date=current_date,
             status=localization.get_text("status_in_progress")
@@ -3062,7 +3076,7 @@ class PostManager:
             session.delete(post)
             session.commit()
 
-    def get_all_posts(self):
+    def get_all_posts(self,user_id):
 
         blocked_users = session.query(Block.blocked_user_id).filter(Block.user_id == user_id).subquery()
 
@@ -3852,7 +3866,8 @@ class GroupManager:
                 Group.status,
                 Group.modify_date,
                 Group.meeting_date,
-                Group.meeting_time
+                Group.meeting_time,
+                Group.max_members
             )
             .filter(Group.group_id == group_id)  # Filter by group_id
             .first()  # Get the first result (similar to fetchone)
@@ -3954,7 +3969,7 @@ class GroupManager:
         finally:
             session.close()  # 세션 종료
 
-    def update_group(self, group_id, group_name, category, status, meeting_date, meeting_time):
+    def update_group(self, group_id, group_name, category, status, meeting_date, meeting_time,max_members):
         try:
             # 그룹 레코드를 조회
             group = session.query(Group).filter(Group.group_id == group_id).first()
@@ -3979,11 +3994,12 @@ class GroupManager:
             group.status = status
             group.meeting_date = meeting_date
             group.meeting_time = meeting_time
+            group.max_members = max_members
             group.modify_date = datetime.now()
 
             # 세션 커밋
             session.commit()
-            st.success(localization.get_text("group_updated_success"))
+            st.success(localization.get_text("group_updated_success").format(group_name=group_name))
         except Exception as e:
             st.error(localization.get_text("db_error").format(error=e))
             session.rollback()  # 오류 발생 시 롤백
